@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿using Skanly.Application.Interfaces.Services;
 namespace Skanly.Infrastructure.Identity
 {
-    internal class JwtTokenService
+    public class JwtTokenService : IJwtTokenService
     {
+        public string GenerateToken(string userId, string email)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

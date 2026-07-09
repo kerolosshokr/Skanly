@@ -30,16 +30,16 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
-        //services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
-        //services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        //services.AddScoped<IJwtTokenService, JwtTokenService>();
-        //services.AddScoped<IGoogleMapsService, GoogleMapsService>();
-        //services.AddScoped<IOcrService, OcrService>();
-        //services.AddScoped<IAiRecommendationService, AiRecommendationService>();
-        //services.AddScoped<IAiChatbotService, AiChatbotService>();
-        //services.AddScoped<IPdfContractService, PdfContractService>();
-        //services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IGoogleMapsService, GoogleMapsService>();
+        services.AddScoped<IOcrService, OcrService>();
+        services.AddScoped<IAiRecommendationService, AiRecommendationService>();
+        services.AddScoped<IAiChatbotService, AiChatbotService>();
+        services.AddScoped<IPdfContractService, PdfContractService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         return services;
     }

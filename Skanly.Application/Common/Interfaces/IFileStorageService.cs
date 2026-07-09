@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Skanly.Application.Common.Interfaces
 {
-    internal class IFileStorageService
+    public  interface IFileStorageService
     {
     }
 }
