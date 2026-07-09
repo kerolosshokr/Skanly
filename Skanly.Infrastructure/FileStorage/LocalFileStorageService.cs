@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Skanly.Infrastructure.FileStorage
 {
-    internal class LocalFileStorageService
+    public  class LocalFileStorageService
     {
     }
 }

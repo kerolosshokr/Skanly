@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Skanly.Application.Interfaces.Services
 {
-    public  interface IAirRecommendationService
+    public  interface IAiChatbotService
     {
     }
 }

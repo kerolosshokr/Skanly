@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Skanly.Shared.Responses
+namespace Skanly.Shared.Extensions
 {
-    public class ApiErrorResponse
+    internal class StringExtensions
     {
     }
 }

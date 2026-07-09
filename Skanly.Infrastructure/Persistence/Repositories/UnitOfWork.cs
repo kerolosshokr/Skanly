@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Skanly.Application.Common.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Skanly.Infrastructure.Persistence.Repositories
 {
-    internal class UnitOfWork
+    public  class UnitOfWork : IUnitOfWork
     {
     }
 }

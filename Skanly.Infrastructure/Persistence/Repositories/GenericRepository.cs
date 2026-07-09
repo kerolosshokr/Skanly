@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Skanly.Infrastructure.Persistence.Repositories
 {
-    internal class GenericRepository
+    internal  class GenericRepository
     {
     }
 }

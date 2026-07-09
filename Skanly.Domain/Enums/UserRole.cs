@@ -8,5 +8,6 @@ namespace Skanly.Domain.Enums
 {
     internal class UserRole
     {
+
     }
 }

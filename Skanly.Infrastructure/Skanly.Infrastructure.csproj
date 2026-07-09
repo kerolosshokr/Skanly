@@ -12,12 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ExternalServices\GoogleMaps\" />
-    <Folder Include="ExternalServices\AiRecommendation\" />
-    <Folder Include="ExternalServices\AiChatbot\" />
     <Folder Include="ExternalServices\PdfGeneration\" />
     <Folder Include="ExternalServices\PaymentSimulation\" />
-    <Folder Include="ExternalServices\Ocr\" />
     <Folder Include="Persistence\Migrations\" />
     <Folder Include="Services\FileStorage\" />
     <Folder Include="Services\Email\" />
@@ -44,7 +40,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="QuestPDF" Version="2026.7.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="4.0.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
   </ItemGroup>
 

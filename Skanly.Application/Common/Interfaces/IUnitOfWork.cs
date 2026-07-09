@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Skanly.Application.Common.Interfaces
 {
-    internal class IUnitOfWork
+    public  interface IUnitOfWork
     {
     }
 }
