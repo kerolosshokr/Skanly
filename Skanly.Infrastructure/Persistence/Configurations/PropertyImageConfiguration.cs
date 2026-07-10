@@ -1,27 +1,17 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/PropertyImageConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
-namespace Skanly.Infrastructure.Persistence.Configurations
+
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class PropertyImageConfiguration : IEntityTypeConfiguration<PropertyImage>
 {
-    public class propertyImageConfiguration : IEntityTypeConfiguration<PropertyImage>
+    public void Configure(EntityTypeBuilder<PropertyImage> builder)
     {
-        public void Configure(EntityTypeBuilder<PropertyImage> builder)
-        {
-            builder.ToTable("PropertyImages");
-
-            builder.HasKey(x => x.Id);
-
-            builder.Property(x => x.ImageUrl)
-                   .IsRequired()
-                   .HasMaxLength(500);
-
-            builder.Property(x => x.IsPrimary)
-                   .HasDefaultValue(false);
-
-            builder.HasOne(x => x.Property)
-                   .WithMany()
-                   .HasForeignKey(x => x.PropertyId)
-                   .OnDelete(DeleteBehavior.Cascade);
-        }
+        builder.ToTable("PropertyImages");
+        builder.HasKey(i => i.Id);
+        builder.Property(i => i.ImageUrl).IsRequired().HasMaxLength(300);
+        builder.Property(i => i.IsPrimary).HasDefaultValue(false);
     }
 }

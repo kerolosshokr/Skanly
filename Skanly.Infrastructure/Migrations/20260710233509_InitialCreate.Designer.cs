@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Skanly.Infrastructure.Persistence;
 
@@ -10,10 +11,12 @@ using Skanly.Infrastructure.Persistence;
 
 namespace Skanly.Infrastructure.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(SkanlyDbContext))]
+    [Migration("20260710233509_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,71 +75,6 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetRoleClaims", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUser", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -222,61 +160,46 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Admin", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FullName")
+                    b.Property<string>("Department")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("PhoneNumber")
+                    b.Property<string>("LastName")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasKey("UserId");
 
                     b.ToTable("Admins", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Amenity", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Icon")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                    b.Property<string>("IconClass")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("NameAr")
                         .IsRequired()
@@ -301,19 +224,16 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Area", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("NameAr")
@@ -339,30 +259,51 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Booking", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<DateTime>("CheckInDate")
-                        .HasColumnType("datetime2");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CheckOutDate")
-                        .HasColumnType("datetime2");
+                    b.Property<DateOnly>("CheckInDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("CheckOutDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("CommissionAmount")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("CommissionRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(10.00m);
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                    b.Property<decimal>("DepositAmount")
+                        .HasColumnType("decimal(10,2)");
 
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Status")
+                    b.Property<int>("PropertyId")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -370,6 +311,8 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PropertyId");
+
+                    b.HasIndex("Status");
 
                     b.HasIndex("StudentId");
 
@@ -378,105 +321,149 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.ChatConversation", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                    b.Property<DateTime?>("LastMessageAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("OwnerId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("PropertyId")
+                        .HasColumnType("int");
 
                     b.Property<string>("StudentId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OwnerId");
+
                     b.HasIndex("PropertyId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("StudentId", "OwnerId", "PropertyId")
+                        .IsUnique()
+                        .HasFilter("[PropertyId] IS NOT NULL");
 
                     b.ToTable("ChatConversations", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.ChatMessage", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("MessageId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("bigint");
 
-                    b.Property<Guid>("ConversationId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("MessageId"));
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MessageText")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("MessageId");
+
+                    b.HasIndex("ConversationId", "SentAt")
+                        .HasDatabaseName("IX_Message_ConversationId");
+
+                    b.ToTable("ChatMessages", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Message_Content", "[MessageText] IS NOT NULL OR [ImageUrl] IS NOT NULL");
+                        });
+                });
+
+            modelBuilder.Entity("Skanly.Domain.Entities.CommissionSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsRead")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(5,2)");
 
-                    b.Property<string>("Message")
+                    b.Property<string>("SetByAdminId")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("SenderId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("SentAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ConversationId");
+                    b.HasIndex("SetByAdminId");
 
-                    b.ToTable("ChatMessages", (string)null);
+                    b.ToTable("CommissionSettings", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Contract", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContractNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FileUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("SignedAt")
+                    b.Property<DateTime>("GeneratedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("PdfUrl")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -486,26 +473,29 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasIndex("BookingId")
                         .IsUnique();
 
+                    b.HasIndex("ContractNumber")
+                        .IsUnique();
+
                     b.ToTable("Contracts", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Favorite", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -513,6 +503,8 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PropertyId");
+
+                    b.HasIndex("StudentId");
 
                     b.HasIndex("StudentId", "PropertyId")
                         .IsUnique();
@@ -522,161 +514,191 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.IdentityVerification", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("DocumentUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<DateOnly?>("ExtractedBirthDate")
+                        .HasColumnType("date");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                    b.Property<string>("ExtractedName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ExtractedNationalId")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("NationalIdBackUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("NationalIdFrontUrl")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<DateTime?>("ReviewedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("ReviewedByAdminId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("ReviewedByAdminId")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<byte>("Status")
                         .HasColumnType("tinyint");
 
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ReviewedByAdminId");
 
-                    b.HasIndex("StudentId");
+                    b.HasIndex("Status");
 
                     b.ToTable("IdentityVerifications", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Notification", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("NotificationId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("NotificationId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsRead")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                        .HasColumnType("bit");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("RelatedEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<byte>("Type")
                         .HasColumnType("tinyint");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("Id");
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAt")
+                        .HasDatabaseName("IX_Notification_UserUnread");
 
                     b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Owner", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BankAccountInfo")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("BusinessName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateOfBirth")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FullName")
+                    b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<byte>("Gender")
-                        .HasColumnType("tinyint");
-
-                    b.Property<bool>("IsDeleted")
+                    b.Property<bool>("IsIdentityVerified")
                         .HasColumnType("bit");
 
-                    b.Property<string>("NationalIdImage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("PhoneNumber")
+                    b.Property<string>("LastName")
                         .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NationalId")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("ProfileImage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<string>("ProfileImageUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.HasKey("UserId");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("NationalId")
+                        .IsUnique()
+                        .HasFilter("[NationalId] IS NOT NULL");
 
                     b.ToTable("Owners", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Payment", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("PaymentDate")
+                    b.Property<DateTime?>("PaidAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("PaymentMethod")
-                        .HasColumnType("int");
+                    b.Property<byte>("PaymentMethod")
+                        .HasColumnType("tinyint");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("TransactionReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -690,28 +712,33 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Property", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
-                    b.Property<Guid>("AreaId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("AreaId")
+                        .HasColumnType("int");
 
-                    b.Property<int>("AvailableBeds")
+                    b.Property<decimal>("AverageRating")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(3,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int>("Beds")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsApproved")
                         .ValueGeneratedOnAdd()
@@ -734,22 +761,30 @@ namespace Skanly.Infrastructure.Migrations
                     b.Property<decimal>("Longitude")
                         .HasColumnType("decimal(9,6)");
 
-                    b.Property<Guid>("OwnerId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<decimal>("PricePerMonth")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<byte>("PropertyType")
                         .HasColumnType("tinyint");
+
+                    b.Property<int>("Rooms")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SmokingAllowed")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<Guid?>("UniversityId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("UniversityId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -760,18 +795,23 @@ namespace Skanly.Infrastructure.Migrations
 
                     b.HasIndex("OwnerId");
 
+                    b.HasIndex("PricePerMonth");
+
                     b.HasIndex("UniversityId");
+
+                    b.HasIndex("Latitude", "Longitude")
+                        .HasDatabaseName("IX_Property_Geo");
 
                     b.ToTable("Properties", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.PropertyAmenity", b =>
                 {
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("AmenityId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("AmenityId")
+                        .HasColumnType("int");
 
                     b.HasKey("PropertyId", "AmenityId");
 
@@ -782,30 +822,32 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.PropertyImage", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<bool>("IsPrimary")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UploadedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
@@ -817,26 +859,28 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.PropertyVideo", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("VideoUrl")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.HasKey("Id");
 
@@ -847,25 +891,16 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Report", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsResolved")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Reason")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -873,54 +908,90 @@ namespace Skanly.Infrastructure.Migrations
                     b.Property<byte>("ReportType")
                         .HasColumnType("tinyint");
 
+                    b.Property<int?>("ReportedPropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReportedUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("ReporterId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Resolution")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime?>("ResolvedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ResolvedByAdminId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PropertyId");
+                    b.HasIndex("ReportedPropertyId");
 
-                    b.ToTable("Reports", (string)null);
+                    b.HasIndex("ResolvedByAdminId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Reports", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Report_Target", "[ReportedPropertyId] IS NOT NULL OR [ReportedUserId] IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Review", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("CleanlinessRating")
+                        .HasColumnType("tinyint");
 
                     b.Property<string>("Comment")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                    b.Property<byte>("InternetRating")
+                        .HasColumnType("tinyint");
 
-                    b.Property<Guid>("PropertyId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<byte>("LocationRating")
+                        .HasColumnType("tinyint");
 
-                    b.Property<int>("Rating")
+                    b.Property<byte>("OverallRating")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("PropertyId")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<byte>("QuietnessRating")
+                        .HasColumnType("tinyint");
+
+                    b.Property<byte>("SafetyRating")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -939,79 +1010,79 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Student", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("date");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("DateOfBirth")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FullName")
+                    b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<byte>("Gender")
                         .HasColumnType("tinyint");
 
-                    b.Property<bool>("IsDeleted")
+                    b.Property<bool>("IsIdentityVerified")
                         .HasColumnType("bit");
 
-                    b.Property<string>("PhoneNumber")
+                    b.Property<string>("LastName")
                         .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NationalId")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("ProfileImage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<string>("ProfileImageUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
-                    b.Property<Guid>("UniversityId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("UniversityId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.HasKey("UserId");
 
-                    b.HasKey("Id");
+                    b.HasIndex("NationalId")
+                        .IsUnique()
+                        .HasFilter("[NationalId] IS NOT NULL");
 
                     b.HasIndex("UniversityId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
 
                     b.ToTable("Students", (string)null);
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.University", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<Guid?>("AreaId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
 
                     b.Property<decimal>("Latitude")
                         .HasColumnType("decimal(9,6)");
@@ -1034,12 +1105,81 @@ namespace Skanly.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AreaId");
-
                     b.HasIndex("NameEn")
                         .IsUnique();
 
                     b.ToTable("Universities", (string)null);
+                });
+
+            modelBuilder.Entity("Skanly.Infrastructure.Identity.ApplicationUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1053,7 +1193,7 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("Skanly.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1062,7 +1202,7 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("Skanly.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1077,7 +1217,7 @@ namespace Skanly.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("Skanly.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1086,9 +1226,18 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("Skanly.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skanly.Domain.Entities.Admin", b =>
+                {
+                    b.HasOne("Skanly.Infrastructure.Identity.ApplicationUser", null)
+                        .WithOne()
+                        .HasForeignKey("Skanly.Domain.Entities.Admin", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -1114,13 +1263,28 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.ChatConversation", b =>
                 {
-                    b.HasOne("Skanly.Domain.Entities.Property", "Property")
-                        .WithMany("ChatConversations")
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("Skanly.Domain.Entities.Owner", "Owner")
+                        .WithMany("Conversations")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Skanly.Domain.Entities.Property", "Property")
+                        .WithMany("Conversations")
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Skanly.Domain.Entities.Student", "Student")
+                        .WithMany("Conversations")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+
                     b.Navigation("Property");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.ChatMessage", b =>
@@ -1132,6 +1296,17 @@ namespace Skanly.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("Skanly.Domain.Entities.CommissionSetting", b =>
+                {
+                    b.HasOne("Skanly.Domain.Entities.Admin", "SetByAdmin")
+                        .WithMany("CommissionSettings")
+                        .HasForeignKey("SetByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SetByAdmin");
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Contract", b =>
@@ -1150,7 +1325,7 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasOne("Skanly.Domain.Entities.Property", "Property")
                         .WithMany("Favorites")
                         .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Skanly.Domain.Entities.Student", "Student")
@@ -1167,19 +1342,20 @@ namespace Skanly.Infrastructure.Migrations
             modelBuilder.Entity("Skanly.Domain.Entities.IdentityVerification", b =>
                 {
                     b.HasOne("Skanly.Domain.Entities.Admin", "ReviewedByAdmin")
-                        .WithMany("ReviewedIdentityVerifications")
+                        .WithMany("ReviewedVerifications")
                         .HasForeignKey("ReviewedByAdminId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Skanly.Domain.Entities.Student", "Student")
-                        .WithMany("IdentityVerifications")
-                        .HasForeignKey("StudentId")
+                    b.Navigation("ReviewedByAdmin");
+                });
+
+            modelBuilder.Entity("Skanly.Domain.Entities.Owner", b =>
+                {
+                    b.HasOne("Skanly.Infrastructure.Identity.ApplicationUser", null)
+                        .WithOne()
+                        .HasForeignKey("Skanly.Domain.Entities.Owner", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("ReviewedByAdmin");
-
-                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Payment", b =>
@@ -1187,7 +1363,7 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasOne("Skanly.Domain.Entities.Booking", "Booking")
                         .WithMany("Payments")
                         .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Booking");
@@ -1204,13 +1380,13 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasOne("Skanly.Domain.Entities.Owner", "Owner")
                         .WithMany("Properties")
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Skanly.Domain.Entities.University", "University")
                         .WithMany("Properties")
                         .HasForeignKey("UniversityId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Area");
 
@@ -1241,7 +1417,7 @@ namespace Skanly.Infrastructure.Migrations
             modelBuilder.Entity("Skanly.Domain.Entities.PropertyImage", b =>
                 {
                     b.HasOne("Skanly.Domain.Entities.Property", "Property")
-                        .WithMany()
+                        .WithMany("Images")
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1252,7 +1428,7 @@ namespace Skanly.Infrastructure.Migrations
             modelBuilder.Entity("Skanly.Domain.Entities.PropertyVideo", b =>
                 {
                     b.HasOne("Skanly.Domain.Entities.Property", "Property")
-                        .WithMany()
+                        .WithMany("Videos")
                         .HasForeignKey("PropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1262,13 +1438,19 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Report", b =>
                 {
-                    b.HasOne("Skanly.Domain.Entities.Property", "Property")
+                    b.HasOne("Skanly.Domain.Entities.Property", "ReportedProperty")
                         .WithMany("Reports")
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("ReportedPropertyId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("Property");
+                    b.HasOne("Skanly.Domain.Entities.Admin", "ResolvedByAdmin")
+                        .WithMany("ResolvedReports")
+                        .HasForeignKey("ResolvedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ReportedProperty");
+
+                    b.Navigation("ResolvedByAdmin");
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Review", b =>
@@ -1276,7 +1458,7 @@ namespace Skanly.Infrastructure.Migrations
                     b.HasOne("Skanly.Domain.Entities.Booking", "Booking")
                         .WithOne("Review")
                         .HasForeignKey("Skanly.Domain.Entities.Review", "BookingId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Skanly.Domain.Entities.Property", "Property")
@@ -1301,24 +1483,26 @@ namespace Skanly.Infrastructure.Migrations
             modelBuilder.Entity("Skanly.Domain.Entities.Student", b =>
                 {
                     b.HasOne("Skanly.Domain.Entities.University", "University")
-                        .WithMany()
+                        .WithMany("Students")
                         .HasForeignKey("UniversityId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Skanly.Infrastructure.Identity.ApplicationUser", null)
+                        .WithOne()
+                        .HasForeignKey("Skanly.Domain.Entities.Student", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("University");
                 });
 
-            modelBuilder.Entity("Skanly.Domain.Entities.University", b =>
-                {
-                    b.HasOne("Skanly.Domain.Entities.Area", null)
-                        .WithMany("Universities")
-                        .HasForeignKey("AreaId");
-                });
-
             modelBuilder.Entity("Skanly.Domain.Entities.Admin", b =>
                 {
-                    b.Navigation("ReviewedIdentityVerifications");
+                    b.Navigation("CommissionSettings");
+
+                    b.Navigation("ResolvedReports");
+
+                    b.Navigation("ReviewedVerifications");
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Amenity", b =>
@@ -1329,8 +1513,6 @@ namespace Skanly.Infrastructure.Migrations
             modelBuilder.Entity("Skanly.Domain.Entities.Area", b =>
                 {
                     b.Navigation("Properties");
-
-                    b.Navigation("Universities");
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Booking", b =>
@@ -1349,6 +1531,8 @@ namespace Skanly.Infrastructure.Migrations
 
             modelBuilder.Entity("Skanly.Domain.Entities.Owner", b =>
                 {
+                    b.Navigation("Conversations");
+
                     b.Navigation("Properties");
                 });
 
@@ -1356,24 +1540,28 @@ namespace Skanly.Infrastructure.Migrations
                 {
                     b.Navigation("Bookings");
 
-                    b.Navigation("ChatConversations");
+                    b.Navigation("Conversations");
 
                     b.Navigation("Favorites");
+
+                    b.Navigation("Images");
 
                     b.Navigation("PropertyAmenities");
 
                     b.Navigation("Reports");
 
                     b.Navigation("Reviews");
+
+                    b.Navigation("Videos");
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.Student", b =>
                 {
                     b.Navigation("Bookings");
 
-                    b.Navigation("Favorites");
+                    b.Navigation("Conversations");
 
-                    b.Navigation("IdentityVerifications");
+                    b.Navigation("Favorites");
 
                     b.Navigation("Reviews");
                 });
@@ -1381,6 +1569,8 @@ namespace Skanly.Infrastructure.Migrations
             modelBuilder.Entity("Skanly.Domain.Entities.University", b =>
                 {
                     b.Navigation("Properties");
+
+                    b.Navigation("Students");
                 });
 #pragma warning restore 612, 618
         }

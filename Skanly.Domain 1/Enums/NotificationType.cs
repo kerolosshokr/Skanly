@@ -2,11 +2,10 @@
 {
     public enum NotificationType : byte
     {
-        General = 1,
-        Booking = 2,
-        Payment = 3,
-        Chat = 4,
-        Review = 5,
-        Report = 6
+        BookingUpdate = 1,
+        NewMessage = 2,
+        PropertyApproval = 3,
+        VerificationApproval = 4,
+        PaymentConfirmation = 5
     }
 }

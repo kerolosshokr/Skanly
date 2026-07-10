@@ -1,14 +1,13 @@
-﻿
+﻿// Skanly.Domain/Entities/Common/BaseEntity.cs
+namespace Skanly.Domain.Entities.Common;
 
-using System;
-
-namespace Skanly.Domain.Entities.Common
+public abstract class BaseEntity
 {
-    public abstract class BaseEntity
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
-        public bool IsDeleted { get; set; }
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
+}
+
+public abstract class BaseEntity<TKey> : BaseEntity
+{
+    public TKey Id { get; set; } = default!;
 }

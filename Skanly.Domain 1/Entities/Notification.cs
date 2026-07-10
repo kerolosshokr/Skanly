@@ -1,18 +1,31 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/Notification.cs
+using System.ComponentModel.DataAnnotations;
 using Skanly.Domain.Enums;
-namespace Skanly.Domain.Entities
+using Skanly.Domain.Interfaces;
+
+namespace Skanly.Domain.Entities;
+
+public class Notification : IAggregateRoot
 {
-    public  class Notification : BaseEntity
-    {
-        public string UserId { get; set; } = string.Empty;
+    public long NotificationId { get; set; }
 
-        public string Title { get; set; } = string.Empty;
+    [Required]
+    public string UserId { get; set; } = string.Empty;
 
-        public string Message { get; set; } = string.Empty;
+    [Required, MaxLength(150)]
+    public string Title { get; set; } = string.Empty;
 
-        public NotificationType Type { get; set; }
+    [Required, MaxLength(500)]
+    public string Message { get; set; } = string.Empty;
 
-        public bool IsRead { get; set; } = false;
-    }
+    public NotificationType Type { get; set; }
+
+    public bool IsRead { get; set; }
+
+    public int? RelatedEntityId { get; set; }
+
+    [MaxLength(50)]
+    public string? RelatedEntityType { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
-

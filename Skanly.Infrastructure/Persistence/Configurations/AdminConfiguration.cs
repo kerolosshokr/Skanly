@@ -1,32 +1,43 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/AdminConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
+using Skanly.Infrastructure.Identity;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class AdminConfiguration : IEntityTypeConfiguration<Admin>
 {
-    public  class AdminConfiguration : IEntityTypeConfiguration<Admin>
+    public void Configure(EntityTypeBuilder<Admin> builder)
     {
+        builder.ToTable("Admins");
+        builder.HasKey(a => a.UserId);
+        builder.Property(a => a.UserId).HasMaxLength(450);
 
-        public void Configure(EntityTypeBuilder<Admin> builder)
-        {
-            builder.ToTable("Admins");
+        builder.Property(a => a.FirstName).IsRequired().HasMaxLength(100);
+        builder.Property(a => a.LastName).IsRequired().HasMaxLength(100);
+        builder.Property(a => a.Department).HasMaxLength(100);
 
-            builder.HasKey(x => x.Id);
+        builder.HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<Admin>(a => a.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.UserId)
-                   .IsRequired();
+        builder.HasMany(a => a.ReviewedVerifications)
+            .WithOne(v => v.ReviewedByAdmin)
+            .HasForeignKey(v => v.ReviewedByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(x => x.FullName)
-                   .IsRequired()
-                   .HasMaxLength(150);
+        builder.HasMany(a => a.ResolvedReports)
+            .WithOne(r => r.ResolvedByAdmin)
+            .HasForeignKey(r => r.ResolvedByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(x => x.PhoneNumber)
-                   .IsRequired()
-                   .HasMaxLength(20);
+        builder.HasMany(a => a.CommissionSettings)
+            .WithOne(c => c.SetByAdmin)
+            .HasForeignKey(c => c.SetByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasIndex(x => x.UserId)
-                   .IsUnique();
-        }
-
+        builder.Ignore(a => a.FullName);
     }
 }

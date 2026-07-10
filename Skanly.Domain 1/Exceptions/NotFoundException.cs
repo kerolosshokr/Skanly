@@ -1,11 +1,8 @@
-﻿using System;
-namespace Skanly.Domain.Exceptions
+﻿// Skanly.Domain/Exceptions/NotFoundException.cs
+namespace Skanly.Domain.Exceptions;
+
+public class NotFoundException : Exception
 {
-    public  class NotFoundException : Exception
-    {
-        public NotFoundException(string message) 
-            : base(message) 
-        {
-        }
-    }
+    public NotFoundException(string entityName, object key)
+        : base($"Entity \"{entityName}\" with key ({key}) was not found.") { }
 }

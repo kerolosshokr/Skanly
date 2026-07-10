@@ -1,18 +1,20 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/ChatConversation.cs
+using Skanly.Domain.Entities.Common;
+using Skanly.Domain.Interfaces;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class ChatConversation : BaseEntity<int>, IAggregateRoot
 {
-    public  class ChatConversation : BaseEntity
-    {
-        public string StudentId { get; set; } = string.Empty;
+    public string StudentId { get; set; } = string.Empty;
+    public string OwnerId { get; set; } = string.Empty;
+    public int? PropertyId { get; set; }
 
-        public string OwnerId { get; set; } = string.Empty;
+    public DateTime? LastMessageAt { get; set; }
 
-        public Guid PropertyId { get; set; }
-
-        public Property Property { get; set; } = null!;
-
-        public ICollection<ChatMessage> Messages { get; set; }
-            = new List<ChatMessage>();
-    }
+    // Navigation
+    public Student Student { get; set; } = null!;
+    public Owner Owner { get; set; } = null!;
+    public Property? Property { get; set; }
+    public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
 }

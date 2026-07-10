@@ -1,22 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Skanly.Domain/Entities/PropertyAmenity.cs
+namespace Skanly.Domain.Entities;
 
-namespace Skanly.Domain.Entities
+// Pure join entity for the Property <-> Amenity many-to-many relationship.
+// Composite PK (PropertyId, AmenityId) configured via Fluent API in Part 4.
+public class PropertyAmenity
 {
+    public int PropertyId { get; set; }
+    public int AmenityId { get; set; }
 
-    // PropertyAmenity doesn't inherit from BaseEntity because it's only a junction table.
-    public class PropertyAmenity
-    {
-        public Guid PropertyId { get; set; }
-
-        public Guid AmenityId { get; set; }
-
-        public Property Property { get; set; } = null!;
-
-        public Amenity Amenity { get; set; } = null!;
-
-    }
+    // Navigation
+    public Property Property { get; set; } = null!;
+    public Amenity Amenity { get; set; } = null!;
 }

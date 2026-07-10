@@ -1,24 +1,36 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/Report.cs
+using Skanly.Domain.Entities.Common;
 using Skanly.Domain.Enums;
+using Skanly.Domain.Interfaces;
+using Skanly.Domain_1.Enums;
+using System.ComponentModel.DataAnnotations;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class Report : BaseEntity<int>, IAggregateRoot
 {
-    public  class Report : BaseEntity
-    {
-        public string ReporterId { get; set; } = string.Empty;
+    [Required]
+    public string ReporterId { get; set; } = string.Empty;
 
-        public Guid PropertyId { get; set; }
+    public int? ReportedPropertyId { get; set; }
 
-        public ReportType ReportType { get; set; }
+    public string? ReportedUserId { get; set; }
 
-        public string Reason { get; set; } = string.Empty;
+    public ReportType ReportType { get; set; }
 
-        public bool IsResolved { get; set; } = false;
+    [Required, MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
 
-        public string? ResolvedByAdminId { get; set; }
+    public ReportStatus Status { get; set; } = ReportStatus.Open;
 
-        public DateTime? ResolvedAt { get; set; }
+    public string? ResolvedByAdminId { get; set; }
 
-        public Property Property { get; set; } = null!;
-    }
+    [MaxLength(1000)]
+    public string? Resolution { get; set; }
+
+    public DateTime? ResolvedAt { get; set; }
+
+    // Navigation
+    public Property? ReportedProperty { get; set; }
+    public Admin? ResolvedByAdmin { get; set; }
 }

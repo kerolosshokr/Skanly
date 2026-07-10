@@ -1,17 +1,29 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/Payment.cs
+using Skanly.Domain.Entities.Common;
 using Skanly.Domain.Enums;
-namespace Skanly.Domain.Entities
+using Skanly.Domain.Interfaces;
+using Skanly.Domain_1.Enums;
+using System.ComponentModel.DataAnnotations;
+
+namespace Skanly.Domain.Entities;
+
+public class Payment : BaseEntity<int>, IAggregateRoot
 {
-    public  class Payment : BaseEntity
-    {
-        public Guid BookingId { get; set; }
+    [Required]
+    public int BookingId { get; set; }
 
-        public decimal Amount { get; set; }
+    public PaymentMethod PaymentMethod { get; set; }
 
-        public PaymentMethod PaymentMethod { get; set; }
+    [Range(0.01, double.MaxValue)]
+    public decimal Amount { get; set; }
 
-        public DateTime PaymentDate { get; set; }
+    [MaxLength(100)]
+    public string? TransactionReference { get; set; }
 
-        public Booking Booking { get; set; } = null!;
-    }
+    public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
+
+    public DateTime? PaidAt { get; set; }
+
+    // Navigation
+    public Booking Booking { get; set; } = null!;
 }

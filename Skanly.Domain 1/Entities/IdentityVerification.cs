@@ -1,22 +1,39 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/IdentityVerification.cs
+using System.ComponentModel.DataAnnotations;
+using Skanly.Domain.Entities.Common;
 using Skanly.Domain.Enums;
+using Skanly.Domain.Interfaces;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class IdentityVerification : BaseEntity<int>, IAggregateRoot
 {
-    public class IdentityVerification : BaseEntity
-    {
-        public Guid StudentId { get; set; }
+    [Required]
+    public string UserId { get; set; } = string.Empty;
 
-        public string DocumentUrl { get; set; } = string.Empty;
+    [Required, MaxLength(300)]
+    public string NationalIdFrontUrl { get; set; } = string.Empty;
 
-        public VerificationStatus Status { get; set; }
+    [MaxLength(300)]
+    public string? NationalIdBackUrl { get; set; }
 
-        public Guid? ReviewedByAdminId { get; set; }
+    [MaxLength(150)]
+    public string? ExtractedName { get; set; }
 
-        public DateTime? ReviewedAt { get; set; }
+    [MaxLength(20)]
+    public string? ExtractedNationalId { get; set; }
 
-        public Student Student { get; set; } = null!;
+    public DateOnly? ExtractedBirthDate { get; set; }
 
-        public Admin? ReviewedByAdmin { get; set; }
-    }
+    public VerificationStatus Status { get; set; } = VerificationStatus.Pending;
+
+    public string? ReviewedByAdminId { get; set; }
+
+    public DateTime? ReviewedAt { get; set; }
+
+    [MaxLength(300)]
+    public string? RejectionReason { get; set; }
+
+    // Navigation
+    public Admin? ReviewedByAdmin { get; set; }
 }

@@ -4,9 +4,10 @@ namespace Skanly.Domain.Enums
 {
     public  enum PaymentMethod
     {
-        Cash = 1,
-        CreditCard = 2,
-        Wallet = 3,
-        instapay =4
+        Visa = 1,
+        Mastercard = 2,
+        VodafoneCash = 3,
+        InstaPay = 4,
+        Fawry = 5
     }
 }

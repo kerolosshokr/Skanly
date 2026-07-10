@@ -1,42 +1,34 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/UniversityConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class UniversityConfiguration : IEntityTypeConfiguration<University>
 {
-    public class UniversityConfiguration : IEntityTypeConfiguration<University>
+    public void Configure(EntityTypeBuilder<University> builder)
     {
-        public void Configure(EntityTypeBuilder<University> builder)
-        {
-            builder.ToTable("Universities");
+        builder.ToTable("Universities");
+        builder.HasKey(u => u.Id);
 
-            builder.HasKey(x => x.Id);
+        builder.Property(u => u.NameAr).IsRequired().HasMaxLength(150);
+        builder.Property(u => u.NameEn).IsRequired().HasMaxLength(150);
+        builder.Property(u => u.Address).HasMaxLength(300);
+        builder.Property(u => u.Latitude).HasColumnType("decimal(9,6)");
+        builder.Property(u => u.Longitude).HasColumnType("decimal(9,6)");
+        builder.Property(u => u.IsActive).HasDefaultValue(true);
 
-            builder.Property(x => x.NameAr)
-                   .IsRequired()
-                   .HasMaxLength(150);
+        builder.HasIndex(u => u.NameEn).IsUnique();
 
-            builder.Property(x => x.NameEn)
-                   .IsRequired()
-                   .HasMaxLength(150);
+        builder.HasMany(u => u.Students)
+            .WithOne(s => s.University)
+            .HasForeignKey(s => s.UniversityId)
+            .OnDelete(DeleteBehavior.SetNull);
 
-            builder.Property(x => x.Address)
-                   .HasMaxLength(250);
-
-            builder.Property(x => x.Latitude)
-                   .HasColumnType("decimal(9,6)");
-
-            builder.Property(x => x.Longitude)
-                   .HasColumnType("decimal(9,6)");
-
-            builder.Property(x => x.IsActive)
-                   .HasDefaultValue(true);
-
-
-            builder.HasIndex(x => x.NameEn)
-                   .IsUnique();
-
-
-        }
+        builder.HasMany(u => u.Properties)
+            .WithOne(p => p.University)
+            .HasForeignKey(p => p.UniversityId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

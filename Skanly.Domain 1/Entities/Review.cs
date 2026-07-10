@@ -1,23 +1,33 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/Review.cs
+using System.ComponentModel.DataAnnotations;
+using Skanly.Domain.Entities.Common;
+using Skanly.Domain.Interfaces;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class Review : BaseEntity<int>, IAggregateRoot
 {
-    public  class Review : BaseEntity
-    {
-        public Guid BookingId { get; set; }
+    [Required]
+    public int BookingId { get; set; }
 
-        public Guid StudentId { get; set; }
+    [Required]
+    public string StudentId { get; set; } = string.Empty;
 
-        public Guid PropertyId { get; set; }
+    [Required]
+    public int PropertyId { get; set; }
 
-        public int Rating { get; set; }
+    [Range(1, 5)] public byte CleanlinessRating { get; set; }
+    [Range(1, 5)] public byte SafetyRating { get; set; }
+    [Range(1, 5)] public byte InternetRating { get; set; }
+    [Range(1, 5)] public byte LocationRating { get; set; }
+    [Range(1, 5)] public byte QuietnessRating { get; set; }
+    [Range(1, 5)] public byte OverallRating { get; set; }
 
-        public string Comment { get; set; } = string.Empty;
+    [MaxLength(1000)]
+    public string? Comment { get; set; }
 
-        public Booking Booking { get; set; } = null!;
-
-        public Student Student { get; set; } = null!;
-
-        public Property Property { get; set; } = null!;
-    }
+    // Navigation
+    public Booking Booking { get; set; } = null!;
+    public Student Student { get; set; } = null!;
+    public Property Property { get; set; } = null!;
 }

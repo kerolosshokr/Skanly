@@ -1,35 +1,26 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/ChatMessageConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
+namespace Skanly.Infrastructure.Persistence.Configurations;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+public class ChatMessageConfiguration : IEntityTypeConfiguration<ChatMessage>
 {
-    public class ChatMessageConfiguration : IEntityTypeConfiguration<ChatMessage>
+    public void Configure(EntityTypeBuilder<ChatMessage> builder)
     {
-        public void Configure(EntityTypeBuilder<ChatMessage> builder)
-        {
-            builder.ToTable("ChatMessages");
+        builder.ToTable("ChatMessages");
+        builder.HasKey(m => m.MessageId);
 
-            builder.HasKey(x => x.Id);
+        builder.Property(m => m.MessageText).HasMaxLength(1000);
+        builder.Property(m => m.ImageUrl).HasMaxLength(300);
+        builder.Property(m => m.SenderId).IsRequired().HasMaxLength(450);
 
-            builder.Property(x => x.Message)
-                   .IsRequired()
-                   .HasMaxLength(2000);
+        builder.HasIndex(m => new { m.ConversationId, m.SentAt })
+            .HasDatabaseName("IX_Message_ConversationId");
 
-            builder.Property(x => x.SenderId)
-                   .IsRequired();
-
-            builder.Property(x => x.IsRead)
-                   .HasDefaultValue(false);
-
-            builder.Property(x => x.SentAt)
-                   .HasDefaultValueSql("GETUTCDATE()");
-
-            builder.HasOne(x => x.Conversation)
-                   .WithMany(x => x.Messages)
-                   .HasForeignKey(x => x.ConversationId)
-                   .OnDelete(DeleteBehavior.Cascade);
-        }
+        builder.ToTable(t => t.HasCheckConstraint(
+            "CK_Message_Content",
+            "[MessageText] IS NOT NULL OR [ImageUrl] IS NOT NULL"));
     }
 }

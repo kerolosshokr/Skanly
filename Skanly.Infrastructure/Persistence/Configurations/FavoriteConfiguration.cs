@@ -2,28 +2,29 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class FavoriteConfiguration : IEntityTypeConfiguration<Favorite>
 {
-    public class FavoriteConfiguration : IEntityTypeConfiguration<Favorite>
+    public void Configure(EntityTypeBuilder<Favorite> builder)
     {
-        public void Configure(EntityTypeBuilder<Favorite> builder)
-        {
-            builder.ToTable("Favorites");
+        builder.ToTable("Favorites");
 
-            builder.HasKey(x => x.Id);
+        builder.HasKey(f => f.Id);
 
-            builder.HasIndex(x => new { x.StudentId, x.PropertyId })
-                   .IsUnique();
+        builder.HasIndex(f => new { f.StudentId, f.PropertyId })
+               .IsUnique();
 
-            builder.HasOne(x => x.Student)
-                   .WithMany(x => x.Favorites)
-                   .HasForeignKey(x => x.StudentId)
-                   .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(f => f.StudentId);
 
-            builder.HasOne(x => x.Property)
-                   .WithMany(x => x.Favorites)
-                   .HasForeignKey(x => x.PropertyId)
-                   .OnDelete(DeleteBehavior.Restrict);
-        }
+        builder.HasOne(f => f.Student)
+               .WithMany(s => s.Favorites)
+               .HasForeignKey(f => f.StudentId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(f => f.Property)
+               .WithMany(p => p.Favorites)
+               .HasForeignKey(f => f.PropertyId)
+               .OnDelete(DeleteBehavior.Restrict);
     }
 }

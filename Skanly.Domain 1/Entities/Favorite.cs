@@ -1,15 +1,15 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/Favorite.cs
+using Skanly.Domain.Entities.Common;
+using Skanly.Domain.Interfaces;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class Favorite : BaseEntity<int>, IAggregateRoot
 {
-    public  class Favorite : BaseEntity
-    {
-        public Guid StudentId { get; set; }
+    public string StudentId { get; set; } = string.Empty;
+    public int PropertyId { get; set; }
 
-        public Guid PropertyId { get; set; }
-
-        public Student Student { get; set; } = null!;
-
-        public Property Property { get; set; } = null!;
-    }
+    // Navigation
+    public Student Student { get; set; } = null!;
+    public Property Property { get; set; } = null!;
 }

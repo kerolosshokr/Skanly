@@ -1,33 +1,30 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/IdentityVerificationConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class IdentityVerificationConfiguration : IEntityTypeConfiguration<IdentityVerification>
 {
-    public class IdentityVerificationConfiguration : IEntityTypeConfiguration<IdentityVerification>
+    public void Configure(EntityTypeBuilder<IdentityVerification> builder)
     {
-        public void Configure(EntityTypeBuilder<IdentityVerification> builder)
-        {
-            builder.ToTable("IdentityVerifications");
+        builder.ToTable("IdentityVerifications");
+        builder.HasKey(v => v.Id);
 
-            builder.HasKey(x => x.Id);
+        builder.Property(v => v.UserId).IsRequired().HasMaxLength(450);
+        builder.Property(v => v.NationalIdFrontUrl).IsRequired().HasMaxLength(300);
+        builder.Property(v => v.NationalIdBackUrl).HasMaxLength(300);
+        builder.Property(v => v.ExtractedName).HasMaxLength(150);
+        builder.Property(v => v.ExtractedNationalId).HasMaxLength(20);
+        builder.Property(v => v.RejectionReason).HasMaxLength(300);
+        builder.Property(v => v.Status).HasConversion<byte>();
 
-            builder.Property(x => x.DocumentUrl)
-                   .IsRequired()
-                   .HasMaxLength(500);
+        builder.HasIndex(v => v.Status);
 
-            builder.Property(x => x.Status)
-                   .HasConversion<byte>();
-
-            builder.HasOne(x => x.Student)
-                   .WithMany(x => x.IdentityVerifications)
-                   .HasForeignKey(x => x.StudentId);
-
-            builder.HasOne(x => x.ReviewedByAdmin)
-                   .WithMany(x => x.ReviewedIdentityVerifications)
-                   .HasForeignKey(x => x.ReviewedByAdminId)
-                   .OnDelete(DeleteBehavior.Restrict);
-        }
-
+        builder.HasOne(v => v.ReviewedByAdmin)
+            .WithMany(a => a.ReviewedVerifications)
+            .HasForeignKey(v => v.ReviewedByAdminId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

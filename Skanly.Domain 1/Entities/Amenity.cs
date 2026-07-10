@@ -1,16 +1,21 @@
-﻿
+﻿// Skanly.Domain/Entities/Amenity.cs
+using System.ComponentModel.DataAnnotations;
 using Skanly.Domain.Entities.Common;
-namespace Skanly.Domain.Entities
+using Skanly.Domain.Interfaces;
+
+namespace Skanly.Domain.Entities;
+
+public class Amenity : BaseEntity<int>, IAggregateRoot
 {
-    public  class Amenity : BaseEntity
-    {
-        public string NameAr { get; set; } = string.Empty;
+    [Required, MaxLength(100)]
+    public string NameAr { get; set; } = string.Empty;
 
-        public string NameEn { get; set; } = string.Empty;
+    [Required, MaxLength(100)]
+    public string NameEn { get; set; } = string.Empty;
 
-        public string? Icon { get; set; }
+    [MaxLength(100)]
+    public string? IconClass { get; set; }
 
-        public bool IsActive { get; set; } = true;
-        public ICollection<PropertyAmenity> PropertyAmenities { get; set; } = new List<PropertyAmenity>();
-    }
+    // Navigation
+    public ICollection<PropertyAmenity> PropertyAmenities { get; set; } = new List<PropertyAmenity>();
 }

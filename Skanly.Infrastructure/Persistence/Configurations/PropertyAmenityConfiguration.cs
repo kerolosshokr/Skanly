@@ -1,24 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/PropertyAmenityConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class PropertyAmenityConfiguration : IEntityTypeConfiguration<PropertyAmenity>
 {
-    public class PropertyAmenityConfiguration : IEntityTypeConfiguration<PropertyAmenity>
+    public void Configure(EntityTypeBuilder<PropertyAmenity> builder)
     {
-        public void Configure(EntityTypeBuilder<PropertyAmenity> builder)
-        {
-            builder.ToTable("PropertyAmenities");
+        builder.ToTable("PropertyAmenities");
+        builder.HasKey(pa => new { pa.PropertyId, pa.AmenityId });
 
-            builder.HasKey(x => new { x.PropertyId, x.AmenityId });
+        builder.HasOne(pa => pa.Property)
+            .WithMany(p => p.PropertyAmenities)
+            .HasForeignKey(pa => pa.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasOne(x => x.Property)
-                   .WithMany(x => x.PropertyAmenities)
-                   .HasForeignKey(x => x.PropertyId);
-
-            builder.HasOne(x => x.Amenity)
-                   .WithMany(x => x.PropertyAmenities)
-                   .HasForeignKey(x => x.AmenityId);
-        }
+        builder.HasOne(pa => pa.Amenity)
+            .WithMany(a => a.PropertyAmenities)
+            .HasForeignKey(pa => pa.AmenityId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

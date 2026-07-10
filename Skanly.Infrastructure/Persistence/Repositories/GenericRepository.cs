@@ -7,9 +7,9 @@ namespace Skanly.Infrastructure.Persistence.Repositories
     public  class GenericRepository<T> : IRepository<T> 
         where T : class
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SkanlyDbContext _context;
 
-        public GenericRepository(ApplicationDbContext context)
+        public GenericRepository(SkanlyDbContext context)
         {
             _context = context;
         }

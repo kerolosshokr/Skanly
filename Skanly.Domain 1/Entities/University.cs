@@ -1,20 +1,32 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/University.cs
+using System.ComponentModel.DataAnnotations;
+using Skanly.Domain.Entities.Common;
+using Skanly.Domain.Interfaces;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class University : BaseEntity<int>, IAggregateRoot
 {
-    public class University : BaseEntity
-    {
-        public string NameAr { get; set; } = string.Empty;
+    [Required, MaxLength(150)]
+    public string NameAr { get; set; } = string.Empty;
 
-        public string NameEn { get; set; } = string.Empty;
+    [Required, MaxLength(150)]
+    public string NameEn { get; set; } = string.Empty;
 
-        public string? Address { get; set; }
+    [MaxLength(300)]
+    public string? Address { get; set; }
 
-        public decimal Latitude { get; set; }
+    [Range(-90, 90)]
+    public decimal Latitude { get; set; }
 
-        public decimal Longitude { get; set; }
+    [Range(-180, 180)]
+    public decimal Longitude { get; set; }
 
-        public bool IsActive { get; set; } = true;
-        public ICollection<Property> Properties { get; set; } = new List<Property>();
-    }
+    public string? Description { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    // Navigation
+    public ICollection<Student> Students { get; set; } = new List<Student>();
+    public ICollection<Property> Properties { get; set; } = new List<Property>();
 }

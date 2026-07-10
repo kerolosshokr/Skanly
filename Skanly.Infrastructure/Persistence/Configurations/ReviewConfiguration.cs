@@ -1,37 +1,29 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/ReviewConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class ReviewConfiguration : IEntityTypeConfiguration<Review>
 {
-    public class ReviewConfiguration : IEntityTypeConfiguration<Review>
+    public void Configure(EntityTypeBuilder<Review> builder)
     {
-        public void Configure(EntityTypeBuilder<Review> builder)
-        {
-            builder.ToTable("Reviews");
+        builder.ToTable("Reviews");
+        builder.HasKey(r => r.Id);
 
-            builder.HasKey(x => x.Id);
+        builder.Property(r => r.Comment).HasMaxLength(1000);
+        builder.HasIndex(r => r.BookingId).IsUnique();
+        builder.HasIndex(r => r.PropertyId);
 
-            builder.Property(x => x.Rating)
-                   .IsRequired();
+        builder.HasOne(r => r.Student)
+            .WithMany(s => s.Reviews)
+            .HasForeignKey(r => r.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(x => x.Comment)
-                   .HasMaxLength(1000);
-
-            builder.HasOne(x => x.Booking)
-                   .WithOne(x => x.Review)
-                   .HasForeignKey<Review>(x => x.BookingId)
-                   .OnDelete(DeleteBehavior.Restrict);
-
-            builder.HasOne(x => x.Student)
-                   .WithMany(x => x.Reviews)
-                   .HasForeignKey(x => x.StudentId)
-                   .OnDelete(DeleteBehavior.Restrict);
-
-            builder.HasOne(x => x.Property)
-                   .WithMany(x => x.Reviews)
-                   .HasForeignKey(x => x.PropertyId)
-                   .OnDelete(DeleteBehavior.Restrict);
-        }
+        builder.HasOne(r => r.Property)
+            .WithMany(p => p.Reviews)
+            .HasForeignKey(r => r.PropertyId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

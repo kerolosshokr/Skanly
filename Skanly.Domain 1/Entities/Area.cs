@@ -1,17 +1,20 @@
-﻿using Skanly.Domain.Entities.Common;
-namespace Skanly.Domain.Entities
+﻿// Skanly.Domain/Entities/Area.cs
+using System.ComponentModel.DataAnnotations;
+using Skanly.Domain.Entities.Common;
+using Skanly.Domain.Interfaces;
+
+namespace Skanly.Domain.Entities;
+
+public class Area : BaseEntity<int>, IAggregateRoot
 {
-     public class Area : BaseEntity
-    {
-        public string NameAr { get; set; } = string.Empty;
-        public string NameEn { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = true;
+    [Required, MaxLength(100)]
+    public string NameAr { get; set; } = string.Empty;
 
+    [Required, MaxLength(100)]
+    public string NameEn { get; set; } = string.Empty;
 
-        // Navigation Properties
-        public ICollection<University> Universities { get; set; }
-          = new List<University>();
-        public ICollection<Property> Properties { get; set; } = new List<Property>();
+    public bool IsActive { get; set; } = true;
 
-    }
+    // Navigation
+    public ICollection<Property> Properties { get; set; } = new List<Property>();
 }

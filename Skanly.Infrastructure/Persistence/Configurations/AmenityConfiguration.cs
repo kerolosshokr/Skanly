@@ -1,32 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/AmenityConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
-namespace Skanly.Infrastructure.Persistence.Configurations
+
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class AmenityConfiguration : IEntityTypeConfiguration<Amenity>
 {
-    public class AmenityConfiguration : IEntityTypeConfiguration<Amenity>
+    public void Configure(EntityTypeBuilder<Amenity> builder)
     {
-        public void Configure(EntityTypeBuilder<Amenity> builder)
-        {
-            builder.ToTable("Amenities");
+        builder.ToTable("Amenities");
+        builder.HasKey(a => a.Id);
 
-            builder.HasKey(x => x.Id);
-
-            builder.Property(x => x.NameAr)
-                   .IsRequired()
-                   .HasMaxLength(100);
-
-            builder.Property(x => x.NameEn)
-                   .IsRequired()
-                   .HasMaxLength(100);
-
-            builder.Property(x => x.Icon)
-                   .HasMaxLength(250);
-
-            builder.Property(x => x.IsActive)
-                   .HasDefaultValue(true);
-
-            builder.HasIndex(x => x.NameEn)
-                   .IsUnique();
-        }
+        builder.Property(a => a.NameAr).IsRequired().HasMaxLength(100);
+        builder.Property(a => a.NameEn).IsRequired().HasMaxLength(100);
+        builder.Property(a => a.IconClass).HasMaxLength(100);
+        builder.HasIndex(a => a.NameEn).IsUnique();
     }
 }

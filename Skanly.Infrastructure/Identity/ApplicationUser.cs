@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// Skanly.Infrastructure/Identity/ApplicationUser.cs
+using Microsoft.AspNetCore.Identity;
 
-namespace Skanly.Infrastructure.Identity
+namespace Skanly.Infrastructure.Identity;
+
+public class ApplicationUser : IdentityUser
 {
-    public  class ApplicationUser : IdentityUser
-    {
-    }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

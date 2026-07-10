@@ -1,13 +1,7 @@
-﻿
-using System;
+﻿// Skanly.Domain/Exceptions/DomainException.cs
+namespace Skanly.Domain.Exceptions;
 
-namespace Skanly.Domain.Exceptions
+public class DomainException : Exception
 {
-    public  class DomainException : Exception
-    {
-        public DomainException(string message)
-            : base(message) 
-        {
-        }
-    }
+    public DomainException(string message) : base(message) { }
 }

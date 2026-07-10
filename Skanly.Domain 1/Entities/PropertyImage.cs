@@ -1,15 +1,21 @@
-﻿using Skanly.Domain.Entities.Common;
-namespace Skanly.Domain.Entities
+﻿// Skanly.Domain/Entities/PropertyImage.cs
+using System.ComponentModel.DataAnnotations;
+using Skanly.Domain.Entities.Common;
+
+namespace Skanly.Domain.Entities;
+
+public class PropertyImage : BaseEntity<int>
 {
-    public  class PropertyImage : BaseEntity
-    {
-        public Guid PropertyId { get; set; }
+    [Required]
+    public int PropertyId { get; set; }
 
-        public string ImageUrl { get; set; } = string.Empty;
+    [Required, MaxLength(300)]
+    public string ImageUrl { get; set; } = string.Empty;
 
-        public bool IsPrimary { get; set; }
+    public bool IsPrimary { get; set; }
 
-        public Property Property { get; set; } = null!;
-    }
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation
+    public Property Property { get; set; } = null!;
 }
-

@@ -1,15 +1,29 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/Admin.cs
+using System.ComponentModel.DataAnnotations;
+using Skanly.Domain.Interfaces;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class Admin : IAggregateRoot
 {
-    public  class Admin : BaseEntity
-    {
-        public string UserId { get; set; } = string.Empty;
+    [Key]
+    public string UserId { get; set; } = string.Empty;   // FK to AspNetUsers.Id
 
-        public string FullName { get; set; } = string.Empty;
+    [Required, MaxLength(100)]
+    public string FirstName { get; set; } = string.Empty;
 
-        public string PhoneNumber { get; set; } = string.Empty;
-        public ICollection<IdentityVerification> ReviewedIdentityVerifications { get; set; }
-    = new List<IdentityVerification>();
-    }
+    [Required, MaxLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [MaxLength(100)]
+    public string? Department { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation (reverse — entities this admin has actioned)
+    public ICollection<IdentityVerification> ReviewedVerifications { get; set; } = new List<IdentityVerification>();
+    public ICollection<Report> ResolvedReports { get; set; } = new List<Report>();
+    public ICollection<CommissionSetting> CommissionSettings { get; set; } = new List<CommissionSetting>();
+
+    public string FullName => $"{FirstName} {LastName}";
 }

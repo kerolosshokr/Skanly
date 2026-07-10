@@ -1,25 +1,21 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/ContractConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
+namespace Skanly.Infrastructure.Persistence.Configurations;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+public class ContractConfiguration : IEntityTypeConfiguration<Contract>
 {
-    public class ContractConfiguration : IEntityTypeConfiguration<Contract>
+    public void Configure(EntityTypeBuilder<Contract> builder)
     {
-        public void Configure(EntityTypeBuilder<Contract> builder)
-        {
-            builder.ToTable("Contracts");
+        builder.ToTable("Contracts");
+        builder.HasKey(c => c.Id);
 
-            builder.HasKey(x => x.Id);
+        builder.Property(c => c.ContractNumber).IsRequired().HasMaxLength(50);
+        builder.Property(c => c.PdfUrl).IsRequired().HasMaxLength(300);
 
-            builder.Property(x => x.FileUrl)
-                   .IsRequired()
-                   .HasMaxLength(500);
-
-            builder.HasOne(x => x.Booking)
-                   .WithOne(x => x.Contract)
-                   .HasForeignKey<Contract>(x => x.BookingId);
-        }
+        builder.HasIndex(c => c.BookingId).IsUnique();
+        builder.HasIndex(c => c.ContractNumber).IsUnique();
     }
 }

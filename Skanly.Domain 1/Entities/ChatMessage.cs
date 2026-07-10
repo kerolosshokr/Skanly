@@ -1,19 +1,29 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿// Skanly.Domain/Entities/ChatMessage.cs
+using System.ComponentModel.DataAnnotations;
+using Skanly.Domain.Interfaces;
 
-namespace Skanly.Domain.Entities
+namespace Skanly.Domain.Entities;
+
+public class ChatMessage : IAggregateRoot
 {
-    public  class ChatMessage : BaseEntity
-    {
-        public Guid ConversationId { get; set; }
+    public long MessageId { get; set; }
 
-        public string SenderId { get; set; } = string.Empty;
+    [Required]
+    public int ConversationId { get; set; }
 
-        public string Message { get; set; } = string.Empty;
+    [Required]
+    public string SenderId { get; set; } = string.Empty;
 
-        public DateTime SentAt { get; set; }
+    [MaxLength(1000)]
+    public string? MessageText { get; set; }
 
-        public bool IsRead { get; set; } = false;
+    [MaxLength(300)]
+    public string? ImageUrl { get; set; }
 
-        public ChatConversation Conversation { get; set; } = null!;
-    }
+    public bool IsRead { get; set; }
+
+    public DateTime SentAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation
+    public ChatConversation Conversation { get; set; } = null!;
 }

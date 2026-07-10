@@ -1,67 +1,82 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Skanly.Infrastructure/Persistence/Configurations/PropertyConfiguration.cs
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skanly.Domain.Entities;
 
-namespace Skanly.Infrastructure.Persistence.Configurations
+namespace Skanly.Infrastructure.Persistence.Configurations;
+
+public class PropertyConfiguration : IEntityTypeConfiguration<Property>
 {
-    public class PropertyConfiguration : IEntityTypeConfiguration<Property>
+    public void Configure(EntityTypeBuilder<Property> builder)
     {
-        public void Configure(EntityTypeBuilder<Property> builder)
-        {
-            builder.ToTable("Properties");
+        builder.ToTable("Properties");
+        builder.HasKey(p => p.Id);
 
-            builder.HasKey(x => x.Id);
+        builder.Property(p => p.OwnerId).IsRequired().HasMaxLength(450);
+        builder.Property(p => p.Title).IsRequired().HasMaxLength(200);
+        builder.Property(p => p.Address).IsRequired().HasMaxLength(300);
+        builder.Property(p => p.PricePerMonth).HasColumnType("decimal(10,2)");
+        builder.Property(p => p.Latitude).HasColumnType("decimal(9,6)");
+        builder.Property(p => p.Longitude).HasColumnType("decimal(9,6)");
+        builder.Property(p => p.AverageRating).HasColumnType("decimal(3,2)").HasDefaultValue(0);
+        builder.Property(p => p.PropertyType).HasConversion<byte>();
+        builder.Property(p => p.IsApproved).HasDefaultValue(false);
+        builder.Property(p => p.IsAvailable).HasDefaultValue(true);
+        builder.Property(p => p.IsDeleted).HasDefaultValue(false);
 
-            builder.Property(x => x.Title)
-                   .IsRequired()
-                   .HasMaxLength(200);
+        // Query filter — soft delete, automatically excluded everywhere unless overridden
+        builder.HasQueryFilter(p => !p.IsDeleted);
 
-            builder.Property(x => x.Description)
-                   .IsRequired()
-                   .HasMaxLength(2000);
+        builder.HasIndex(p => p.AreaId);
+        builder.HasIndex(p => p.UniversityId);
+        builder.HasIndex(p => p.OwnerId);
+ 
+        builder.HasIndex(p => p.PricePerMonth);
+        builder.HasIndex(p => new { p.Latitude, p.Longitude }).HasDatabaseName("IX_Property_Geo");
 
-            builder.Property(x => x.Address)
-                   .IsRequired()
-                   .HasMaxLength(300);
+        builder.HasOne(p => p.Owner)
+            .WithMany(o => o.Properties)
+            .HasForeignKey(p => p.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.PricePerMonth)
-                   .HasColumnType("decimal(18,2)");
+        builder.HasOne(p => p.University)
+            .WithMany(u => u.Properties)
+            .HasForeignKey(p => p.UniversityId)
+            .OnDelete(DeleteBehavior.SetNull);
 
-            builder.Property(x => x.Latitude)
-                   .HasColumnType("decimal(9,6)");
+        builder.HasOne(p => p.Area)
+            .WithMany(a => a.Properties)
+            .HasForeignKey(p => p.AreaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(x => x.Longitude)
-                   .HasColumnType("decimal(9,6)");
+        builder.HasMany(p => p.Images)
+            .WithOne(i => i.Property)
+            .HasForeignKey(i => i.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.PropertyType)
-                   .HasConversion<byte>();
+        builder.HasMany(p => p.Videos)
+            .WithOne(v => v.Property)
+            .HasForeignKey(v => v.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.IsApproved)
-                   .HasDefaultValue(false);
+        builder.HasMany(p => p.Bookings)
+            .WithOne(b => b.Property)
+            .HasForeignKey(b => b.PropertyId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Property(x => x.IsAvailable)
-                   .HasDefaultValue(true);
+        builder.HasMany(p => p.Favorites)
+            .WithOne(f => f.Property)
+            .HasForeignKey(f => f.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(x => x.IsDeleted)
-                   .HasDefaultValue(false);
+        builder.HasMany(p => p.Reviews)
+            .WithOne(r => r.Property)
+            .HasForeignKey(r => r.PropertyId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-            // Owner
-            builder.HasOne(x => x.Owner)
-                   .WithMany(x => x.Properties)
-                   .HasForeignKey(x => x.OwnerId)
-                   .OnDelete(DeleteBehavior.Restrict);
-
-            // Area
-            builder.HasOne(x => x.Area)
-                   .WithMany(x => x.Properties)
-                   .HasForeignKey(x => x.AreaId)
-                   .OnDelete(DeleteBehavior.Restrict);
-
-            // University (Optional)
-            builder.HasOne(x => x.University)
-                   .WithMany(x => x.Properties)
-                   .HasForeignKey(x => x.UniversityId)
-                   .OnDelete(DeleteBehavior.Restrict);
-        }
+        builder.HasMany(p => p.Reports)
+            .WithOne(r => r.ReportedProperty)
+            .HasForeignKey(r => r.ReportedPropertyId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -19,7 +19,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructureServices(
         this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<SkanlyDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -27,7 +27,7 @@ public static class DependencyInjection
             options.Password.RequiredLength = 8;
             options.User.RequireUniqueEmail = true;
         })
-            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddEntityFrameworkStores<SkanlyDbContext>()
             .AddDefaultTokenProviders();
 
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
