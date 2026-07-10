@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Skanly.Application;
 using Skanly.Infrastructure;
+using Skanly.Infrastructure.Persistence.Seed;
 using Skanly.Web.Hubs;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,13 @@ app.MapControllerRoute(
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<NotificationHub>("/hubs/notification");
 
+// Skanly.Web/Program.cs (addition at the end, before app.Run())
+using (var scope = app.Services.CreateScope())
+{
+    await DbInitializer.SeedAsync(scope.ServiceProvider);
+}
+
 app.Run();
+
 
 
