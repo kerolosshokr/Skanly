@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Skanly.Infrastructure.Identity
 {
-    internal class ApplicationUser
+    public  class ApplicationUser : IdentityUser
     {
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Skanly.Domain.Entities;
 
 namespace Skanly.Infrastructure.Persistence
 {
@@ -9,6 +10,14 @@ namespace Skanly.Infrastructure.Persistence
             : base(options)
         {
         }
+        //DbSets
+        public DbSet<Area> Areas { get; set; }
+        public DbSet<University> Universities { get; set; }
+        public DbSet<Amenity> Amenities { get; set; }
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Owner> Owners { get; set; }
+
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

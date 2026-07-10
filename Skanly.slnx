@@ -1,9 +1,9 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="D:/Project Skanly test/Skanly/Skanly.Application/Skanly.Application.csproj" />
-    <Project Path="D:/Project Skanly test/Skanly/Skanly.Domain/Skanly.Domain.csproj" Id="54b67586-3e60-48c0-b518-065a8efde3ab" />
     <Project Path="D:/Project Skanly test/Skanly/Skanly.Infrastructure/Skanly.Infrastructure.csproj" />
     <Project Path="D:/Project Skanly test/Skanly/Skanly.Shared/Skanly.Shared.csproj" />
     <Project Path="D:/Project Skanly test/Skanly/Skanly.Web/Skanly.Web.csproj" />
   </Folder>
+  <Project Path="Skanly.Domain 1/Skanly.Domain.csproj" Id="878ec5a0-47d8-439d-b5db-15a0013c538c" />
 </Solution>
