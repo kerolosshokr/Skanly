@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using AutoMapper;
+
 
 namespace Skanly.Application.Common.Mappings
 {
-    internal class MappingProfile
+    public  class MappingProfile : Profile
     {
     }
 }

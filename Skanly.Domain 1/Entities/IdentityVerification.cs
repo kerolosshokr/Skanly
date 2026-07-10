@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Skanly.Domain.Entities.Common;
+using Skanly.Domain.Enums;
 
 namespace Skanly.Domain.Entities
 {
-    internal class IdentityVerification
+    public class IdentityVerification : BaseEntity
     {
+        public Guid StudentId { get; set; }
+
+        public string DocumentUrl { get; set; } = string.Empty;
+
+        public VerificationStatus Status { get; set; }
+
+        public Guid? ReviewedByAdminId { get; set; }
+
+        public DateTime? ReviewedAt { get; set; }
+
+        public Student Student { get; set; } = null!;
+
+        public Admin? ReviewedByAdmin { get; set; }
     }
 }

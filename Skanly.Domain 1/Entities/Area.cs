@@ -11,6 +11,7 @@ namespace Skanly.Domain.Entities
         // Navigation Properties
         public ICollection<University> Universities { get; set; }
           = new List<University>();
+        public ICollection<Property> Properties { get; set; } = new List<Property>();
 
     }
 }

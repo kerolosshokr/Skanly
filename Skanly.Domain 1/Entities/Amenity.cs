@@ -1,4 +1,5 @@
-﻿using Skanly.Domain.Entities.Common;
+﻿
+using Skanly.Domain.Entities.Common;
 namespace Skanly.Domain.Entities
 {
     public  class Amenity : BaseEntity
@@ -10,5 +11,6 @@ namespace Skanly.Domain.Entities
         public string? Icon { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public ICollection<PropertyAmenity> PropertyAmenities { get; set; } = new List<PropertyAmenity>();
     }
 }

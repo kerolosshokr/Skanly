@@ -1,10 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Skanly.Domain.Entities;
 namespace Skanly.Infrastructure.Persistence.Configurations
 {
-    public class NotificationConfiguration
+    public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
     {
+        public void Configure(EntityTypeBuilder<Notification> builder)
+        {
+            builder.ToTable("Notifications");
+
+            builder.HasKey(x => x.Id);
+
+            builder.Property(x => x.UserId)
+                   .IsRequired();
+
+            builder.Property(x => x.Title)
+                   .IsRequired()
+                   .HasMaxLength(200);
+
+            builder.Property(x => x.Message)
+                   .IsRequired()
+                   .HasMaxLength(1000);
+
+            builder.Property(x => x.Type)
+                   .HasConversion<byte>();
+
+            builder.Property(x => x.IsRead)
+                   .HasDefaultValue(false);
+        }
     }
 }

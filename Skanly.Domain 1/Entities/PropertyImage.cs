@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using Skanly.Domain.Entities.Common;
 namespace Skanly.Domain.Entities
 {
-    internal class PropertyImage
+    public  class PropertyImage : BaseEntity
     {
+        public Guid PropertyId { get; set; }
+
+        public string ImageUrl { get; set; } = string.Empty;
+
+        public bool IsPrimary { get; set; }
+
+        public Property Property { get; set; } = null!;
     }
 }
+

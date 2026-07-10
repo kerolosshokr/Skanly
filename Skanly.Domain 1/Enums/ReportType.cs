@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace Skanly.Domain.Enums
 {
-    internal class ReportType
+    public  enum ReportType : byte
     {
+        Property = 1,
+        Owner = 2,
+        Student = 3,
+        Payment = 4,
+        Other = 5
     }
 }

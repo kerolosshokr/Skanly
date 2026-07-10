@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using Skanly.Domain.Entities.Common;
 namespace Skanly.Domain.Entities
 {
-    internal class PropertyVideo
+    public  class PropertyVideo : BaseEntity
     {
+        public Guid PropertyId { get; set; }
+
+        public string VideoUrl { get; set; } = string.Empty;
+
+        public Property Property { get; set; } = null!;
     }
 }

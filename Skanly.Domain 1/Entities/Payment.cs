@@ -1,12 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿using Skanly.Domain.Entities.Common;
+using Skanly.Domain.Enums;
 namespace Skanly.Domain.Entities
 {
-    internal class Payment
+    public  class Payment : BaseEntity
     {
+        public Guid BookingId { get; set; }
+
+        public decimal Amount { get; set; }
+
+        public PaymentMethod PaymentMethod { get; set; }
+
+        public DateTime PaymentDate { get; set; }
+
+        public Booking Booking { get; set; } = null!;
     }
 }

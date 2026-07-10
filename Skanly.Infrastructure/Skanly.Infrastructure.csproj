@@ -14,6 +14,7 @@
   <ItemGroup>
     <Folder Include="ExternalServices\PdfGeneration\" />
     <Folder Include="ExternalServices\PaymentSimulation\" />
+    <Folder Include="Migrations\" />
     <Folder Include="Persistence\Migrations\" />
     <Folder Include="Services\FileStorage\" />
     <Folder Include="Services\Email\" />

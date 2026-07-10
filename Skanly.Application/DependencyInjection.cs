@@ -3,14 +3,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Skanly.Application.Common.Mappings;
 using Skanly.Application.Interfaces.Services;
 using Skanly.Application.Services;
-
+using AutoMapper;
 namespace Skanly.Application;
 
 public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddAutoMapper(typeof(MappingProfile).Assembly);
+        services.AddAutoMapper(cfg => { }, typeof(MappingProfile).Assembly);
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
         services.AddScoped<IStudentService, StudentService>();

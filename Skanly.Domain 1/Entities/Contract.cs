@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
+using Skanly.Domain.Entities.Common;
 namespace Skanly.Domain.Entities
 {
-    internal class Contract
+    public  class Contract : BaseEntity
     {
+        public Guid BookingId { get; set; }
+
+        public string FileUrl { get; set; } = string.Empty;
+
+        public DateTime SignedAt { get; set; }
+
+        public Booking Booking { get; set; } = null!;
     }
 }

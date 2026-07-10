@@ -15,5 +15,6 @@ namespace Skanly.Domain.Entities
         public decimal Longitude { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public ICollection<Property> Properties { get; set; } = new List<Property>();
     }
 }

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace Skanly.Domain.Enums
 {
-    internal class BookingStatus
+     public enum BookingStatus
     {
+        Pending,
+        Confirmed,
+        Cancelled,
+        Completed
     }
 }

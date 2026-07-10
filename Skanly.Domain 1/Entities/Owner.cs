@@ -17,5 +17,6 @@ namespace Skanly.Domain.Entities
         public string? ProfileImage { get; set; }
 
         public string? NationalIdImage { get; set; }
+        public ICollection<Property> Properties { get; set; } = new List<Property>();
     }
 }

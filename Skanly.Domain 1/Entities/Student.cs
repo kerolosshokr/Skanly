@@ -25,6 +25,11 @@ namespace Skanly.Domain.Entities
 
         // Navigation Property
         public University University { get; set; } = null!;
+        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+        public ICollection<IdentityVerification> IdentityVerifications { get; set; }
+    = new List<IdentityVerification>();
 
     }
 }
