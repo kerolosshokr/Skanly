@@ -42,8 +42,6 @@ public class OwnerService : IOwnerService
         _logger = logger;
     }
 
-    // ── GetProfileAsync ───────────────────────────────────────────────────────
-
     public async Task<ServiceResult<OwnerProfileDto>> GetProfileAsync(
         string userId,
         CancellationToken ct = default)
@@ -102,8 +100,6 @@ public class OwnerService : IOwnerService
         return ServiceResult<OwnerProfileDto>.Success(dto);
     }
 
-    // ── UpdateProfileAsync ────────────────────────────────────────────────────
-
     public async Task<ServiceResult<OwnerProfileDto>> UpdateProfileAsync(
         string userId,
         UpdateOwnerProfileDto dto,
@@ -141,8 +137,6 @@ public class OwnerService : IOwnerService
         return await GetProfileAsync(userId, ct);
     }
 
-    // ── UploadProfileImageAsync ───────────────────────────────────────────────
-
     public async Task<ServiceResult<string>> UploadProfileImageAsync(
         string userId,
         IFormFile image,
@@ -170,8 +164,6 @@ public class OwnerService : IOwnerService
 
         return ServiceResult<string>.Success(imageUrl);
     }
-
-    // ── SubmitIdentityVerificationAsync ───────────────────────────────────────
 
     public async Task<ServiceResult> SubmitIdentityVerificationAsync(
         string userId,
@@ -211,8 +203,6 @@ public class OwnerService : IOwnerService
         return ServiceResult.Success();
     }
 
-    // ── GetDashboardAsync ─────────────────────────────────────────────────────
-
     public async Task<ServiceResult<OwnerDashboardDto>> GetDashboardAsync(
         string userId,
         CancellationToken ct = default)
@@ -224,7 +214,6 @@ public class OwnerService : IOwnerService
 
         var profile = profileResult.Data!;
 
-        // Monthly earnings (current month)
         var now = DateTime.UtcNow;
         var monthStart = new DateTime(now.Year, now.Month, 1);
         var monthEarnings = await _uow.Bookings
@@ -234,11 +223,9 @@ public class OwnerService : IOwnerService
             .Where(b => b.Property.OwnerId == userId)
             .Sum(b => b.TotalAmount - (b.CommissionAmount ?? 0));
 
-        // Unread notifications
         var unreadCount = await _uow.Notifications
             .GetUnreadCountAsync(userId, ct);
 
-        // Pending booking requests (max 5 for dashboard)
         var pendingRequests = await _uow.Bookings
             .GetPendingByOwnerIdAsync(userId, ct);
 
@@ -246,7 +233,6 @@ public class OwnerService : IOwnerService
             .Select(MapToBookingRequestDto)
             .ToList();
 
-        // Top properties (by booking count)
         var ownerProperties = await _uow.Properties
             .GetByOwnerIdAsync(userId, false, ct);
 
@@ -277,7 +263,6 @@ public class OwnerService : IOwnerService
             });
         }
 
-        // Recent notifications (last 5)
         var (notifEntities, _) = await _uow.Notifications
             .GetByUserIdAsync(userId, 1, 5, ct);
 
@@ -285,7 +270,6 @@ public class OwnerService : IOwnerService
             .Select(MapToNotificationDto)
             .ToList();
 
-        // Earnings chart — last 6 months
         var earningsChart = await BuildEarningsChartAsync(userId, 6, ct);
 
         var dashboard = new OwnerDashboardDto
@@ -310,8 +294,6 @@ public class OwnerService : IOwnerService
         return ServiceResult<OwnerDashboardDto>.Success(dashboard);
     }
 
-    // ── GetPropertiesAsync ────────────────────────────────────────────────────
-
     public async Task<ServiceResult<PagedResult<OwnerPropertySummaryDto>>> GetPropertiesAsync(
         string ownerId,
         int pageNumber = 1,
@@ -322,7 +304,6 @@ public class OwnerService : IOwnerService
         var allProperties = await _uow.Properties
             .GetByOwnerIdAsync(ownerId, includeDeleted: true, ct);
 
-        // Apply status filter
         var filtered = statusFilter switch
         {
             "Approved"    => allProperties.Where(p => p.IsApproved && !p.IsDeleted),
@@ -369,8 +350,6 @@ public class OwnerService : IOwnerService
             PagedResult<OwnerPropertySummaryDto>.Create(dtos, total, pageNumber, pageSize));
     }
 
-    // ── GetBookingRequestsAsync ───────────────────────────────────────────────
-
     public async Task<ServiceResult<PagedResult<BookingRequestDto>>> GetBookingRequestsAsync(
         string ownerId,
         int pageNumber = 1,
@@ -383,7 +362,6 @@ public class OwnerService : IOwnerService
             Enum.TryParse<BookingStatus>(statusFilter, out var parsed))
             status = parsed;
 
-        // Get all properties owned
         var ownerPropertyIds = (await _uow.Properties
             .GetByOwnerIdAsync(ownerId, false, ct))
             .Select(p => p.Id)
@@ -407,8 +385,6 @@ public class OwnerService : IOwnerService
             PagedResult<BookingRequestDto>.Create(dtos, total, pageNumber, pageSize));
     }
 
-    // ── GetBookingRequestDetailAsync ──────────────────────────────────────────
-
     public async Task<ServiceResult<BookingRequestDto>> GetBookingRequestDetailAsync(
         string ownerId,
         int bookingId,
@@ -419,7 +395,6 @@ public class OwnerService : IOwnerService
         if (booking is null)
             return ServiceResult<BookingRequestDto>.Failure("Booking not found.");
 
-        // Ownership guard
         if (booking.Property.OwnerId != ownerId)
             return ServiceResult<BookingRequestDto>.Failure("Access denied.");
 
@@ -427,14 +402,11 @@ public class OwnerService : IOwnerService
             MapToBookingRequestDto(booking));
     }
 
-    // ── HandleBookingRequestAsync ─────────────────────────────────────────────
-
     public async Task<ServiceResult> HandleBookingRequestAsync(
         string ownerId,
         HandleBookingRequestDto dto,
         CancellationToken ct = default)
     {
-        // Validate
         var validation = await _bookingValidator.ValidateAsync(dto, ct);
         if (!validation.IsValid)
             return ServiceResult.Failure(
@@ -455,19 +427,16 @@ public class OwnerService : IOwnerService
         await using var tx = await _uow.BeginTransactionAsync(ct);
         try
         {
-            // Update booking status
             booking.Status      = dto.Accept ? BookingStatus.Accepted : BookingStatus.Rejected;
             booking.RespondedAt = DateTime.UtcNow;
             _uow.Bookings.Update(booking);
 
-            // Get active commission rate
             var commissionRate = await _uow.Repository<CommissionSetting>()
                 .GetFirstOrDefaultAsync(c => c.IsActive, ct);
 
             if (dto.Accept && commissionRate is not null)
                 booking.CommissionRate = commissionRate.Rate;
 
-            // Notify student
             var notification = new Notification
             {
                 UserId            = booking.StudentId,
@@ -497,8 +466,6 @@ public class OwnerService : IOwnerService
         }
     }
 
-    // ── GetEarningsAsync ──────────────────────────────────────────────────────
-
     public async Task<ServiceResult<EarningsSummaryDto>> GetEarningsAsync(
         string ownerId,
         int year,
@@ -525,7 +492,6 @@ public class OwnerService : IOwnerService
         var totalCommission = confirmedBookings
             .Sum(b => b.CommissionAmount ?? 0);
 
-        // Per-property breakdown
         var ownerProperties = await _uow.Properties
             .GetByOwnerIdAsync(ownerId, false, ct);
 
@@ -550,7 +516,6 @@ public class OwnerService : IOwnerService
             .OrderByDescending(r => r.NetEarnings)
             .ToList();
 
-        // Monthly chart
         var monthlyBreakdown = Enumerable.Range(1, 12)
             .Select(month =>
             {
@@ -578,8 +543,6 @@ public class OwnerService : IOwnerService
             MonthlyBreakdown       = monthlyBreakdown
         });
     }
-
-    // ── Notifications ─────────────────────────────────────────────────────────
 
     public async Task<ServiceResult<PagedResult<NotificationDto>>> GetNotificationsAsync(
         string userId,
@@ -627,8 +590,6 @@ public class OwnerService : IOwnerService
         var count = await _uow.Notifications.GetUnreadCountAsync(userId, ct);
         return ServiceResult<int>.Success(count);
     }
-
-    // ── Private Helpers ───────────────────────────────────────────────────────
 
     private static BookingRequestDto MapToBookingRequestDto(Booking b) =>
         new()
