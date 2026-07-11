@@ -3,45 +3,47 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Skanly.Application.Common.Interfaces;
-using Skanly.Application.Interfaces.Services;
-using Skanly.Application.Services;
-using Skanly.Infrastructure.ExternalServices;
-using Skanly.Infrastructure.ExternalServices.AiChatbot;
-using Skanly.Infrastructure.FileStorage;
+using Skanly.Application.Common.Interfaces.Repositories;
 using Skanly.Infrastructure.Identity;
 using Skanly.Infrastructure.Persistence;
 using Skanly.Infrastructure.Persistence.Repositories;
-using Skanly.Application.Common.Interfaces.Repositories;
-using Microsoft.AspNetCore.Identity;
 
 namespace Skanly.Infrastructure;
 
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(
-        this IServiceCollection services, IConfiguration configuration)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         services.AddDbContext<SkanlyDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sqlOptions => sqlOptions
+                    .EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null)
+                    .CommandTimeout(30)
+                    .MigrationsAssembly(typeof(SkanlyDbContext).Assembly.FullName)));
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         {
             options.Password.RequiredLength = 8;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireDigit = true;
+            options.Password.RequireNonAlphanumeric = false;
             options.User.RequireUniqueEmail = true;
+            options.SignIn.RequireConfirmedEmail = true;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            options.Lockout.MaxFailedAccessAttempts = 5;
         })
             .AddEntityFrameworkStores<SkanlyDbContext>()
             .AddDefaultTokenProviders();
 
-        services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        services.AddScoped<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<IGoogleMapsService, GoogleMapsService>();
-        services.AddScoped<IOcrService, OcrService>();
-        services.AddScoped<IAiRecommendationService, AiRecommendationService>();
-        services.AddScoped<IAiChatbotService, AiChatbotService>();
-        services.AddScoped<IPdfContractService, PdfContractService>();
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 
         services.AddScoped<IPropertyRepository, PropertyRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
