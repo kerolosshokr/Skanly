@@ -1,0 +1,61 @@
+﻿@model Skanly.Application.Features.Owners.DTOs.UpdateOwnerProfileDto
+@{
+    ViewData["Title"] = "Edit Profile";
+    Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Profile</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="FirstName" class="form-label fw-semibold"></label>
+                        <input asp-for="FirstName" class="form-control" />
+                        <span asp-validation-for="FirstName" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="LastName" class="form-label fw-semibold"></label>
+                        <input asp-for="LastName" class="form-control" />
+                        <span asp-validation-for="LastName" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PhoneNumber" class="form-label fw-semibold"></label>
+                        <input asp-for="PhoneNumber" class="form-control" placeholder="e.g. 01234567890" />
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="BusinessName" class="form-label fw-semibold"></label>
+                        <input asp-for="BusinessName" class="form-control" />
+                        <span asp-validation-for="BusinessName" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="BankAccountInfo" class="form-label fw-semibold"></label>
+                        <input asp-for="BankAccountInfo" class="form-control" />
+                        <span asp-validation-for="BankAccountInfo" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Changes
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

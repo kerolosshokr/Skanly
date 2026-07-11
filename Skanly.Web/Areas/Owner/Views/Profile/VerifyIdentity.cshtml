@@ -1,0 +1,68 @@
+﻿@model Skanly.Application.Features.Owners.DTOs.UploadIdentityDto
+@{
+    ViewData["Title"] = "Verify Identity";
+    Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+    var status = ViewBag.VerificationStatus as string ?? "Not Submitted";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-shield-alt me-2 text-warning"></i>Identity Verification</h5>
+            </div>
+            <div class="card-body">
+                @if (status == "Verified")
+                {
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Your identity is verified. You can list properties and receive bookings.
+                    </div>
+                }
+                else if (status == "Pending Review")
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock me-2"></i>
+                        Your documents are being reviewed. This usually takes 24-48 hours.
+                    </div>
+                }
+                else if (status == "Rejected")
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle me-2"></i>
+                        Your verification was rejected. Please submit new documents.
+                    </div>
+                }
+
+                @if (status != "Verified")
+                {
+                    <form method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="NationalIdFront" class="form-label fw-semibold"></label>
+                            <input asp-for="NationalIdFront" class="form-control" type="file" accept="image/*" />
+                            <span asp-validation-for="NationalIdFront" class="text-danger"></span>
+                            <div class="form-text">Clear photo of your National ID (front side)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NationalIdBack" class="form-label fw-semibold"></label>
+                            <input asp-for="NationalIdBack" class="form-control" type="file" accept="image/*" />
+                            <span asp-validation-for="NationalIdBack" class="text-danger"></span>
+                            <div class="form-text">Clear photo of your National ID (back side) - Optional</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning fw-semibold">
+                            <i class="fas fa-upload me-1"></i>Submit for Verification
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-action="Index" class="btn btn-primary">Back to Profile</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,190 @@
+﻿@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Owners.DTOs.BookingRequestDto>
+@{
+    ViewData["Title"] = "Booking Requests";
+    Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-inbox me-2 text-warning"></i>Booking Requests
+    </h1>
+</div>
+
+<ul class="nav nav-pills mb-4 gap-1">
+    @foreach (var (label, value) in new[]
+    {
+        ("All", ""),
+        ("Pending", "Pending"),
+        ("Accepted", "Accepted"),
+        ("Confirmed", "Confirmed"),
+        ("Rejected", "Rejected"),
+        ("Cancelled", "Cancelled")
+    })
+    {
+        <li class="nav-item">
+            <a class="nav-link @(ViewBag.StatusFilter == value ? "active" : "")"
+               asp-action="Index"
+               asp-route-status="@value">@label</a>
+        </li>
+    }
+</ul>
+
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-inbox fa-4x mb-3 opacity-25"></i>
+        <h5>No booking requests found</h5>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student</th>
+                        <th>Property</th>
+                        <th>Check In</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center">Status</th>
+                        <th>Requested</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var req in Model.Items)
+                    {
+                        <tr id="row-@req.BookingId">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="@(req.StudentImageUrl ?? "/images/default-avatar.png")"
+                                         class="rounded-circle object-fit-cover"
+                                         width="36" height="36" alt="" />
+                                    <div>
+                                        <div class="fw-semibold small">
+                                            @req.StudentFullName
+                                            @if (req.StudentIsVerified)
+                                            {
+                                                <i class="fas fa-check-circle text-success ms-1" style="font-size:11px;"></i>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-truncate" style="max-width:180px">@req.PropertyTitle</div>
+                                <div class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i>@req.AreaNameEn</div>
+                            </td>
+                            <td class="small">@req.CheckInDate.ToString("MMM dd, yyyy")</td>
+                            <td class="text-end">
+                                <div class="fw-bold small">EGP @req.TotalAmount.ToString("N0")</div>
+                                <div class="text-muted" style="font-size:11px;">Dep: @req.DepositAmount.ToString("N0")</div>
+                            </td>
+                            <td class="text-center"><span class="badge @req.StatusBadgeClass">@req.StatusDisplay</span></td>
+                            <td class="small text-muted">@req.TimeAgo</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@req.BookingId" class="btn btn-outline-secondary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    @if (req.Status == Skanly.Domain.Enums.BookingStatus.Pending)
+                                    {
+                                        <button class="btn btn-success accept-btn" data-booking-id="@req.BookingId">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-danger reject-btn" data-booking-id="@req.BookingId">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <small class="text-muted">@Model.TotalCount total requests</small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@i"
+                                   asp-route-status="@ViewBag.StatusFilter">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+}
+
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger">Reject Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="rejectionReason" class="form-control" rows="3"
+                          placeholder="Reason for rejection..."></textarea>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-danger" id="confirmRejectBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentBookingId = null;
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+    async function handleBooking(bookingId, accept, reason = null) {
+        const res = await fetch('/Owner/BookingRequests/Handle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
+            body: JSON.stringify({ bookingId, accept, rejectionReason: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById(`row-${bookingId}`)?.remove();
+        } else {
+            alert(data.message);
+        }
+    }
+
+    document.querySelectorAll('.accept-btn').forEach(b =>
+        b.addEventListener('click', function () {
+            if (confirm('Accept this booking?'))
+                handleBooking(+this.dataset.bookingId, true);
+        }));
+
+    document.querySelectorAll('.reject-btn').forEach(b =>
+        b.addEventListener('click', function () {
+            currentBookingId = +this.dataset.bookingId;
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }));
+
+    document.getElementById('confirmRejectBtn').addEventListener('click', function () {
+        const reason = document.getElementById('rejectionReason').value.trim();
+        if (!reason) return;
+        bootstrap.Modal.getInstance(
+            document.getElementById('rejectModal')).hide();
+        handleBooking(currentBookingId, false, reason);
+    });
+</script>
+}

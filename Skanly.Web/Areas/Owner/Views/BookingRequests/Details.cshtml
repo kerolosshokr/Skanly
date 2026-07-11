@@ -1,0 +1,129 @@
+﻿@model Skanly.Application.Features.Owners.DTOs.BookingRequestDto
+@{
+    ViewData["Title"] = "Booking Request Details";
+    Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-file-invoice me-2 text-warning"></i>Booking Request Details
+    </h1>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Back to List
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Request Information</span>
+                <span class="badge @Model.StatusBadgeClass fs-6">@Model.StatusDisplay</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-semibold">Student</div>
+                    <div class="col-sm-8">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="@(Model.StudentImageUrl ?? "/images/default-avatar.png")"
+                                 class="rounded-circle object-fit-cover" width="32" height="32" alt="" />
+                            @Model.StudentFullName
+                            @if (Model.StudentIsVerified)
+                            {
+                                <i class="fas fa-check-circle text-success" title="Verified"></i>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-semibold">Property</div>
+                    <div class="col-sm-8">@Model.PropertyTitle</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-semibold">Area</div>
+                    <div class="col-sm-8">@Model.AreaNameEn</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-semibold">Check In</div>
+                    <div class="col-sm-8">@Model.CheckInDate.ToString("MMMM dd, yyyy")</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-semibold">Check Out</div>
+                    <div class="col-sm-8">@(Model.CheckOutDate?.ToString("MMMM dd, yyyy") ?? "Not set")</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-semibold">Total Amount</div>
+                    <div class="col-sm-8 fw-bold text-success">EGP @Model.TotalAmount.ToString("N0")</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-semibold">Deposit Amount</div>
+                    <div class="col-sm-8">EGP @Model.DepositAmount.ToString("N0")</div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4 fw-semibold">Requested</div>
+                    <div class="col-sm-8">@Model.RequestedAt.ToString("MMMM dd, yyyy h:mm tt") (@Model.TimeAgo)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent fw-semibold">Actions</div>
+            <div class="card-body">
+                @if (Model.Status == Skanly.Domain.Enums.BookingStatus.Pending)
+                {
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success accept-btn" data-booking-id="@Model.BookingId">
+                            <i class="fas fa-check me-1"></i>Accept Booking
+                        </button>
+                        <button class="btn btn-danger reject-btn" data-booking-id="@Model.BookingId">
+                            <i class="fas fa-times me-1"></i>Reject Booking
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">This request has been @Model.StatusDisplay.ToLower().</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+    async function handleBooking(bookingId, accept, reason = null) {
+        const res = await fetch('/Owner/BookingRequests/Handle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
+            body: JSON.stringify({ bookingId, accept, rejectionReason: reason })
+        });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    }
+
+    document.querySelector('.accept-btn')?.addEventListener('click', function () {
+        if (confirm('Accept this booking request?'))
+            handleBooking(+this.dataset.bookingId, true);
+    });
+
+    document.querySelector('.reject-btn')?.addEventListener('click', function () {
+        const reason = prompt('Please provide a reason for rejection:');
+        if (reason !== null && reason.trim() !== '') {
+            handleBooking(+this.dataset.bookingId, false, reason.trim());
+        } else if (reason !== null) {
+            alert('Please provide a reason for rejection.');
+        }
+    });
+</script>
+}
