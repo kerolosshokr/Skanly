@@ -11,6 +11,8 @@ using Skanly.Infrastructure.FileStorage;
 using Skanly.Infrastructure.Identity;
 using Skanly.Infrastructure.Persistence;
 using Skanly.Infrastructure.Persistence.Repositories;
+using Skanly.Application.Common.Interfaces.Repositories;
+using Microsoft.AspNetCore.Identity;
 
 namespace Skanly.Infrastructure;
 
@@ -40,6 +42,17 @@ public static class DependencyInjection
         services.AddScoped<IAiChatbotService, AiChatbotService>();
         services.AddScoped<IPdfContractService, PdfContractService>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+        services.AddScoped<IPropertyRepository, PropertyRepository>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
+        services.AddScoped<IStudentRepository, StudentRepository>();
+        services.AddScoped<IOwnerRepository, OwnerRepository>();
+        services.AddScoped<IChatRepository, ChatRepository>();
+        services.AddScoped<IReviewRepository, ReviewRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+        services.AddScoped<IUniversityRepository, UniversityRepository>();
 
         return services;
     }
