@@ -1,0 +1,267 @@
+﻿@* Skanly.Web/Areas/Student/Views/Dashboard/Index.cshtml *@
+@model Skanly.Application.Features.Students.DTOs.StudentDashboardDto
+@{
+    ViewData["Title"] = "My Dashboard";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+}
+
+@* Welcome Banner *@
+<div class="welcome-banner rounded-4 p-4 mb-4 text-white"
+     style="background:linear-gradient(135deg,#6C63FF,#48CAE4);">
+    <div class="d-flex align-items-center gap-3">
+        <div class="avatar-wrap position-relative">
+            <img src="@(Model.ProfileImageUrl ?? "/images/default-avatar.png")"
+                 class="rounded-circle object-fit-cover border border-white border-3"
+                 width="72" height="72" alt="Avatar" />
+            @if (Model.IsIdentityVerified)
+            {
+                <span class="position-absolute bottom-0 end-0
+                    bg-success rounded-circle d-flex align-items-center
+                    justify-content-center"
+                      style="width:22px;height:22px;"
+                      title="Identity Verified">
+                    <i class="fas fa-check text-white" style="font-size:10px;"></i>
+                </span>
+            }
+        </div>
+        <div>
+            <h4 class="mb-0 fw-bold">Welcome back, @Model.FullName 👋</h4>
+            <p class="mb-0 opacity-75 small">
+                @(Model.UniversityNameEn ?? "No university selected")
+            </p>
+        </div>
+    </div>
+</div>
+
+@* Verification Alert *@
+@if (!Model.IsIdentityVerified)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-3 rounded-3 mb-4">
+        <i class="fas fa-shield-alt fa-2x text-warning"></i>
+        <div class="flex-grow-1">
+            <strong>Verify your identity</strong>
+            <p class="mb-0 small">
+                Status: <span class="fw-semibold">@Model.VerificationStatus</span>.
+                Verified students get priority access to listings.
+            </p>
+        </div>
+        @if (Model.VerificationStatus == "Not Submitted")
+        {
+            <a asp-area="Student"
+               asp-controller="Profile"
+               asp-action="VerifyIdentity"
+               class="btn btn-warning btn-sm fw-semibold text-nowrap">
+                Verify Now
+            </a>
+        }
+    </div>
+}
+
+@* Stats Cards *@
+<div class="row g-3 mb-4">
+    @{
+        var stats = new[]
+        {
+            new { Label="Total Bookings",  Value=Model.TotalBookings.ToString(),
+                  Icon="fa-calendar", Color="primary",  Link="Bookings" },
+            new { Label="Active Bookings", Value=Model.ActiveBookings.ToString(),
+                  Icon="fa-home",     Color="success",  Link="Bookings" },
+            new { Label="Pending",         Value=Model.PendingBookings.ToString(),
+                  Icon="fa-clock",    Color="warning",  Link="Bookings" },
+            new { Label="Saved Homes",     Value=Model.TotalFavorites.ToString(),
+                  Icon="fa-heart",    Color="danger",   Link="Favorites" },
+        };
+    }
+    @foreach (var stat in stats)
+    {
+        <div class="col-6 col-md-3">
+            <a asp-area="Student"
+               asp-controller="@stat.Link"
+               asp-action="Index"
+               class="card border-0 shadow-sm text-decoration-none h-100 stat-card
+                hover-lift">
+                <div class="card-body text-center py-4">
+                    <div class="mb-2">
+                        <span class="icon-circle bg-@stat.Color bg-opacity-15
+                            text-@stat.Color rounded-circle d-inline-flex
+                            align-items-center justify-content-center"
+                              style="width:52px;height:52px;">
+                            <i class="fas @stat.Icon fa-lg"></i>
+                        </span>
+                    </div>
+                    <div class="fs-3 fw-bold text-dark">@stat.Value</div>
+                    <div class="small text-muted">@stat.Label</div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+@* Main Grid *@
+<div class="row g-4">
+
+    @* Recent Bookings *@
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent d-flex
+                justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                    Recent Bookings
+                </span>
+                <a asp-area="Student"
+                   asp-controller="Bookings"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.RecentBookings.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-calendar-times fa-3x mb-3 opacity-25"></i>
+                        <p>No bookings yet.</p>
+                        <a asp-area="" asp-controller="Property"
+                           asp-action="Search"
+                           class="btn btn-sm btn-primary">Explore Housing</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var booking in Model.RecentBookings)
+                        {
+                            <div class="list-group-item px-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="@(booking.PropertyImageUrl ?? "/images/property-placeholder.jpg")"
+                                         class="rounded-2 object-fit-cover flex-shrink-0"
+                                         width="56" height="56" alt="" />
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-semibold text-truncate">
+                                            @booking.PropertyTitle
+                                        </div>
+                                        <div class="small text-muted">
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            @booking.AreaNameEn &nbsp;·&nbsp;
+                                            Check in: @booking.CheckInDate.ToString("MMM dd, yyyy")
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0">
+                                        <span class="badge @booking.StatusBadgeClass mb-1">
+                                            @booking.StatusDisplay
+                                        </span>
+                                        <div class="small fw-semibold">
+                                            EGP @booking.TotalAmount.ToString("N0")
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Right Column *@
+    <div class="col-lg-5">
+
+        @* Recent Notifications *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-transparent d-flex
+                justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="fas fa-bell me-2 text-warning"></i>Notifications
+                    @if (Model.UnreadNotifications > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill ms-1">
+                            @Model.UnreadNotifications
+                        </span>
+                    }
+                </span>
+                <a asp-area="Student"
+                   asp-controller="Notifications"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-secondary">All</a>
+            </div>
+            @if (!Model.RecentNotifications.Any())
+            {
+                <div class="card-body text-center text-muted py-4">
+                    <i class="fas fa-bell-slash fa-2x mb-2 opacity-25"></i>
+                    <p class="mb-0 small">No notifications yet</p>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var n in Model.RecentNotifications)
+                    {
+                        <div class="list-group-item px-3 py-2
+                            @(!n.IsRead ? "bg-primary bg-opacity-5" : "")">
+                            <div class="d-flex gap-2 align-items-start">
+                                <i class="fas @n.IconClass mt-1 flex-shrink-0"></i>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small fw-semibold text-truncate">
+                                        @n.Title
+                                    </div>
+                                    <div class="small text-muted text-truncate">
+                                        @n.Message
+                                    </div>
+                                </div>
+                                <div class="small text-muted flex-shrink-0">
+                                    @n.TimeAgo
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* Saved Homes *@
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent d-flex
+                justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="fas fa-heart me-2 text-danger"></i>Saved Homes
+                </span>
+                <a asp-area="Student"
+                   asp-controller="Favorites"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            @if (!Model.RecentFavorites.Any())
+            {
+                <div class="card-body text-center text-muted py-4">
+                    <i class="fas fa-heart-broken fa-2x mb-2 opacity-25"></i>
+                    <p class="mb-0 small">No saved homes yet</p>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var fav in Model.RecentFavorites)
+                    {
+                        <a href="/Property/@fav.PropertyId"
+                           class="list-group-item list-group-item-action px-3 py-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="@(fav.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                                     class="rounded-2 object-fit-cover flex-shrink-0"
+                                     width="48" height="48" alt="" />
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small fw-semibold text-truncate">
+                                        @fav.Title
+                                    </div>
+                                    <div class="small text-muted">
+                                        @fav.AreaNameEn &nbsp;·&nbsp;
+                                        EGP @fav.PricePerMonth.ToString("N0")/mo
+                                    </div>
+                                </div>
+                                <i class="fas fa-heart text-danger flex-shrink-0"></i>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

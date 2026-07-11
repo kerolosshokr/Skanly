@@ -1,0 +1,145 @@
+﻿@using Skanly.Application.Common.Models
+@using Skanly.Application.Features.Properties.DTOs
+
+@model PagedResult<PropertyCardDto>
+
+@{
+    ViewData["Title"] = "Saved Homes";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-heart me-2 text-danger"></i>Saved Homes
+    </h1>
+    <span class="text-muted">@Model.TotalCount home(s) saved</span>
+</div>
+
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-heart-broken fa-4x mb-3 opacity-25"></i>
+        <h5>No saved homes yet</h5>
+        <p>Tap the heart icon on any listing to save it here.</p>
+        <a href="/Property/Search" class="btn btn-primary">
+            <i class="fas fa-search me-2"></i>Explore Housing
+        </a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        @foreach (var prop in Model.Items)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 property-card hover-lift">
+                    <div class="position-relative">
+                        <img src="@(prop.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                             class="card-img-top object-fit-cover"
+                             height="200" alt="@prop.Title" />
+
+                        @* Remove Favorite *@
+                        <button class="btn btn-sm btn-danger position-absolute
+                            top-0 end-0 m-2 rounded-circle
+                            remove-favorite-btn"
+                                data-property-id="@prop.PropertyId"
+                                style="width:36px;height:36px;"
+                                title="Remove from favorites">
+                            <i class="fas fa-heart"></i>
+                        </button>
+
+                        @* Property Type Badge *@
+                        <span class="badge bg-dark bg-opacity-60
+                            position-absolute bottom-0 start-0 m-2">
+                            @prop.PropertyTypeDisplay
+                        </span>
+                    </div>
+
+                    <div class="card-body">
+                        <h6 class="card-title fw-semibold mb-1 text-truncate">
+                            @prop.Title
+                        </h6>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                            @prop.AreaNameEn
+                            @if (!string.IsNullOrEmpty(prop.UniversityNameEn))
+                            {
+                                <span> · @prop.UniversityNameEn</span>
+                            }
+                        </p>
+
+                        @* Star Rating *@
+                        <div class="d-flex align-items-center gap-1 mb-3">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <i class="fas fa-star @(i <= (int)prop.AverageRating
+                                                                       ? "text-warning" : "text-muted")"
+                               style="font-size:12px;"></i>
+                        }
+                        <span class="small text-muted ms-1">
+                            @prop.AverageRating.ToString("F1")
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-transparent d-flex
+                    justify-content-between align-items-center">
+                    <span class="fw-bold text-primary">
+                        EGP @prop.PricePerMonth.ToString("N0")
+                        <span class="fw-normal text-muted small">/mo</span>
+                    </span>
+                    <a href="/Property/@prop.PropertyId"
+                       class="btn btn-sm btn-outline-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Pagination *@
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@i">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.remove-favorite-btn').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const propertyId = this.dataset.propertyId;
+                const card = this.closest('.col');
+                const token = document.querySelector(
+                    'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+                const res = await fetch('/Student/Favorites/Toggle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `propertyId=${propertyId}`
+                });
+
+                if (res.ok) {
+                    card.style.transition = 'opacity .3s';
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                }
+            });
+        });
+    </script>
+}

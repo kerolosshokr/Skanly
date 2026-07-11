@@ -1,0 +1,378 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Universities/Index.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Universities.DTOs.UniversityDto>
+@{
+    ViewData["Title"] = "Universities Management";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-university me-2 text-primary"></i>Universities
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a asp-action="Index" asp-controller="Dashboard">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item active">Universities</li>
+            </ol>
+        </nav>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Add University
+    </a>
+</div>
+
+@* Alert Messages *@
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* Search & Filter Bar *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           value="@ViewBag.Search"
+                           class="form-control"
+                           placeholder="Search by name (English or Arabic)..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Status</label>
+                <select name="isActive" class="form-select">
+                    <option value="">All</option>
+                    <option value="true" selected="@(ViewBag.IsActive == true)">Active</option>
+                    <option value="false" selected="@(ViewBag.IsActive == false)">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Per Page</label>
+                <select name="pageSize" class="form-select">
+                    @foreach (var size in new[] { 10, 25, 50 })
+                    {
+                        <option value="@size" selected="@(ViewBag.PageSize == size)">@size</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Stats Row *@
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 bg-primary bg-opacity-10 text-center py-3">
+            <div class="fs-2 fw-bold text-primary">@Model.TotalCount</div>
+            <div class="text-muted small">Total Universities</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 bg-success bg-opacity-10 text-center py-3">
+            <div class="fs-2 fw-bold text-success">@Model.Items.Count(u => u.IsActive)</div>
+            <div class="text-muted small">Active</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 bg-warning bg-opacity-10 text-center py-3">
+            <div class="fs-2 fw-bold text-warning">@Model.Items.Count(u => !u.IsActive)</div>
+            <div class="text-muted small">Inactive (this page)</div>
+        </div>
+    </div>
+</div>
+
+@* Table *@
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="universitiesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px">#</th>
+                        <th>University</th>
+                        <th>Location</th>
+                        <th class="text-center">Properties</th>
+                        <th class="text-center">Students</th>
+                        <th class="text-center">Status</th>
+                        <th style="width:160px">Created</th>
+                        <th style="width:140px" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fas fa-university fa-3x mb-3 opacity-25"></i>
+                                <p class="mb-0">No universities found.</p>
+                                <a asp-action="Create" class="btn btn-sm btn-primary mt-2">
+                                    Add First University
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var (uni, index) in Model.Items.Select((u, i) => (u, i)))
+                        {
+                            <tr id="row-@uni.UniversityId">
+                                <td class="text-muted small">
+                                    @(((Model.PageNumber - 1) * Model.PageSize) + index + 1)
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar-circle bg-primary bg-opacity-15
+                                            text-primary rounded-circle d-flex
+                                            align-items-center justify-content-center"
+                                             style="width:42px;height:42px;flex-shrink:0">
+                                            <i class="fas fa-university"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">@uni.NameEn</div>
+                                            <div class="text-muted small" dir="rtl">@uni.NameAr</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(uni.Address))
+                                    {
+                                        <span class="text-muted small">
+                                            <i class="fas fa-map-marker-alt me-1"></i>@uni.Address
+                                        </span>
+                                    }
+                                    <div class="text-muted small font-monospace">
+                                        @uni.Latitude.ToString("F4"), @uni.Longitude.ToString("F4")
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary rounded-pill">
+                                        @uni.TotalProperties
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info rounded-pill">
+                                        @uni.TotalStudents
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input toggle-active"
+                                               type="checkbox"
+                                               role="switch"
+                                               data-id="@uni.UniversityId"
+                                        @(uni.IsActive ? "checked" : "")
+                                               style="cursor:pointer" />
+                                    </div>
+                                </td>
+                                <td class="text-muted small">
+                                    @uni.CreatedAt.ToString("MMM dd, yyyy")
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details"
+                                           asp-route-id="@uni.UniversityId"
+                                           class="btn btn-outline-info"
+                                           title="Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit"
+                                           asp-route-id="@uni.UniversityId"
+                                           class="btn btn-outline-primary"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-outline-danger btn-delete"
+                                                data-id="@uni.UniversityId"
+                                                data-name="@uni.NameEn"
+                                                title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* Pagination *@
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Showing @(((Model.PageNumber - 1) * Model.PageSize) + 1)–
+                @Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount)
+                of @Model.TotalCount universities
+            </small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@(Model.PageNumber - 1)"
+                           asp-route-search="@ViewBag.Search"
+                           asp-route-isActive="@ViewBag.IsActive">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int i = Math.Max(1, Model.PageNumber - 2);
+                          i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-search="@ViewBag.Search"
+                               asp-route-isActive="@ViewBag.IsActive">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@(Model.PageNumber + 1)"
+                           asp-route-search="@ViewBag.Search"
+                           asp-route-isActive="@ViewBag.IsActive">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+@* Delete Confirmation Modal *@
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete University
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">Are you sure you want to delete</p>
+                <strong id="deleteUniversityName" class="fs-6"></strong>
+                <p class="text-muted small mt-2 mb-0">
+                    This action cannot be undone. Universities with associated
+                    students or properties cannot be deleted.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Toggle Active ──────────────────────────────────────────────────────────
+        document.querySelectorAll('.toggle-active').forEach(toggle => {
+            toggle.addEventListener('change', async function () {
+                const id = this.dataset.id;
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                           || '@Html.AntiForgeryToken()';
+
+                const response = await fetch(`/Admin/Universities/ToggleActive`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector(
+                            'input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `id=${id}`
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    this.checked = !this.checked; // revert
+                    showToast('Failed to toggle status: ' + result.message, 'danger');
+                } else {
+                    showToast('Status updated successfully.', 'success');
+                }
+            });
+        });
+
+        // ── Delete Modal ───────────────────────────────────────────────────────────
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+
+                document.getElementById('deleteUniversityName').textContent = name;
+                document.getElementById('deleteForm').action =
+                    `/Admin/Universities/Delete/${id}`;
+
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            });
+        });
+
+        // ── Toast Helper ───────────────────────────────────────────────────────────
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer')
+                || (() => {
+                    const c = document.createElement('div');
+                    c.id = 'toastContainer';
+                    c.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                    c.style.zIndex = '9999';
+                    document.body.appendChild(c);
+                    return c;
+                })();
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"></button>
+                </div>`;
+            toastContainer.appendChild(toast);
+            new bootstrap.Toast(toast, { delay: 3500 }).show();
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        }
+    </script>
+}

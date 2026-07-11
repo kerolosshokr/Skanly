@@ -1,15 +1,28 @@
-﻿using FluentValidation;
+﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Skanly.Application.Common.Interfaces;
 using Skanly.Application.Common.Mappings;
+using Skanly.Application.Features.Universities.Interfaces;
+using Skanly.Application.Features.Universities.Services;
 using Skanly.Application.Interfaces.Services;
 using Skanly.Application.Services;
-using AutoMapper;
 namespace Skanly.Application;
 
 public static class DependencyInjection
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+     
+
+        // FluentValidation — scans all validators in this assembly
+        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+
+        // ── University ─────────────────────────────────────────────────────────
+        services.AddScoped<IUniversityService, UniversityService>();
+
+        // (Parts 9–24 will register their services here)
+
         services.AddAutoMapper(cfg => { }, typeof(MappingProfile).Assembly);
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
@@ -24,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
+       
 
         return services;
     }

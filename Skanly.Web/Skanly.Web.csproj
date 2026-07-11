@@ -12,14 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Admin\Controllers\" />
-    <Folder Include="Areas\Admin\Views\" />
+    <Folder Include="Areas\Admin\Views\Shared\" />
     <Folder Include="Areas\Owner\Controllers\" />
     <Folder Include="Areas\Owner\Views\" />
-    <Folder Include="Areas\Student\Controllers\" />
-    <Folder Include="Areas\Student\Views\" />
-    <Folder Include="Controllers\Api\" />
-    <Folder Include="Middlewares\" />
     <Folder Include="Filters\" />
     <Folder Include="ViewsModels\" />
     <Folder Include="wwwroot\Uploads\" />

@@ -1,0 +1,131 @@
+﻿@using Skanly.Application.Common.Models
+@using Skanly.Application.Features.Notifications.DTOs
+
+@model PagedResult<NotificationDto>
+
+@{
+    ViewData["Title"] = "Notifications";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-bell me-2 text-warning"></i>Notifications
+        <span class="badge bg-danger fs-6 ms-1">
+            @Model.Items.Count(n => !n.IsRead)
+        </span>
+    </h1>
+    @if (Model.Items.Any(n => !n.IsRead))
+    {
+        <form asp-action="MarkAllRead" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-check-double me-1"></i>Mark All Read
+            </button>
+        </form>
+    }
+</div>
+
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-bell-slash fa-4x mb-3 opacity-25"></i>
+        <h5>All caught up!</h5>
+        <p>No notifications to show.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="list-group list-group-flush" id="notificationList">
+            @foreach (var n in Model.Items)
+            {
+                <div class="list-group-item px-4 py-3
+                    @(!n.IsRead ? "bg-primary bg-opacity-5 border-start border-primary border-3" : "")"
+                     id="notif-@n.NotificationId">
+                    <div class="d-flex gap-3 align-items-start">
+
+                        @* Icon *@
+                        <div class="notification-icon flex-shrink-0 mt-1">
+                            <span class="icon-circle d-inline-flex align-items-center
+                                justify-content-center rounded-circle"
+                                  style="width:42px;height:42px;
+                                background:rgba(108,99,255,.1);">
+                                <i class="fas @n.IconClass"></i>
+                            </span>
+                        </div>
+
+                        @* Content *@
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="fw-semibold @(!n.IsRead ? "text-primary" : "")">
+                                    @n.Title
+                                </span>
+                                <span class="text-muted small flex-shrink-0 ms-3">
+                                    @n.TimeAgo
+                                </span>
+                            </div>
+                            <p class="mb-0 small text-muted">@n.Message</p>
+                        </div>
+
+                        @* Mark read button *@
+                        @if (!n.IsRead)
+                        {
+                            <button class="btn btn-sm btn-link text-primary p-0 flex-shrink-0
+                                mark-read-btn"
+                                    data-id="@n.NotificationId"
+                                    title="Mark as read">
+                                <i class="fas fa-circle" style="font-size:10px;"></i>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Pagination *@
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@i">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.mark-read-btn').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const id = this.dataset.id;
+                const token = document.querySelector(
+                    'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+                await fetch('/Student/Notifications/MarkRead', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `id=${id}`
+                });
+
+                // Remove unread styling
+                const item = document.getElementById(`notif-${id}`);
+                item.classList.remove(
+                    'bg-primary', 'bg-opacity-5',
+                    'border-start', 'border-primary', 'border-3');
+                this.remove();
+            });
+        });
+    </script>
+}

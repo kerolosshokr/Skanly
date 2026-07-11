@@ -1,0 +1,265 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Universities/Create.cshtml *@
+@model Skanly.Application.Features.Universities.DTOs.CreateUniversityDto
+@{
+    ViewData["Title"] = "Add University";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-plus-circle me-2 text-primary"></i>Add University
+    </h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-action="Index" asp-controller="Dashboard">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a asp-action="Index">Universities</a>
+            </li>
+            <li class="breadcrumb-item active">Add</li>
+        </ol>
+    </nav>
+</div>
+
+<form asp-action="Create" method="post" id="universityForm">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-4">
+        @* Left Column — Form Fields *@
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent fw-semibold">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>University Information
+                </div>
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger d-none" id="validationSummary"></div>
+
+                    @* English Name *@
+                    <div class="mb-3">
+                        <label asp-for="NameEn" class="form-label fw-semibold">
+                            English Name <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="NameEn"
+                               class="form-control"
+                               placeholder="e.g. Cairo University"
+                               autofocus />
+                        <span asp-validation-for="NameEn" class="text-danger small"></span>
+                    </div>
+
+                    @* Arabic Name *@
+                    <div class="mb-3">
+                        <label asp-for="NameAr" class="form-label fw-semibold">
+                            Arabic Name <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="NameAr"
+                               class="form-control text-end"
+                               dir="rtl"
+                               placeholder="مثال: جامعة القاهرة" />
+                        <span asp-validation-for="NameAr" class="text-danger small"></span>
+                    </div>
+
+                    @* Address *@
+                    <div class="mb-3">
+                        <label asp-for="Address" class="form-label fw-semibold">Address</label>
+                        <input asp-for="Address"
+                               class="form-control"
+                               placeholder="e.g. Giza, Egypt" />
+                        <span asp-validation-for="Address" class="text-danger small"></span>
+                    </div>
+
+                    @* Coordinates *@
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Latitude" class="form-label fw-semibold">
+                                Latitude <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Latitude"
+                                   class="form-control font-monospace"
+                                   id="latInput"
+                                   placeholder="e.g. 30.0289"
+                                   step="0.000001" />
+                            <span asp-validation-for="Latitude" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Longitude" class="form-label fw-semibold">
+                                Longitude <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Longitude"
+                                   class="form-control font-monospace"
+                                   id="lngInput"
+                                   placeholder="e.g. 31.2154"
+                                   step="0.000001" />
+                            <span asp-validation-for="Longitude" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    @* Pick on Map button *@
+                    <div class="mb-3">
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                id="pickOnMapBtn">
+                            <i class="fas fa-crosshairs me-1"></i>Pick Location on Map
+                        </button>
+                        <small class="text-muted ms-2">Or click on the map below</small>
+                    </div>
+
+                    @* Description *@
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                        <textarea asp-for="Description"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="Brief description of the university..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    @* Active Toggle *@
+                    <div class="form-check form-switch">
+                        <input asp-for="IsActive"
+                               class="form-check-input"
+                               type="checkbox"
+                               role="switch"
+                               checked />
+                        <label asp-for="IsActive" class="form-check-label fw-semibold">
+                            Active (visible to users)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-transparent d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save me-1"></i>Save University
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* Right Column — Map Preview *@
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent fw-semibold">
+                    <i class="fas fa-map me-2 text-success"></i>Location Preview
+                </div>
+                <div class="card-body p-0">
+                    <div id="mapPreview"
+                         style="height:400px;border-radius:0 0 8px 8px;"></div>
+                </div>
+            </div>
+
+            @* Tips Card *@
+            <div class="card shadow-sm mt-3 border-warning border-opacity-50">
+                <div class="card-body">
+                    <h6 class="fw-semibold text-warning mb-2">
+                        <i class="fas fa-lightbulb me-2"></i>Tips
+                    </h6>
+                    <ul class="list-unstyled small text-muted mb-0">
+                        <li class="mb-1">
+                            <i class="fas fa-check text-success me-1"></i>
+                            Click the map to auto-fill coordinates
+                        </li>
+                        <li class="mb-1">
+                            <i class="fas fa-check text-success me-1"></i>
+                            Use Google Maps to find exact coordinates
+                        </li>
+                        <li class="mb-1">
+                            <i class="fas fa-check text-success me-1"></i>
+                            Students will see properties sorted by distance
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-1"></i>
+                            Arabic name is shown to Arabic-language users
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // ── Map Initialization ─────────────────────────────────────────────────────
+        // Leaflet.js (open-source, no API key needed for map display)
+        // Full Google Maps integration is covered in Part 19.
+        let map, marker;
+
+        function initMap() {
+            const defaultLat = 30.0444;  // Cairo center
+            const defaultLng = 31.2357;
+
+            map = L.map('mapPreview').setView([defaultLat, defaultLng], 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Place marker at current coordinate values if editing
+            const lat = parseFloat(document.getElementById('latInput').value);
+            const lng = parseFloat(document.getElementById('lngInput').value);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                placeMarker(lat, lng);
+                map.setView([lat, lng], 14);
+            }
+
+            // Click on map → fill coordinates
+            map.on('click', function (e) {
+                placeMarker(e.latlng.lat, e.latlng.lng);
+                document.getElementById('latInput').value = e.latlng.lat.toFixed(6);
+                document.getElementById('lngInput').value = e.latlng.lng.toFixed(6);
+            });
+        }
+
+        function placeMarker(lat, lng) {
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+            marker.on('dragend', function () {
+                const pos = marker.getLatLng();
+                document.getElementById('latInput').value = pos.lat.toFixed(6);
+                document.getElementById('lngInput').value = pos.lng.toFixed(6);
+            });
+        }
+
+        // Update map when coordinates are typed manually
+        ['latInput', 'lngInput'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function () {
+                const lat = parseFloat(document.getElementById('latInput').value);
+                const lng = parseFloat(document.getElementById('lngInput').value);
+                if (!isNaN(lat) && !isNaN(lng) &&
+                    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                    placeMarker(lat, lng);
+                    map.setView([lat, lng], 14);
+                }
+            });
+        });
+
+        document.getElementById('pickOnMapBtn')?.addEventListener('click', function () {
+            map.getContainer().scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Load Leaflet CSS + JS dynamically (or add to _Layout.cshtml)
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = initMap;
+        document.head.appendChild(script);
+
+        // ── Form Submit Spinner ────────────────────────────────────────────────────
+        document.getElementById('universityForm').addEventListener('submit', function () {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Saving...`;
+        });
+    </script>
+}

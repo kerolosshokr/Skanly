@@ -1,0 +1,22 @@
+﻿// Skanly.Application/Common/Interfaces/Repositories/IFavoriteRepository.cs
+using Skanly.Domain.Entities;
+
+namespace Skanly.Application.Common.Interfaces.Repositories;
+
+public interface IFavoriteRepository : IRepository<Favorite>
+{
+    Task<bool> IsFavoritedAsync(
+        string studentId,
+        int propertyId,
+        CancellationToken ct = default);
+
+    /// <summary>Returns all favourited properties for a student with full property data.</summary>
+    Task<IReadOnlyList<Favorite>> GetByStudentIdAsync(
+        string studentId,
+        CancellationToken ct = default);
+
+    Task<Favorite?> GetByStudentAndPropertyAsync(
+        string studentId,
+        int propertyId,
+        CancellationToken ct = default);
+}

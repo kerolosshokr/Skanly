@@ -1,0 +1,153 @@
+﻿@* Skanly.Web/Areas/Student/Views/Profile/Index.cshtml *@
+@model Skanly.Application.Features.Students.DTOs.StudentProfileDto
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+
+    @* Profile Card *@
+    <div class="col-lg-4">
+        <div class="card shadow-sm text-center">
+            <div class="card-body py-4">
+
+                @* Avatar with upload overlay *@
+                <div class="position-relative d-inline-block mb-3">
+                    <img id="avatarPreview"
+                         src="@(Model.ProfileImageUrl ?? "/images/default-avatar.png")"
+                         class="rounded-circle object-fit-cover border border-3 border-primary"
+                         width="110" height="110" alt="Avatar" />
+                    <label for="imageUpload"
+                           class="position-absolute bottom-0 end-0
+                        btn btn-sm btn-primary rounded-circle
+                        d-flex align-items-center justify-content-center"
+                           style="width:34px;height:34px;cursor:pointer;"
+                           title="Change photo">
+                        <i class="fas fa-camera" style="font-size:12px;"></i>
+                    </label>
+                    <input type="file" id="imageUpload" class="d-none"
+                           accept="image/*" />
+                </div>
+
+                <h5 class="fw-bold mb-0">@Model.FullName</h5>
+                <p class="text-muted small mb-3">@Model.Email</p>
+
+                @* Verification Badge *@
+                @if (Model.IsIdentityVerified)
+                {
+                    <span class="badge bg-success px-3 py-2">
+                        <i class="fas fa-shield-check me-1"></i>Identity Verified
+                    </span>
+                }
+                else
+                {
+                    <a asp-action="VerifyIdentity"
+                       class="badge bg-warning text-dark px-3 py-2 text-decoration-none">
+                        <i class="fas fa-shield-alt me-1"></i>@Model.VerificationStatus
+                    </a>
+                }
+
+                @* Stats row *@
+                <div class="row g-0 border-top mt-3 pt-3 text-center">
+                    <div class="col">
+                        <div class="fw-bold">@Model.TotalBookings</div>
+                        <div class="small text-muted">Bookings</div>
+                    </div>
+                    <div class="col border-start border-end">
+                        <div class="fw-bold">@Model.TotalFavorites</div>
+                        <div class="small text-muted">Saved</div>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold">@Model.TotalReviews</div>
+                        <div class="small text-muted">Reviews</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-transparent">
+                <a asp-action="Edit" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @* Info Column *@
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-user me-2 text-primary"></i>Personal Information
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    @{
+                        var fields = new[]
+                        {
+                            new { Label = "First Name",   Value = Model.FirstName },
+                            new { Label = "Last Name",    Value = Model.LastName },
+                            new { Label = "Email",        Value = Model.Email },
+                            new { Label = "Phone",        Value = Model.PhoneNumber ?? "—" },
+                            new { Label = "Gender",       Value = Model.GenderDisplay },
+                            new { Label = "Date of Birth",Value = Model.BirthDate?.ToString("MMMM dd, yyyy") ?? "—" },
+                            new { Label = "University",   Value = Model.UniversityNameEn ?? "Not selected" },
+                            new { Label = "Member Since", Value = Model.CreatedAt.ToString("MMMM yyyy") }
+                        };
+                    }
+                    @foreach (var field in fields)
+                    {
+                        <div class="col-sm-6">
+                            <label class="text-muted small">@field.Label</label>
+                            <div class="fw-semibold">@field.Value</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Profile Image Upload ───────────────────────────────────────────────────
+        document.getElementById('imageUpload').addEventListener('change', async function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            // Local preview immediately
+            const reader = new FileReader();
+            reader.onload = e =>
+                document.getElementById('avatarPreview').src = e.target.result;
+            reader.readAsDataURL(file);
+
+            // Upload to server
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('__RequestVerificationToken',
+                document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '');
+
+            try {
+                const res = await fetch('/Student/Profile/UploadImage', {
+                    method: 'POST', body: formData
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    alert('Upload failed: ' + data.message);
+                    document.getElementById('avatarPreview').src =
+                        '@(Model.ProfileImageUrl ?? "/images/default-avatar.png")';
+                }
+            } catch {
+                alert('Upload failed. Please try again.');
+            }
+        });
+    </script>
+}

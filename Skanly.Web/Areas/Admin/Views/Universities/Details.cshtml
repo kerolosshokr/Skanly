@@ -1,0 +1,112 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Universities/Details.cshtml *@
+@model Skanly.Application.Features.Universities.DTOs.UniversityDto
+@{
+    ViewData["Title"] = Model.NameEn;
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">@Model.NameEn</h1>
+        <p class="text-muted mb-0" dir="rtl">@Model.NameAr</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit"
+           asp-route-id="@Model.UniversityId"
+           class="btn btn-primary">
+            <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    @* Info Card *@
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-4">
+                <div class="display-4 text-primary mb-3">
+                    <i class="fas fa-university"></i>
+                </div>
+                <h4 class="fw-bold">@Model.NameEn</h4>
+                <p class="text-muted" dir="rtl">@Model.NameAr</p>
+                <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary") fs-6">
+                    @(Model.IsActive ? "Active" : "Inactive")
+                </span>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Properties</span>
+                    <span class="badge bg-primary rounded-pill">@Model.TotalProperties</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Students</span>
+                    <span class="badge bg-info rounded-pill">@Model.TotalStudents</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Added</span>
+                    <span>@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                </li>
+                @if (!string.IsNullOrEmpty(Model.Address))
+                {
+                    <li class="list-group-item">
+                        <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                        @Model.Address
+                    </li>
+                }
+                <li class="list-group-item">
+                    <div class="small text-muted">Coordinates</div>
+                    <code>@Model.Latitude.ToString("F6"), @Model.Longitude.ToString("F6")</code>
+                </li>
+            </ul>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-transparent fw-semibold">Description</div>
+                <div class="card-body text-muted">@Model.Description</div>
+            </div>
+        }
+    </div>
+
+    @* Map Column *@
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-map me-2 text-success"></i>Location
+            </div>
+            <div class="card-body p-0">
+                <div id="detailMap" style="height:450px;border-radius:0 0 8px 8px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = function () {
+            const lat = @Model.Latitude;
+            const lng = @Model.Longitude;
+            const name = '@Html.Raw(Model.NameEn)';
+
+            const map = L.map('detailMap').setView([lat, lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup(`<strong>${name}</strong>`)
+                .openPopup();
+        };
+        document.head.appendChild(script);
+    </script>
+}
