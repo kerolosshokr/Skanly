@@ -1,9 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Skanly.Web.Controllers
+namespace Skanly.Web.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController 
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult Index()
     {
-       
+        return View();
     }
 }

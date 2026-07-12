@@ -1,0 +1,434 @@
+﻿@* Skanly.Web/Areas/Owner/Views/Dashboard/Index.cshtml *@
+@model Skanly.Application.Features.Owners.DTOs.OwnerDashboardDto
+@{
+    ViewData["Title"] = "Owner Dashboard";
+    Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+}
+
+@* Welcome Banner *@
+<div class="welcome-banner rounded-4 p-4 mb-4 text-white"
+     style="background:linear-gradient(135deg,#0F3460,#16213E);">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="position-relative">
+                <img src="@(Model.ProfileImageUrl ?? "/images/default-avatar.png")"
+                     class="rounded-circle object-fit-cover border border-white border-3"
+                     width="72" height="72" alt="Avatar" />
+                @if (Model.IsIdentityVerified)
+                {
+                    <span class="position-absolute bottom-0 end-0 bg-success
+                        rounded-circle d-flex align-items-center
+                        justify-content-center"
+                          style="width:22px;height:22px;">
+                        <i class="fas fa-check text-white" style="font-size:10px;"></i>
+                    </span>
+                }
+            </div>
+            <div>
+                <h4 class="mb-0 fw-bold">@Model.FullName</h4>
+                <p class="mb-0 opacity-75 small">Property Owner</p>
+            </div>
+        </div>
+        <a asp-area="Owner"
+           asp-controller="Properties"
+           asp-action="Create"
+           class="btn btn-light fw-semibold">
+            <i class="fas fa-plus me-2"></i>Add Property
+        </a>
+    </div>
+</div>
+
+@* Verification Alert *@
+@if (!Model.IsIdentityVerified)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-3 rounded-3 mb-4">
+        <i class="fas fa-shield-alt fa-2x text-warning"></i>
+        <div class="flex-grow-1">
+            <strong>Complete Identity Verification</strong>
+            <p class="mb-0 small">
+                Status: <strong>@Model.VerificationStatus</strong>.
+                Verified owners can list properties and receive bookings.
+            </p>
+        </div>
+        @if (Model.VerificationStatus == "Not Submitted")
+        {
+            <a asp-area="Owner"
+               asp-controller="Profile"
+               asp-action="VerifyIdentity"
+               class="btn btn-warning btn-sm fw-semibold text-nowrap">
+                Verify Now
+            </a>
+        }
+    </div>
+}
+
+@* Stats Cards *@
+<div class="row g-3 mb-4">
+    @{
+        var stats = new[]
+        {
+            new { Label = "Total Properties",  Value = Model.TotalProperties.ToString(),
+                  Icon = "fa-building",         Color = "primary" },
+            new { Label = "Active Listings",   Value = Model.ActiveListings.ToString(),
+                  Icon = "fa-check-circle",     Color = "success" },
+            new { Label = "Pending Requests",  Value = Model.PendingRequests.ToString(),
+                  Icon = "fa-clock",            Color = "warning" },
+            new { Label = "Total Bookings",    Value = Model.TotalBookings.ToString(),
+                  Icon = "fa-calendar-check",   Color = "info" },
+            new { Label = "Monthly Earnings",  Value = $"EGP {Model.MonthlyEarnings:N0}",
+                  Icon = "fa-wallet",           Color = "success" },
+            new { Label = "Total Earnings",    Value = $"EGP {Model.TotalEarnings:N0}",
+                  Icon = "fa-coins",            Color = "primary" },
+        };
+    }
+    @foreach (var stat in stats)
+    {
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm text-center h-100 hover-lift">
+                <div class="card-body py-3 px-2">
+                    <div class="mb-2">
+                        <span class="icon-circle bg-@stat.Color bg-opacity-15
+                            text-@stat.Color rounded-circle d-inline-flex
+                            align-items-center justify-content-center"
+                              style="width:46px;height:46px;">
+                            <i class="fas @stat.Icon"></i>
+                        </span>
+                    </div>
+                    <div class="fw-bold fs-6">@stat.Value</div>
+                    <div class="text-muted" style="font-size:11px;">@stat.Label</div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Main Grid *@
+<div class="row g-4">
+
+    @* Pending Requests *@
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent d-flex
+                justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="fas fa-inbox me-2 text-warning"></i>
+                    Pending Booking Requests
+                    @if (Model.PendingRequests > 0)
+                    {
+                        <span class="badge bg-warning text-dark rounded-pill ms-1">
+                            @Model.PendingRequests
+                        </span>
+                    }
+                </span>
+                <a asp-area="Owner"
+                   asp-controller="BookingRequests"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-warning">View All</a>
+            </div>
+
+            @if (!Model.PendingBookingRequests.Any())
+            {
+                <div class="card-body text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+                    <p>No pending requests. All caught up!</p>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var req in Model.PendingBookingRequests)
+                    {
+                        <div class="list-group-item px-4 py-3"
+                             id="request-@req.BookingId">
+                            <div class="d-flex align-items-center gap-3">
+
+                                @* Student Avatar *@
+                                <img src="@(req.StudentImageUrl ?? "/images/default-avatar.png")"
+                                     class="rounded-circle object-fit-cover flex-shrink-0"
+                                     width="48" height="48" alt="" />
+
+                                @* Info *@
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-semibold">@req.StudentFullName</span>
+                                        @if (req.StudentIsVerified)
+                                        {
+                                            <i class="fas fa-badge-check text-success"
+                                               title="Verified Identity"
+                                               style="font-size:14px;"></i>
+                                        }
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-home me-1"></i>@req.PropertyTitle
+                                        &nbsp;·&nbsp;
+                                        <i class="fas fa-calendar me-1"></i>
+                                        @req.CheckInDate.ToString("MMM dd, yyyy")
+                                    </div>
+                                    <div class="small text-muted">
+                                        @req.TimeAgo
+                                    </div>
+                                </div>
+
+                                @* Amount *@
+                                <div class="text-end flex-shrink-0 me-2">
+                                    <div class="fw-bold text-success">
+                                        EGP @req.TotalAmount.ToString("N0")
+                                    </div>
+                                    <div class="small text-muted">
+                                        Deposit: EGP @req.DepositAmount.ToString("N0")
+                                    </div>
+                                </div>
+
+                                @* Actions *@
+                                <div class="d-flex gap-2 flex-shrink-0">
+                                    <button class="btn btn-success btn-sm accept-btn"
+                                            data-booking-id="@req.BookingId"
+                                            title="Accept">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm reject-btn"
+                                            data-booking-id="@req.BookingId"
+                                            title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <a asp-area="Owner"
+                                       asp-controller="BookingRequests"
+                                       asp-action="Details"
+                                       asp-route-id="@req.BookingId"
+                                       class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Right Column *@
+    <div class="col-lg-4">
+
+        @* Earnings Chart *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-chart-bar me-2 text-success"></i>
+                Earnings (Last 6 Months)
+            </div>
+            <div class="card-body">
+                <canvas id="earningsChart" height="180"></canvas>
+            </div>
+            <div class="card-footer bg-transparent text-center">
+                <a asp-area="Owner"
+                   asp-controller="Earnings"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-success">Full Report</a>
+            </div>
+        </div>
+
+        @* Recent Notifications *@
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent d-flex
+                justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="fas fa-bell me-2 text-warning"></i>Notifications
+                    @if (Model.UnreadNotifications > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill ms-1">
+                            @Model.UnreadNotifications
+                        </span>
+                    }
+                </span>
+                <a asp-area="Owner"
+                   asp-controller="Notifications"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-secondary">All</a>
+            </div>
+            @if (!Model.RecentNotifications.Any())
+            {
+                <div class="card-body text-center text-muted py-4">
+                    <i class="fas fa-bell-slash fa-2x mb-2 opacity-25"></i>
+                    <p class="mb-0 small">No notifications yet</p>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var n in Model.RecentNotifications)
+                    {
+                        <div class="list-group-item px-3 py-2
+                            @(!n.IsRead ? "bg-warning bg-opacity-5" : "")">
+                            <div class="d-flex gap-2">
+                                <i class="fas @n.IconClass mt-1 flex-shrink-0"></i>
+                                <div class="min-w-0">
+                                    <div class="small fw-semibold text-truncate">
+                                        @n.Title
+                                    </div>
+                                    <div class="small text-muted">@n.TimeAgo</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@* Reject Modal *@
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-times-circle me-2"></i>Reject Booking
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">
+                    Please provide a reason so the student understands why their
+                    request was declined.
+                </p>
+                <label class="form-label fw-semibold">Rejection Reason</label>
+                <textarea id="rejectionReason"
+                          class="form-control"
+                          rows="3"
+                          placeholder="e.g. Property already booked for that period..."></textarea>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmRejectBtn">
+                    <i class="fas fa-times me-1"></i>Confirm Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // ── Earnings Chart ─────────────────────────────────────────────────────────
+        const chartLabels = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                    Model.EarningsChart.Select(p => p.MonthLabel)));
+        const chartData = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                    Model.EarningsChart.Select(p => p.Amount)));
+
+        new Chart(document.getElementById('earningsChart'), {
+        type: 'bar',
+        data: {
+        labels: chartLabels,
+        datasets: [{
+        label: 'Earnings (EGP)',
+        data: chartData,
+        backgroundColor: 'rgba(22,196,100,0.25)',
+        borderColor: '#16C464',
+        borderWidth: 2,
+        borderRadius: 4
+        }]
+        },
+        options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+        y: {
+        beginAtZero: true,
+        ticks: {
+        callback: v => 'EGP ' + v.toLocaleString()
+        }
+        }
+        }
+        }
+        });
+
+        // ── Booking Request Actions ────────────────────────────────────────────────
+        let currentBookingId = null;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        async function handleBooking(bookingId, accept, rejectionReason = null) {
+        const res = await fetch('/Owner/BookingRequests/Handle', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        'RequestVerificationToken': token
+        },
+        body: JSON.stringify({ bookingId, accept, rejectionReason })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+        const row = document.getElementById(`request-${bookingId}`);
+        if (row) {
+        row.style.transition = 'opacity .3s';
+        row.style.opacity = '0';
+        setTimeout(() => row.remove(), 300);
+        }
+        showToast(data.message, accept ? 'success' : 'secondary');
+        } else {
+        showToast('Error: ' + data.message, 'danger');
+        }
+        }
+
+        // Accept buttons
+        document.querySelectorAll('.accept-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+        const id = parseInt(this.dataset.bookingId);
+        if (confirm('Accept this booking request?'))
+        handleBooking(id, true);
+        });
+        });
+
+        // Reject buttons — open modal
+        document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+        currentBookingId = parseInt(this.dataset.bookingId);
+        document.getElementById('rejectionReason').value = '';
+        new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        });
+        });
+
+        // Confirm rejection
+        document.getElementById('confirmRejectBtn').addEventListener('click', function () {
+        const reason = document.getElementById('rejectionReason').value.trim();
+        if (!reason) {
+        document.getElementById('rejectionReason').classList.add('is-invalid');
+        return;
+        }
+        bootstrap.Modal.getInstance(
+        document.getElementById('rejectModal')).hide();
+        handleBooking(currentBookingId, false, reason);
+        });
+
+        // ── Toast Helper ───────────────────────────────────────────────────────────
+        function showToast(message, type = 'success') {
+        const c = document.getElementById('toastContainer') || (() => {
+        const el = document.createElement('div');
+        el.id = 'toastContainer';
+        el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        el.style.zIndex = '9999';
+        document.body.appendChild(el);
+        return el;
+        })();
+
+        const t = document.createElement('div');
+        t.className = `toast align-items-center text-bg-${type} border-0`;
+        t.setAttribute('role', 'alert');
+        t.innerHTML = `
+        <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"></button>
+        </div>`;
+        c.appendChild(t);
+        new bootstrap.Toast(t, { delay: 4000 }).show();
+        t.addEventListener('hidden.bs.toast', () => t.remove());
+        }
+    </script>
+}

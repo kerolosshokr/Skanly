@@ -1,0 +1,166 @@
+﻿@* Skanly.Web/Views/Property/_PropertyGrid.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Properties.DTOs.PropertyCardDto>
+
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-search fa-4x mb-3 opacity-25"></i>
+        <h5>No properties found</h5>
+        <p>Try adjusting your filters or search term.</p>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="propertyList">
+        @foreach (var prop in Model.Items)
+        {
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm property-card">
+                    <div class="position-relative overflow-hidden"
+                         style="border-radius:8px 8px 0 0;">
+                        <a href="/Property/@prop.PropertyId">
+                            <img src="@(prop.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                                 class="card-img-top object-fit-cover"
+                                 height="210"
+                                 alt="@prop.Title"
+                                 loading="lazy" />
+                        </a>
+
+                        @* Favorite Toggle *@
+                        <button class="btn position-absolute top-0 end-0 m-2
+                            p-2 rounded-circle bg-white shadow-sm
+                            favorite-btn"
+                                data-property-id="@prop.PropertyId"
+                                data-favorited="@prop.IsFavorited.ToString().ToLower()"
+                                style="width:38px;height:38px;"
+                                title="@(prop.IsFavorited ? "Remove from favorites" : "Save")">
+                            <i class="fas fa-heart @(prop.IsFavorited ? "text-danger" : "text-muted")"></i>
+                        </button>
+
+                        @* Type Badge *@
+                        <span class="badge bg-primary position-absolute bottom-0 start-0 m-2">
+                            @prop.PropertyTypeDisplay
+                        </span>
+                    </div>
+
+                    <div class="card-body pb-2">
+                        <a href="/Property/@prop.PropertyId"
+                           class="text-decoration-none text-dark">
+                            <h6 class="fw-semibold mb-1 text-truncate"
+                                title="@prop.Title">
+                                @prop.Title
+                            </h6>
+                        </a>
+                        <div class="small text-muted mb-2">
+                            <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                            @prop.AreaNameEn
+                            @if (!string.IsNullOrEmpty(prop.UniversityNameEn))
+                            {
+                                <span class="ms-2">
+                                    <i class="fas fa-graduation-cap me-1 text-primary"></i>
+                                    @prop.UniversityNameEn
+                                </span>
+                            }
+                        </div>
+
+                        @* Star Rating *@
+                        <div class="d-flex align-items-center gap-1">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <i class="fas fa-star @(i <= Math.Round((double)prop.AverageRating)
+                                                                       ? "text-warning" : "text-muted opacity-25")"
+                               style="font-size:12px;"></i>
+                        }
+                        <span class="small text-muted ms-1">
+                            @prop.AverageRating.ToString("F1")
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-transparent border-0 pt-0
+                    d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-primary fs-6">
+                            EGP @prop.PricePerMonth.ToString("N0")
+                        </span>
+                        <span class="text-muted small">/month</span>
+                    </div>
+                    <a href="/Property/@prop.PropertyId"
+                       class="btn btn-sm btn-outline-primary px-3">
+                        View
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Pagination *@
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Search"
+                   asp-route-page="@(Model.PageNumber - 1)">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            @for (int i = Math.Max(1, Model.PageNumber - 2);
+                  i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+            {
+                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Search"
+                       asp-route-page="@i">@i</a>
+                </li>
+            }
+            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                <a class="page-link"
+                   asp-action="Search"
+                   asp-route-page="@(Model.PageNumber + 1)">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+}
+}
+
+<script>
+    // Favorite button toggle
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        btn.addEventListener('click', async function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const isAuth = '@User.Identity?.IsAuthenticated' === 'True';
+            if (!isAuth) {
+                window.location.href = '/Account/Login?returnUrl=' +
+                    encodeURIComponent(window.location.pathname);
+                return;
+            }
+
+            const propertyId = this.dataset.propertyId;
+            const icon = this.querySelector('i');
+
+            const res = await fetch('/Student/Favorites/Toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector(
+                        'input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: `propertyId=${propertyId}`
+            });
+
+            if (res.ok) {
+                const favorited = icon.classList.contains('text-danger');
+                icon.classList.toggle('text-danger', !favorited);
+                icon.classList.toggle('text-muted', favorited);
+                this.dataset.favorited = (!favorited).toString();
+            }
+        });
+    });
+</script>

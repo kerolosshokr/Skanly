@@ -1,0 +1,434 @@
+﻿@* Skanly.Web/Views/Payment/Checkout.cshtml *@
+@model Skanly.Application.Features.Payments.DTOs.CheckoutViewModel
+@{
+    ViewData["Title"] = "Secure Checkout";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@using Skanly.Domain.Enums
+
+<div class="container py-5" style="max-width:960px;">
+    <div class="text-center mb-5">
+        <div class="mb-2">
+            <i class="fas fa-lock text-success fa-2x"></i>
+        </div>
+        <h2 class="fw-bold">Secure Checkout</h2>
+        <p class="text-muted">Your payment is protected with SSL encryption</p>
+    </div>
+
+    <div class="row g-4">
+
+        @* ── Payment Form ──────────────────────────────────────────────────── *@
+        <div class="col-lg-7">
+            <form asp-controller="Payment"
+                  asp-action="Process"
+                  method="post"
+                  id="paymentForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="PaymentForm.BookingId" />
+
+                @* Validation Summary *@
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger mb-4"
+                     id="validationSummary"
+                     style="display:none"></div>
+
+                @* ── Payment Method Selection ─────────────────────────────── *@
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent fw-semibold">
+                        <i class="fas fa-credit-card me-2 text-primary"></i>
+                        Choose Payment Method
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3" id="methodSelector">
+
+                            @* Card Methods *@
+                            @foreach (var (method, icon, label, color) in new[]
+                            {
+                                (PaymentMethod.Visa,         "fa-cc-visa",
+                                 "Visa",          "#1A1F71"),
+                                (PaymentMethod.Mastercard,   "fa-cc-mastercard",
+                                 "Mastercard",    "#EB001B"),
+                            })
+                            {
+                                <div class="col-6">
+                                    <label class="method-option w-100"
+                                           for="method_@((int)method)">
+                                        <input type="radio"
+                                               asp-for="PaymentForm.PaymentMethod"
+                                               value="@((int)method)"
+                                               id="method_@((int)method)"
+                                               class="method-radio d-none" />
+                                        <div class="border rounded-3 p-3 text-center
+                                            hover-lift"
+                                             style="cursor:pointer;transition:all .15s;">
+                                            <i class="fab @icon mb-2 d-block"
+                                               style="font-size:2rem;color:@color;"></i>
+                                            <span class="small fw-semibold">@label</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+
+                            @* Wallet Methods *@
+                            @foreach (var (method, icon, label, color) in new[]
+                            {
+                                (PaymentMethod.VodafoneCash, "fa-mobile-alt",
+                                 "Vodafone Cash", "#E60000"),
+                                (PaymentMethod.InstaPay,     "fa-bolt",
+                                 "InstaPay",      "#6C63FF"),
+                                (PaymentMethod.Fawry,        "fa-store",
+                                 "Fawry",         "#F5A623"),
+                            })
+                            {
+                                <div class="col-4">
+                                    <label class="method-option w-100"
+                                           for="method_@((int)method)">
+                                        <input type="radio"
+                                               asp-for="PaymentForm.PaymentMethod"
+                                               value="@((int)method)"
+                                               id="method_@((int)method)"
+                                               class="method-radio d-none" />
+                                        <div class="border rounded-3 p-3 text-center
+                                            hover-lift"
+                                             style="cursor:pointer;transition:all .15s;">
+                                            <i class="fas @icon mb-2 d-block"
+                                               style="font-size:1.8rem;color:@color;"></i>
+                                            <span class="small fw-semibold">@label</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Card Details (shown for Visa/Mastercard) ──────────────── *@
+                <div class="card border-0 shadow-sm mb-4" id="cardSection"
+                     style="display:none;">
+                    <div class="card-header bg-transparent fw-semibold">
+                        <i class="fas fa-credit-card me-2 text-primary"></i>
+                        Card Details
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Card Number
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="fas fa-credit-card text-muted"></i>
+                                </span>
+                                <input asp-for="PaymentForm.CardNumber"
+                                       class="form-control"
+                                       placeholder="0000 0000 0000 0000"
+                                       maxlength="19"
+                                       id="cardNumberInput" />
+                            </div>
+                            <span asp-validation-for="PaymentForm.CardNumber"
+                                  class="text-danger small"></span>
+                            <div class="small text-muted mt-1">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Simulation: use any 16 digits. End in 0000 to test failure.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Cardholder Name
+                            </label>
+                            <input asp-for="PaymentForm.CardHolderName"
+                                   class="form-control"
+                                   placeholder="Name as on card" />
+                            <span asp-validation-for="PaymentForm.CardHolderName"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <label class="form-label fw-semibold">
+                                    Expiry Date
+                                </label>
+                                <input asp-for="PaymentForm.CardExpiry"
+                                       class="form-control"
+                                       placeholder="MM/YY"
+                                       maxlength="5"
+                                       id="expiryInput" />
+                                <span asp-validation-for="PaymentForm.CardExpiry"
+                                      class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">CVV</label>
+                                <div class="input-group">
+                                    <input asp-for="PaymentForm.CardCvv"
+                                           class="form-control"
+                                           placeholder="•••"
+                                           maxlength="4"
+                                           type="password" />
+                                    <span class="input-group-text bg-white"
+                                          title="3-4 digits on back of card">
+                                        <i class="fas fa-question-circle text-muted"></i>
+                                    </span>
+                                </div>
+                                <span asp-validation-for="PaymentForm.CardCvv"
+                                      class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Wallet Details (shown for VodafoneCash / InstaPay) ─────── *@
+                <div class="card border-0 shadow-sm mb-4" id="walletSection"
+                     style="display:none;">
+                    <div class="card-header bg-transparent fw-semibold">
+                        <i class="fas fa-mobile-alt me-2 text-primary"></i>
+                        Mobile Wallet
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Registered Mobile Number
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">+20</span>
+                                <input asp-for="PaymentForm.MobileNumber"
+                                       class="form-control"
+                                       placeholder="01XXXXXXXXX"
+                                       maxlength="11" />
+                            </div>
+                            <span asp-validation-for="PaymentForm.MobileNumber"
+                                  class="text-danger small"></span>
+                            <div class="small text-muted mt-1">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Simulation: end in 9999 (VCash) or 8888 (InstaPay) to test failure.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Fawry Info (shown for Fawry) ─────────────────────────── *@
+                <div class="card border-0 shadow-sm mb-4 border-warning border-opacity-50"
+                     id="fawrySection" style="display:none;">
+                    <div class="card-body">
+                        <h6 class="fw-semibold text-warning mb-3">
+                            <i class="fas fa-store me-2"></i>How Fawry Works
+                        </h6>
+                        <ol class="small text-muted ps-3 mb-0">
+                            <li class="mb-1">Click "Pay with Fawry" below</li>
+                            <li class="mb-1">You'll receive a reference code</li>
+                            <li class="mb-1">Visit any Fawry outlet</li>
+                            <li>Pay within 48 hours using the reference</li>
+                        </ol>
+                    </div>
+                </div>
+
+                @* ── Submit Button ─────────────────────────────────────────── *@
+                <button type="submit"
+                        class="btn btn-success btn-lg w-100"
+                        id="payBtn"
+                        disabled>
+                    <i class="fas fa-lock me-2"></i>
+                    <span id="payBtnText">Select a payment method</span>
+                </button>
+
+                <p class="text-center text-muted small mt-3 mb-0">
+                    <i class="fas fa-shield-alt text-success me-1"></i>
+                    Secured by 256-bit SSL encryption
+                </p>
+            </form>
+        </div>
+
+        @* ── Order Summary ──────────────────────────────────────────────────── *@
+        <div class="col-lg-5">
+            <div style="position:sticky;top:80px;">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent fw-semibold">
+                        <i class="fas fa-receipt me-2 text-primary"></i>
+                        Order Summary
+                    </div>
+                    <div class="card-body p-0">
+
+                        @* Property Info *@
+                        <div class="p-4 border-bottom">
+                            <div class="d-flex gap-3 align-items-center">
+                                <img src="@(Model.PropertyImageUrl ?? "/images/property-placeholder.jpg")"
+                                     class="rounded-2 object-fit-cover flex-shrink-0"
+                                     width="72" height="60" alt="" />
+                                <div>
+                                    <div class="fw-semibold">@Model.PropertyTitle</div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        @Model.AreaNameEn
+                                    </div>
+                                    <div class="small text-muted">
+                                        Owner: @Model.OwnerFullName
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Dates *@
+                        <div class="p-4 border-bottom">
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">Check In</span>
+                                <span class="fw-semibold">
+                                    @Model.CheckInDate.ToString("MMM dd, yyyy")
+                                </span>
+                            </div>
+                            @if (Model.CheckOutDate.HasValue)
+                            {
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-muted">Check Out</span>
+                                    <span class="fw-semibold">
+                                        @Model.CheckOutDate.Value.ToString("MMM dd, yyyy")
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        @* Amount Breakdown *@
+                        <div class="p-4 border-bottom">
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">Total Rent</span>
+                                <span>EGP @Model.TotalAmount.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">Platform Fee</span>
+                                <span class="text-danger">
+                                    @Model.CommissionRate%
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between small">
+                                <span class="text-muted">Deposit Due Now</span>
+                                <span class="fw-bold text-primary">
+                                    EGP @Model.DepositAmount.ToString("N0")
+                                </span>
+                            </div>
+                        </div>
+
+                        @* Total Due *@
+                        <div class="p-4 bg-primary bg-opacity-5 text-center">
+                            <div class="text-muted small mb-1">Amount to Pay Now</div>
+                            <div class="display-6 fw-bold text-primary">
+                                EGP @Model.DepositAmount.ToString("N0")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Security Badges *@
+                <div class="card border-0 shadow-sm mt-3">
+                    <div class="card-body py-3">
+                        <div class="d-flex justify-content-around text-center">
+                            <div>
+                                <i class="fas fa-shield-alt text-success d-block mb-1"></i>
+                                <span class="small text-muted">Secure Pay</span>
+                            </div>
+                            <div>
+                                <i class="fas fa-lock text-primary d-block mb-1"></i>
+                                <span class="small text-muted">SSL 256-bit</span>
+                            </div>
+                            <div>
+                                <i class="fas fa-undo text-warning d-block mb-1"></i>
+                                <span class="small text-muted">Refund Policy</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .method-option input:checked + div {
+            border-color: #6C63FF !important;
+            background: #f5f3ff;
+            box-shadow: 0 0 0 2px rgba(108,99,255,0.2);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // ── Payment Method Selection ───────────────────────────────────────────────
+        const cardSection   = document.getElementById('cardSection');
+        const walletSection = document.getElementById('walletSection');
+        const fawrySection  = document.getElementById('fawrySection');
+        const payBtn        = document.getElementById('payBtn');
+        const payBtnText    = document.getElementById('payBtnText');
+
+        const methodLabels = {
+            '1': 'Pay with Visa',
+            '2': 'Pay with Mastercard',
+            '3': 'Pay with Vodafone Cash',
+            '4': 'Pay with InstaPay',
+            '5': 'Pay with Fawry'
+        };
+
+        document.querySelectorAll('.method-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const method = parseInt(this.value);
+
+                // Hide all sections
+                cardSection.style.display   = 'none';
+                walletSection.style.display = 'none';
+                fawrySection.style.display  = 'none';
+
+                // Show relevant section
+                if (method === 1 || method === 2)
+                    cardSection.style.display = 'block';
+                else if (method === 3 || method === 4)
+                    walletSection.style.display = 'block';
+                else if (method === 5)
+                    fawrySection.style.display = 'block';
+
+                // Enable submit
+                payBtn.disabled = false;
+                payBtnText.textContent = methodLabels[this.value] || 'Pay Now';
+            });
+        });
+
+        // ── Card Number Auto-format ────────────────────────────────────────────────
+        const cardInput = document.getElementById('cardNumberInput');
+        if (cardInput) {
+            cardInput.addEventListener('input', function () {
+                // Strip non-digits, then group in 4s for display
+                let raw = this.value.replace(/\D/g, '').slice(0, 16);
+                this.value = raw.replace(/(.{4})/g, '$1 ').trim();
+                // Store raw value for form submission
+                this.dataset.raw = raw;
+            });
+
+            // On form submit, use raw value
+            document.getElementById('paymentForm').addEventListener('submit', function () {
+                cardInput.value = cardInput.dataset.raw || cardInput.value.replace(/\s/g, '');
+            });
+        }
+
+        // ── Expiry Auto-format ────────────────────────────────────────────────────
+        const expiryInput = document.getElementById('expiryInput');
+        if (expiryInput) {
+            expiryInput.addEventListener('input', function () {
+                let raw = this.value.replace(/\D/g, '').slice(0, 4);
+                if (raw.length >= 3)
+                    this.value = raw.slice(0, 2) + '/' + raw.slice(2);
+                else
+                    this.value = raw;
+            });
+        }
+
+        // ── Submit Spinner ─────────────────────────────────────────────────────────
+        document.getElementById('paymentForm').addEventListener('submit', function () {
+            payBtn.disabled = true;
+            payBtn.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Processing Payment...`;
+        });
+    </script>
+}

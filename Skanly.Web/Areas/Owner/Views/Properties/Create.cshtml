@@ -1,0 +1,549 @@
+﻿@* Skanly.Web/Areas/Owner/Views/Properties/Create.cshtml *@
+@model Skanly.Application.Features.Properties.DTOs.CreatePropertyDto
+@{
+    ViewData["Title"] = "Add Property";
+    Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+}
+
+<div class="page-header mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-plus-circle me-2 text-primary"></i>Add New Property
+    </h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-action="Index">My Properties</a>
+            </li>
+            <li class="breadcrumb-item active">Add Property</li>
+        </ol>
+    </nav>
+</div>
+
+@* Multi-step progress indicator *@
+<div class="step-progress d-flex gap-2 mb-4">
+    @foreach (var (label, num) in new[]
+    {
+        ("Basic Info", 1), ("Location", 2),
+        ("Amenities", 3), ("Photos", 4)
+    })
+    {
+        <div class="step-item d-flex align-items-center gap-2 flex-grow-1">
+            <span class="step-number rounded-circle text-white fw-bold
+                d-flex align-items-center justify-content-center
+                bg-primary"
+                  style="width:32px;height:32px;flex-shrink:0">
+                @num
+            </span>
+            <span class="small fw-semibold d-none d-md-block">@label</span>
+            @if (num < 4)
+            {
+                <div class="flex-grow-1 border-top border-2 border-primary opacity-25"></div>
+            }
+        </div>
+    }
+</div>
+
+<form asp-action="Create"
+      method="post"
+      enctype="multipart/form-data"
+      id="propertyForm">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly"
+         class="alert alert-danger"
+         id="validationAlert"
+         style="display:none"></div>
+
+    <div class="row g-4">
+
+        @* Left: Form *@
+        <div class="col-lg-8">
+
+            @* ── STEP 1: Basic Info ────────────────────────────────────────── *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent fw-semibold">
+                    <span class="badge bg-primary me-2">1</span>Basic Information
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-semibold">
+                            Title <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Title"
+                               class="form-control"
+                               placeholder="e.g. Furnished Studio near Cairo University" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-semibold">
+                            Description
+                        </label>
+                        <textarea asp-for="Description"
+                                  class="form-control"
+                                  rows="5"
+                                  placeholder="Describe your property in detail..."></textarea>
+                        <div class="d-flex justify-content-end">
+                            <span class="small text-muted" id="descCount">0 / 5000</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="PropertyType" class="form-label fw-semibold">
+                                Property Type <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="PropertyType"
+                                    class="form-select"
+                                    asp-items="Html.GetEnumSelectList"
+                                Skanly.Domain.Enums.PropertyType>
+                                ()">
+                                <option value="">Select type...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="GenderPolicy" class="form-label fw-semibold">
+                                Gender Policy <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="GenderPolicy"
+                                    class="form-select"
+                                    asp-items="Html.GetEnumSelectList"
+                                Skanly.Domain.Enums.GenderPolicy>
+                                ()">
+                                <option value="">Select policy...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label asp-for="PricePerMonth" class="form-label fw-semibold">
+                                Price / Month (EGP) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">EGP</span>
+                                <input asp-for="PricePerMonth"
+                                       class="form-control"
+                                       type="number"
+                                       min="100"
+                                       step="50"
+                                       placeholder="e.g. 3500" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Rooms" class="form-label fw-semibold">
+                                Rooms <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Rooms"
+                                   type="number"
+                                   class="form-control"
+                                   min="1" max="50" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Beds" class="form-label fw-semibold">
+                                Beds <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Beds"
+                                   type="number"
+                                   class="form-control"
+                                   min="1" max="100" />
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mt-3">
+                        <input asp-for="SmokingAllowed"
+                               class="form-check-input"
+                               type="checkbox"
+                               role="switch" />
+                        <label asp-for="SmokingAllowed" class="form-check-label">
+                            Smoking Allowed
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            @* ── STEP 2: Location ──────────────────────────────────────────── *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent fw-semibold">
+                    <span class="badge bg-primary me-2">2</span>Location
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="AreaId" class="form-label fw-semibold">
+                                Area <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="AreaId" class="form-select">
+                                <option value="">Select area...</option>
+                                @foreach (var area in ViewBag.Areas as
+                                    IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+                                {
+                                    <option value="@area.Id">@area.NameEn</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="UniversityId" class="form-label fw-semibold">
+                                Nearest University
+                            </label>
+                            <select asp-for="UniversityId" class="form-select">
+                                <option value="">None</option>
+                                @foreach (var uni in ViewBag.Universities as
+                                    IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+                                {
+                                    <option value="@uni.UniversityId">@uni.NameEn</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Address" class="form-label fw-semibold">
+                            Full Address <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Address"
+                               class="form-control"
+                               id="addressInput"
+                               placeholder="Building number, Street, District..." />
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Latitude" class="form-label fw-semibold">
+                                Latitude <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Latitude"
+                                   id="latInput"
+                                   class="form-control font-monospace"
+                                   step="0.000001"
+                                   placeholder="e.g. 30.0444" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Longitude" class="form-label fw-semibold">
+                                Longitude <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Longitude"
+                                   id="lngInput"
+                                   class="form-control font-monospace"
+                                   step="0.000001"
+                                   placeholder="e.g. 31.2357" />
+                        </div>
+                    </div>
+
+                    <div class="rounded overflow-hidden" style="height:300px;">
+                        <div id="locationMap" style="height:100%;"></div>
+                    </div>
+                    <p class="text-muted small mt-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Click on the map or drag the marker to set the exact location.
+                    </p>
+                </div>
+            </div>
+
+            @* ── STEP 3: Amenities ─────────────────────────────────────────── *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent fw-semibold">
+                    <span class="badge bg-primary me-2">3</span>Amenities
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @foreach (var amenity in ViewBag.Amenities as
+                            IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+                        {
+                            <div class="col-6 col-md-4">
+                                <div class="amenity-check border rounded-3 p-3
+                                    text-center cursor-pointer"
+                                     style="cursor:pointer;transition:all .15s;">
+                                    <input type="checkbox"
+                                           name="AmenityIds"
+                                           value="@amenity.AmenityId"
+                                           id="am_@amenity.AmenityId"
+                                           class="amenity-input d-none" />
+                                    <label class="d-block mb-0"
+                                           for="am_@amenity.AmenityId"
+                                           style="cursor:pointer;">
+                                        <i class="fas @(amenity.IconClass ?? "fa-check")
+                                        text-primary mb-2 d-block"
+                                           style="font-size:1.4rem;"></i>
+                                        <span class="small fw-semibold">@amenity.NameEn</span>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* ── STEP 4: Photos & Videos ───────────────────────────────────── *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent fw-semibold">
+                    <span class="badge bg-primary me-2">4</span>Photos & Videos
+                </div>
+                <div class="card-body">
+
+                    @* Image Drop Zone *@
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            Photos <span class="text-danger">*</span>
+                            <span class="text-muted fw-normal">(Max 15, 5 MB each)</span>
+                        </label>
+                        <div class="drop-zone border-2 border-dashed rounded-3
+                            text-center p-4 mb-3"
+                             id="imageDropZone"
+                             style="border-color:#dee2e6;cursor:pointer;">
+                            <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-1">Drag & drop photos here</p>
+                            <p class="text-muted small">or</p>
+                            <label class="btn btn-outline-primary btn-sm" for="Images">
+                                <i class="fas fa-folder-open me-1"></i>
+                                Browse Files
+                            </label>
+                            <input asp-for="Images"
+                                   type="file"
+                                   multiple
+                                   accept="image/*"
+                                   id="Images"
+                                   class="d-none" />
+                        </div>
+                        <div id="imagePreviewGrid"
+                             class="row g-2"></div>
+                        <input type="hidden" asp-for="PrimaryImageIndex" id="primaryIndex" />
+                    </div>
+
+                    @* Video Upload *@
+                    <div>
+                        <label class="form-label fw-semibold">
+                            Videos
+                            <span class="text-muted fw-normal">(Optional, max 3, 50 MB each)</span>
+                        </label>
+                        <input asp-for="Videos"
+                               type="file"
+                               multiple
+                               accept="video/*"
+                               class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Right: Sticky Summary *@
+        <div class="col-lg-4">
+            <div style="position:sticky;top:80px;">
+                <div class="card shadow-sm border-primary border-opacity-25">
+                    <div class="card-header bg-primary bg-opacity-10 fw-semibold">
+                        <i class="fas fa-clipboard-list me-2"></i>Listing Summary
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled small text-muted">
+                            <li class="mb-2">
+                                <i class="fas fa-clock me-2 text-warning"></i>
+                                Listing goes live after Admin approval (24–48 hrs)
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-shield-alt me-2 text-success"></i>
+                                You must be identity-verified to list
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-camera me-2 text-info"></i>
+                                At least 1 photo required
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-star me-2 text-warning"></i>
+                                Good photos get 3× more enquiries
+                            </li>
+                            <li>
+                                <i class="fas fa-edit me-2 text-primary"></i>
+                                Editing re-triggers approval review
+                            </li>
+                        </ul>
+
+                        <hr />
+
+                        <button type="submit"
+                                class="btn btn-primary w-100 btn-lg"
+                                id="submitBtn">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Submit for Approval
+                        </button>
+                        <a asp-action="Index"
+                           class="btn btn-outline-secondary w-100 mt-2">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // ── Description char counter ────────────────────────────────────────────────
+        const desc = document.querySelector('textarea[name="Description"]');
+        const counter = document.getElementById('descCount');
+        if (desc) {
+            desc.addEventListener('input', () => {
+                counter.textContent = `${desc.value.length} / 5000`;
+            });
+        }
+
+        // ── Amenity toggle styles ──────────────────────────────────────────────────
+        document.querySelectorAll('.amenity-check').forEach(card => {
+            const input = card.querySelector('.amenity-input');
+            const updateStyle = () => {
+                card.style.background = input.checked ? '#EEF2FF' : '';
+                card.style.borderColor = input.checked ? '#6C63FF' : '#dee2e6';
+            };
+            input.addEventListener('change', updateStyle);
+            card.addEventListener('click', () => {
+                input.checked = !input.checked;
+                updateStyle();
+            });
+        });
+
+        // ── Image drag-and-drop + preview ────────────────────────────────────────────
+        const dropZone = document.getElementById('imageDropZone');
+        const fileInput = document.getElementById('Images');
+        const previewGrid = document.getElementById('imagePreviewGrid');
+        let uploadedFiles = [];
+
+        function renderPreviews() {
+            previewGrid.innerHTML = '';
+            uploadedFiles.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                const col = document.createElement('div');
+                col.className = 'col-4 col-md-3';
+                col.innerHTML = `
+                    <div class="position-relative rounded overflow-hidden
+                                 border ${index === 0 ? 'border-primary border-2' : ''}
+                                 preview-card" data-index="${index}"
+                         style="cursor:pointer;aspect-ratio:4/3;">
+                        <img src="${url}" class="w-100 h-100 object-fit-cover" />
+                        <div class="position-absolute top-0 start-0 m-1">
+                            ${index === 0
+                                ? '<span class="badge bg-primary" style="font-size:9px;">Primary</span>'
+                                : ''}
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-danger position-absolute
+                                       top-0 end-0 m-1 rounded-circle p-0
+                                       remove-img-btn"
+                                data-index="${index}"
+                                style="width:22px;height:22px;font-size:10px;">
+                            ✕
+                        </button>
+                    </div>`;
+                previewGrid.appendChild(col);
+            });
+
+            // Click to set primary
+            document.querySelectorAll('.preview-card').forEach(card => {
+                card.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('remove-img-btn')) return;
+                    const idx = parseInt(this.dataset.index);
+                    document.getElementById('primaryIndex').value = idx;
+                    uploadedFiles = [
+                        uploadedFiles[idx],
+                        ...uploadedFiles.filter((_, i) => i !== idx)
+                    ];
+                    renderPreviews();
+                });
+            });
+
+            // Remove buttons
+            document.querySelectorAll('.remove-img-btn').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const idx = parseInt(this.dataset.index);
+                    uploadedFiles.splice(idx, 1);
+                    renderPreviews();
+                });
+            });
+
+            syncFileInput();
+        }
+
+        function syncFileInput() {
+            const dt = new DataTransfer();
+            uploadedFiles.forEach(f => dt.items.add(f));
+            fileInput.files = dt.files;
+        }
+
+        fileInput.addEventListener('change', function () {
+            uploadedFiles = [...uploadedFiles, ...Array.from(this.files)].slice(0, 15);
+            renderPreviews();
+        });
+
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#6C63FF';
+            dropZone.style.background = '#f5f3ff';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#dee2e6';
+            dropZone.style.background = '';
+        });
+
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#dee2e6';
+            dropZone.style.background = '';
+            const files = Array.from(e.dataTransfer.files)
+                .filter(f => f.type.startsWith('image/'));
+            uploadedFiles = [...uploadedFiles, ...files].slice(0, 15);
+            renderPreviews();
+        });
+
+        // ── Map ────────────────────────────────────────────────────────────────────
+        const leafletCss = document.createElement('link');
+        leafletCss.rel = 'stylesheet';
+        leafletCss.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(leafletCss);
+
+        const leafletJs = document.createElement('script');
+        leafletJs.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        leafletJs.onload = function () {
+            const map = L.map('locationMap').setView([30.0444, 31.2357], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            let marker;
+
+            function placeMarker(lat, lng) {
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                marker.on('dragend', e => {
+                    const pos = e.target.getLatLng();
+                    document.getElementById('latInput').value = pos.lat.toFixed(6);
+                    document.getElementById('lngInput').value = pos.lng.toFixed(6);
+                });
+            }
+
+            map.on('click', e => {
+                placeMarker(e.latlng.lat, e.latlng.lng);
+                document.getElementById('latInput').value = e.latlng.lat.toFixed(6);
+                document.getElementById('lngInput').value = e.latlng.lng.toFixed(6);
+            });
+
+            ['latInput', 'lngInput'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    const lat = parseFloat(document.getElementById('latInput').value);
+                    const lng = parseFloat(document.getElementById('lngInput').value);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        placeMarker(lat, lng);
+                        map.setView([lat, lng], 15);
+                    }
+                });
+            });
+        };
+        document.head.appendChild(leafletJs);
+
+        // ── Submit spinner ────────────────────────────────────────────────────────
+        document.getElementById('propertyForm').addEventListener('submit', function () {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>
+                             Submitting...`;
+        });
+    </script>
+}

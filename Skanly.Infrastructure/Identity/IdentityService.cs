@@ -74,4 +74,28 @@ public class IdentityService : IIdentityService
         var user = await _userManager.FindByIdAsync(userId);
         return user?.UserName;
     }
+    // ── الدوال الجديدة ────────────────────────────────────────────────────────
+    public async Task<bool> DeactivateUserAsync(
+        string userId,
+        CancellationToken ct = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return false;
+
+        user.IsActive = false;
+        var result = await _userManager.UpdateAsync(user);
+        return result.Succeeded;
+    }
+
+    public async Task<bool> ActivateUserAsync(
+        string userId,
+        CancellationToken ct = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return false;
+
+        user.IsActive = true;
+        var result = await _userManager.UpdateAsync(user);
+        return result.Succeeded;
+    }
 }

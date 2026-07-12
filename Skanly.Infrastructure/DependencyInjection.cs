@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Skanly.Application.Common.Interfaces;
 using Skanly.Application.Common.Interfaces.Repositories;
 using Skanly.Application.Features.Auth.Interfaces;
+using Skanly.Application.Features.Payments.Interfaces;
 using Skanly.Infrastructure.ExternalServices.Email;
+using Skanly.Infrastructure.ExternalServices.Payment;
 using Skanly.Infrastructure.FileStorage;
 using Skanly.Infrastructure.Identity;
 using Skanly.Infrastructure.Persistence;
@@ -81,6 +83,15 @@ public static class DependencyInjection
         // Skanly.Infrastructure/DependencyInjection.cs — أضف السطر ده
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        // ── Payment Gateways (all registered so factory can resolve by Method) ────────
+        services.AddScoped<IPaymentGateway, SimulatedVisaGateway>();
+        services.AddScoped<IPaymentGateway, SimulatedMastercardGateway>();
+        services.AddScoped<IPaymentGateway, SimulatedVodafoneCashGateway>();
+        services.AddScoped<IPaymentGateway, SimulatedInstaPayGateway>();
+        services.AddScoped<IPaymentGateway, SimulatedFawryGateway>();
+        // Factory resolves the right gateway from the collection above
+        services.AddScoped<PaymentGatewayFactory>();
+
 
         return services;
     }

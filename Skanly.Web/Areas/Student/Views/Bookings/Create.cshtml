@@ -1,0 +1,238 @@
+﻿@* Skanly.Web/Areas/Student/Views/Bookings/Create.cshtml *@
+@model Skanly.Application.Features.Bookings.DTOs.CreateBookingDto
+@{
+    ViewData["Title"] = "Request Booking";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+    var property = ViewBag.Property as
+        Skanly.Application.Features.Properties.DTOs.PropertyDetailDto;
+}
+
+<div class="container py-4" style="max-width:760px;">
+    <div class="mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-calendar-plus me-2 text-primary"></i>
+            Request Booking
+        </h1>
+        <p class="text-muted">
+            Submit a booking request. The owner will respond within 24–48 hours.
+        </p>
+    </div>
+
+    <form asp-action="Create" method="post" id="bookingForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="PropertyId" />
+
+        <div class="row g-4">
+
+            @* Left: Form *@
+            <div class="col-lg-7">
+
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger mb-4"
+                     id="validationSummary"
+                     style="display:none;"></div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent fw-semibold">
+                        <i class="fas fa-calendar me-2 text-primary"></i>
+                        Booking Dates
+                    </div>
+                    <div class="card-body">
+
+                        <div class="mb-3">
+                            <label asp-for="CheckInDate"
+                                   class="form-label fw-semibold">
+                                Check-in Date
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CheckInDate"
+                                   type="date"
+                                   class="form-control"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="CheckInDate"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CheckOutDate"
+                                   class="form-label fw-semibold">
+                                Check-out Date
+                                <span class="text-muted fw-normal">
+                                    (Optional — leave blank for open-ended)
+                                </span>
+                            </label>
+                            <input asp-for="CheckOutDate"
+                                   type="date"
+                                   class="form-control"
+                                   id="checkOutInput" />
+                            <span asp-validation-for="CheckOutDate"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="SpecialRequests"
+                                   class="form-label fw-semibold">
+                                Special Requests
+                                <span class="text-muted fw-normal">(Optional)</span>
+                            </label>
+                            <textarea asp-for="SpecialRequests"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="Any special requirements or questions for the owner..."></textarea>
+                            <span asp-validation-for="SpecialRequests"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        @* Dynamic amount preview *@
+                        <div class="alert alert-light border" id="amountPreview">
+                            <div class="d-flex justify-content-between small">
+                                <span class="text-muted">Monthly Rent</span>
+                                <span class="fw-semibold">
+                                    EGP @property?.PricePerMonth.ToString("N0")/mo
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between small mt-1">
+                                <span class="text-muted">Deposit (20%)</span>
+                                <span class="fw-semibold text-primary"
+                                      id="depositDisplay">
+                                    EGP @(((property?.PricePerMonth ?? 0) * 0.20m).ToString("N0"))
+                                </span>
+                            </div>
+                            <hr class="my-2" />
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold">Due at Payment</span>
+                                <span class="fw-bold text-primary fs-6"
+                                      id="totalDisplay">
+                                    EGP @(((property?.PricePerMonth ?? 0) * 0.20m).ToString("N0"))
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-transparent
+                        d-flex justify-content-between">
+                        <a href="/Property/@property?.PropertyId"
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back
+                        </a>
+                        <button type="submit"
+                                class="btn btn-primary fw-semibold"
+                                id="submitBtn">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Send Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @* Right: Property Card *@
+            @if (property is not null)
+            {
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm"
+                         style="position:sticky;top:80px;">
+                        <img src="@(property.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
+                                                                  ?? "/images/property-placeholder.jpg")"
+                             class="card-img-top object-fit-cover"
+                             height="180" alt="@property.Title" />
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-1">@property.Title</h6>
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                                @property.AreaNameEn
+                            </p>
+                            <div class="d-flex gap-3 small text-muted mb-3">
+                                <span>
+                                    <i class="fas fa-door-open me-1"></i>
+                                    @property.Rooms rooms
+                                </span>
+                                <span>
+                                    <i class="fas fa-bed me-1"></i>
+                                    @property.Beds beds
+                                </span>
+                            </div>
+                            <div class="border-top pt-3">
+                                <span class="fs-5 fw-bold text-primary">
+                                    EGP @property.PricePerMonth.ToString("N0")
+                                </span>
+                                <span class="text-muted small">/month</span>
+                            </div>
+
+                            @* Owner *@
+                            <div class="d-flex align-items-center gap-2 mt-3">
+                                <img src="@(property.OwnerImageUrl ?? "/images/default-avatar.png")"
+                                     class="rounded-circle" width="32" height="32" alt="" />
+                                <div class="small">
+                                    <div class="fw-semibold">
+                                        @property.OwnerFullName
+                                    </div>
+                                    @if (property.OwnerIsVerified)
+                                    {
+                                        <span class="text-success"
+                                              style="font-size:11px;">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Verified
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const pricePerMonth = @(property?.PricePerMonth ?? 0);
+        const depositPct    = 0.20;
+
+        const checkInInput  = document.querySelector('input[name="CheckInDate"]');
+        const checkOutInput = document.getElementById('checkOutInput');
+        const depositEl     = document.getElementById('depositDisplay');
+        const totalEl       = document.getElementById('totalDisplay');
+
+        function updateAmounts() {
+            const checkIn  = checkInInput?.value;
+            const checkOut = checkOutInput?.value;
+            let total;
+
+            if (checkIn && checkOut && checkOut > checkIn) {
+                const daysMs = new Date(checkOut) - new Date(checkIn);
+                const days   = daysMs / (1000 * 60 * 60 * 24);
+                const months = days / 30;
+                total        = Math.round(pricePerMonth * months * 100) / 100;
+            } else {
+                total = pricePerMonth; // first month
+            }
+
+            const deposit = Math.round(total * depositPct * 100) / 100;
+            depositEl.textContent = `EGP ${deposit.toLocaleString('en-EG')}`;
+            totalEl.textContent   = `EGP ${deposit.toLocaleString('en-EG')}`;
+        }
+
+        // Set min for check-out based on check-in
+        checkInInput?.addEventListener('change', function () {
+            if (checkOutInput) {
+                checkOutInput.min = this.value;
+                if (checkOutInput.value && checkOutInput.value <= this.value)
+                    checkOutInput.value = '';
+            }
+            updateAmounts();
+        });
+
+        checkOutInput?.addEventListener('change', updateAmounts);
+
+        // Submit spinner
+        document.getElementById('bookingForm').addEventListener('submit', function () {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML =
+                '<span class="spinner-border spinner-border-sm me-2"></span>' +
+                'Sending...';
+        });
+    </script>
+}

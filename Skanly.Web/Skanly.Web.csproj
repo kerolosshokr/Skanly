@@ -13,8 +13,6 @@
 
   <ItemGroup>
     <Folder Include="Areas\Admin\Views\Shared\" />
-    <Folder Include="Areas\Owner\Controllers\" />
-    <Folder Include="Areas\Owner\Views\" />
     <Folder Include="Filters\" />
     <Folder Include="ViewsModels\" />
     <Folder Include="wwwroot\Uploads\" />

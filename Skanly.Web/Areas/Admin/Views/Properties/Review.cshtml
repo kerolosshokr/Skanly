@@ -1,0 +1,257 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Properties/Review.cshtml *@
+@model Skanly.Application.Features.Properties.DTOs.PropertyDetailDto
+@{
+    ViewData["Title"] = "Review Property";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">Review Property</h1>
+        <p class="text-muted mb-0">Approve or reject this listing</p>
+    </div>
+    <a asp-action="Pending" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Back to Queue
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+
+        @* Gallery *@
+        @if (Model.Images.Any())
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-3">
+                    <div class="row g-2">
+                        @foreach (var img in Model.Images)
+                        {
+                            <div class="col-4 col-md-3">
+                                <img src="@img.ImageUrl"
+                                     class="w-100 rounded object-fit-cover
+                                @(img.IsPrimary ? "border border-primary border-2" : "")"
+                                     height="100"
+                                     alt="" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* Details *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">Property Details</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    @{
+                        var details = new[]
+                        {
+                            ("Title",        Model.Title),
+                            ("Type",         Model.PropertyTypeDisplay),
+                            ("Area",         Model.AreaNameEn),
+                            ("University",   Model.UniversityNameEn ?? "—"),                          
+                            ("Price",        $"EGP {Model.PricePerMonth:N0}/mo"),
+                            ("Rooms",        Model.Rooms.ToString()),
+                            ("Beds",         Model.Beds.ToString()),
+                            ("Smoking",      Model.SmokingAllowed ? "Allowed" : "Not Allowed"),
+                            ("Address",      Model.Address),
+                        };
+                    }
+                    @foreach (var (label, value) in details)
+                    {
+                        <div class="col-sm-6">
+                            <div class="text-muted small">@label</div>
+                            <div class="fw-semibold">@value</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <div class="col-12">
+                            <div class="text-muted small">Description</div>
+                            <p class="mb-0">@Model.Description</p>
+                        </div>
+                    }
+                </div>
+
+                @* Amenities *@
+                @if (Model.Amenities.Any())
+                {
+                    <hr />
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var a in Model.Amenities)
+                        {
+                            <span class="badge bg-primary bg-opacity-15 text-primary px-3 py-2">
+                                <i class="fas @(a.IconClass ?? "fa-check") me-1"></i>@a.NameEn
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Map *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">Location</div>
+            <div class="card-body p-0">
+                <div id="adminMap" style="height:300px;border-radius:0 0 8px 8px;"></div>
+            </div>
+        </div>
+    </div>
+
+    @* Approval Panel *@
+    <div class="col-lg-4">
+        <div style="position:sticky;top:80px;">
+
+            @* Owner Info *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent fw-semibold">Owner</div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <img src="@(Model.OwnerImageUrl ?? "/images/default-avatar.png")"
+                             class="rounded-circle" width="52" height="52" alt="" />
+                        <div>
+                            <div class="fw-semibold">@Model.OwnerFullName</div>
+                            @if (Model.OwnerIsVerified)
+                            {
+                                <span class="badge bg-success small">Verified</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark small">
+                                    Not Verified
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="small text-muted">
+                        Listed: @Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                    </div>
+                </div>
+            </div>
+
+            @* Approval Actions *@
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-transparent fw-semibold">Decision</div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Review all information above before making a decision.
+                        Both approve and reject notify the owner immediately.
+                    </p>
+
+                    @* Approve *@
+                    <button class="btn btn-success w-100 mb-2"
+                            id="approveBtn">
+                        <i class="fas fa-check me-2"></i>Approve Listing
+                    </button>
+
+                    @* Reject with reason *@
+                    <div id="rejectSection">
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small">
+                                Rejection Reason <span class="text-danger">*</span>
+                            </label>
+                            <textarea id="rejectReason"
+                                      class="form-control form-control-sm"
+                                      rows="3"
+                                      placeholder="Explain why this listing is being rejected..."></textarea>
+                        </div>
+                        <button class="btn btn-danger w-100" id="rejectBtn">
+                            <i class="fas fa-times me-2"></i>Reject Listing
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const token = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value ?? '';
+        const propertyId = @Model.PropertyId;
+
+        // Approve
+        document.getElementById('approveBtn').addEventListener('click', async function () {
+            if (!confirm('Approve this property listing?')) return;
+
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Approving...';
+
+            const res = await fetch(`/Admin/Properties/Approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `id=${propertyId}`
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                showAlert('Property approved and owner notified!', 'success');
+                setTimeout(() => window.location.href = '/Admin/Properties/Pending', 2000);
+            } else {
+                showAlert(data.message, 'danger');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check me-2"></i>Approve Listing';
+            }
+        });
+
+        // Reject
+        document.getElementById('rejectBtn').addEventListener('click', async function () {
+            const reason = document.getElementById('rejectReason').value.trim();
+            if (!reason) {
+                document.getElementById('rejectReason').classList.add('is-invalid');
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rejecting...';
+
+            const res = await fetch(`/Admin/Properties/Reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `id=${propertyId}&reason=${encodeURIComponent(reason)}`
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                showAlert('Property rejected and owner notified.', 'warning');
+                setTimeout(() => window.location.href = '/Admin/Properties/Pending', 2000);
+            } else {
+                showAlert(data.message, 'danger');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-times me-2"></i>Reject Listing';
+            }
+        });
+
+        function showAlert(msg, type) {
+            const a = document.createElement('div');
+            a.className = `alert alert-${type} alert-dismissible fade show position-fixed
+                           bottom-0 start-50 translate-middle-x mb-3`;
+            a.style.zIndex = '9999';
+            a.innerHTML = `${msg}<button class="btn-close" data-bs-dismiss="alert"></button>`;
+            document.body.appendChild(a);
+        }
+
+        // Map
+        const leafletCss = document.createElement('link');
+        leafletCss.rel = 'stylesheet';
+        leafletCss.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(leafletCss);
+        const leafletJs = document.createElement('script');
+        leafletJs.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        leafletJs.onload = () => {
+            const map = L.map('adminMap').setView(
+                [@Model.Latitude, @Model.Longitude], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.marker([@Model.Latitude, @Model.Longitude]).addTo(map);
+        };
+        document.head.appendChild(leafletJs);
+    </script>
+}

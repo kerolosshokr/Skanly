@@ -1,0 +1,325 @@
+﻿@* Skanly.Web/Areas/Student/Views/Bookings/Index.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Bookings.DTOs.BookingDto>
+@{
+    ViewData["Title"] = "My Bookings";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+    var activeStatus = ViewBag.StatusFilter as Skanly.Domain.Enums.BookingStatus?;
+}
+@using Skanly.Domain.Enums
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-1">
+            <i class="fas fa-calendar-check me-2 text-primary"></i>My Bookings
+        </h1>
+        <p class="text-muted mb-0">@Model.TotalCount booking(s) total</p>
+    </div>
+    <a href="/Property/Search"
+       class="btn btn-primary btn-sm">
+        <i class="fas fa-search me-1"></i>Find Housing
+    </a>
+</div>
+
+@* Status Filter Tabs *@
+<ul class="nav nav-pills mb-4 gap-1 flex-wrap">
+    @{
+        var tabs = new[]
+        {
+            ("All",             (BookingStatus?)null),
+            ("Pending",         (BookingStatus?)BookingStatus.Pending),
+            ("Accepted",        (BookingStatus?)BookingStatus.Accepted),
+            ("Payment Pending", (BookingStatus?)BookingStatus.PaymentPending),
+            ("Confirmed",       (BookingStatus?)BookingStatus.Confirmed),
+            ("Rejected",        (BookingStatus?)BookingStatus.Rejected),
+            ("Cancelled",       (BookingStatus?)BookingStatus.Cancelled),
+        };
+    }
+    @foreach (var (label, value) in tabs)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(activeStatus == value ? "active" : "")"
+               asp-action="Index"
+               asp-route-status="@((int?)value)">
+                @label
+            </a>
+        </li>
+    }
+</ul>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-4">
+        <i class="fas fa-check-circle me-2"></i>@ok
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-4">
+        <i class="fas fa-exclamation-circle me-2"></i>@err
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-calendar-times fa-4x mb-3 opacity-25"></i>
+        <h5>No bookings found</h5>
+        <p class="mb-0">
+            @(activeStatus.HasValue
+                ? $"No {activeStatus} bookings."
+                : "You haven't made any booking requests yet.")
+        </p>
+        <a href="/Property/Search" class="btn btn-primary mt-3">
+            <i class="fas fa-search me-2"></i>Find Housing
+        </a>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-3">
+        @foreach (var booking in Model.Items)
+        {
+            <div class="card border-0 shadow-sm hover-lift"
+                 style="transition:transform .2s,box-shadow .2s;">
+                <div class="card-body p-0">
+                    <div class="d-flex flex-column flex-md-row">
+
+                        @* Property Image *@
+                        <div class="flex-shrink-0">
+                            <img src="@(booking.PropertyImageUrl ?? "/images/property-placeholder.jpg")"
+                                 class="rounded-start object-fit-cover"
+                                 style="width:200px;height:140px;"
+                                 alt="@booking.PropertyTitle" />
+                        </div>
+
+                        @* Content *@
+                        <div class="flex-grow-1 p-3">
+                            <div class="d-flex justify-content-between
+                                align-items-start flex-wrap gap-2">
+                                <div>
+                                    <h6 class="fw-bold mb-1">
+                                        @booking.PropertyTitle
+                                    </h6>
+                                    <div class="text-muted small mb-2">
+                                        <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                                        @booking.AreaNameEn
+                                        @if (!string.IsNullOrEmpty(booking.UniversityNameEn))
+                                        {
+                                            <span class="ms-2">
+                                                <i class="fas fa-graduation-cap me-1 text-primary"></i>
+                                                @booking.UniversityNameEn
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <span class="badge @booking.StatusBadgeClass px-3 py-2">
+                                    <i class="fas @booking.StatusIcon me-1"></i>
+                                    @booking.StatusDisplay
+                                </span>
+                            </div>
+
+                            @* Booking Details Row *@
+                            <div class="d-flex flex-wrap gap-3 small text-muted mb-3">
+                                <span>
+                                    <i class="fas fa-calendar-day me-1"></i>
+                                    Check-in:
+                                    <strong>
+                                        @booking.CheckInDate.ToString("MMM dd, yyyy")
+                                    </strong>
+                                </span>
+                                @if (booking.CheckOutDate.HasValue)
+                                {
+                                    <span>
+                                        <i class="fas fa-calendar-check me-1"></i>
+                                        Check-out:
+                                        <strong>
+                                            @booking.CheckOutDate.Value.ToString("MMM dd, yyyy")
+                                        </strong>
+                                    </span>
+                                }
+                                <span>
+                                    <i class="fas fa-coins me-1"></i>
+                                    Total:
+                                    <strong class="text-primary">
+                                        EGP @booking.TotalAmount.ToString("N0")
+                                    </strong>
+                                </span>
+                                <span>
+                                    <i class="fas fa-clock me-1"></i>
+                                    @booking.TimeAgo
+                                </span>
+                            </div>
+
+                            @* Action Buttons *@
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a asp-action="Details"
+                                   asp-route-id="@booking.BookingId"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Details
+                                </a>
+
+                                @if (booking.CanPay)
+                                {
+                                    <form asp-action="ProceedToPayment"
+                                          method="post"
+                                          class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden"
+                                               name="bookingId"
+                                               value="@booking.BookingId" />
+                                        <button type="submit"
+                                                class="btn btn-sm btn-success">
+                                            <i class="fas fa-credit-card me-1"></i>
+                                            Pay Now
+                                        </button>
+                                    </form>
+                                }
+
+                                @if (booking.CanCancel)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger
+                                        cancel-btn"
+                                            data-booking-id="@booking.BookingId">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </button>
+                                }
+
+                                @if (booking.CanReview)
+                                {
+                                    <a asp-area="Student"
+                                       asp-controller="Reviews"
+                                       asp-action="Create"
+                                       asp-route-bookingId="@booking.BookingId"
+                                       asp-route-propertyId="@booking.PropertyId"
+                                       class="btn btn-sm btn-warning">
+                                        <i class="fas fa-star me-1"></i>
+                                        Write Review
+                                    </a>
+                                }
+
+                                @if (booking.HasContract)
+                                {
+                                    <a href="/Payment/Contract/@booking.BookingId"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       target="_blank">
+                                        <i class="fas fa-file-pdf me-1"></i>
+                                        Contract
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Pagination *@
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@(Model.PageNumber - 1)"
+                       asp-route-status="@((int?)activeStatus)">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                @for (int i = Math.Max(1, Model.PageNumber - 2);
+                      i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                {
+                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@i"
+                           asp-route-status="@((int?)activeStatus)">@i</a>
+                    </li>
+                }
+                <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@(Model.PageNumber + 1)"
+                       asp-route-status="@((int?)activeStatus)">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+}
+
+@* Cancel Modal *@
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-times-circle me-2"></i>Cancel Booking
+                </h5>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">
+                    Please tell us why you are cancelling.
+                    If the booking was accepted, the owner will be notified.
+                </p>
+                <textarea id="cancelReasonInput"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Reason for cancellation..."></textarea>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Keep Booking
+                </button>
+                <form id="cancelForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="BookingId" id="cancelBookingId" />
+                    <input type="hidden" name="Reason" id="cancelReason" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>Confirm Cancel
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Cancel modal
+        document.querySelectorAll('.cancel-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const bookingId = this.dataset.bookingId;
+                document.getElementById('cancelBookingId').value = bookingId;
+                document.getElementById('cancelForm').action =
+                    '/Student/Bookings/Cancel';
+                document.getElementById('cancelReasonInput').value = '';
+                new bootstrap.Modal(
+                    document.getElementById('cancelModal')).show();
+            });
+        });
+
+        // Copy reason to hidden field before submit
+        document.getElementById('cancelForm')
+            .addEventListener('submit', function () {
+                const reason = document.getElementById('cancelReasonInput')
+                    .value.trim();
+                if (!reason) {
+                    document.getElementById('cancelReasonInput')
+                        .classList.add('is-invalid');
+                    event.preventDefault();
+                    return;
+                }
+                document.getElementById('cancelReason').value = reason;
+            });
+    </script>
+}

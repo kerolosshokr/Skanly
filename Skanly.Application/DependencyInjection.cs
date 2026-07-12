@@ -5,9 +5,23 @@ using Skanly.Application.Common.Interfaces;
 using Skanly.Application.Common.Mappings;
 using Skanly.Application.Features.Universities.Interfaces;
 using Skanly.Application.Features.Universities.Services;
+using Skanly.Application.Features.Payments.Services;
 using Skanly.Application.Interfaces.Services;
+using Skanly.Application.Features.Payments.Interfaces;
 using Skanly.Application.Services;
 namespace Skanly.Application;
+
+using Skanly.Application.Features.Bookings.Interfaces;
+using Skanly.Application.Features.Bookings.Services;
+
+using Skanly.Application.Features.Owners.Interfaces;
+using Skanly.Application.Features.Owners.Services;
+
+using Skanly.Application.Features.Properties.Interfaces;
+using Skanly.Application.Features.Properties.Services;
+
+using Skanly.Application.Features.Students.Interfaces;
+using Skanly.Application.Features.Students.Services;
 
 public static class DependencyInjection
 {

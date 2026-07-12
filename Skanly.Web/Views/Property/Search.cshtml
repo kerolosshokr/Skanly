@@ -1,0 +1,296 @@
+﻿@* Skanly.Web/Views/Property/Search.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Properties.DTOs.PropertyCardDto>
+@{
+    ViewData["Title"] = "Find Student Housing";
+    var req = ViewBag.Request as
+        Skanly.Application.Features.Properties.DTOs.PropertySearchRequestDto
+        ?? new();
+}
+
+<div class="container-fluid px-0">
+    <div class="row g-0" style="min-height:calc(100vh - 70px);">
+
+        @* ── FILTER SIDEBAR ───────────────────────────────────────────────── *@
+        <div class="col-lg-3 border-end bg-white" id="filterSidebar"
+             style="position:sticky;top:70px;height:calc(100vh - 70px);
+            overflow-y:auto;">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fas fa-filter me-2 text-primary"></i>Filters
+                    </h6>
+                    <a href="/Property/Search" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-redo me-1"></i>Reset
+                    </a>
+                </div>
+
+                <form id="filterForm" method="get">
+
+                    @* Search Term *@
+                    <div class="mb-4">
+                        <label class="filter-label">Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text"
+                                   name="SearchTerm"
+                                   value="@req.SearchTerm"
+                                   class="form-control border-start-0"
+                                   placeholder="Title or address..." />
+                        </div>
+                    </div>
+
+                    @* University *@
+                    <div class="mb-4">
+                        <label class="filter-label">University</label>
+                        <select name="UniversityId" class="form-select form-select-sm">
+                            <option value="">All Universities</option>
+                            @foreach (var u in ViewBag.Universities as
+                                IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+                            {
+                                <option value="@u.UniversityId"
+                                        selected="@(req.UniversityId?.ToString() == u.UniversityId.ToString())">
+                                    @u.NameEn
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    @* Area *@
+                    <div class="mb-4">
+                        <label class="filter-label">Area</label>
+                        <select name="AreaId" class="form-select form-select-sm">
+                            <option value="">All Areas</option>
+                            @foreach (var a in ViewBag.Areas as
+                                IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+                            {
+                                <option value="@a.Id"
+                                        selected="@(req.AreaId?.ToString() == a.Id.ToString())">
+                                    @a.NameEn
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    @* Property Type *@
+                    @foreach (var type in Enum.GetValues<Skanly.Domain.Enums.PropertyType>())
+                    {
+                        <div class="form-check form-check-inline m-0">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="PropertyType"
+                                   value="@((int)type)"
+                                   id="type_@type"
+                            @(req.PropertyType == type ? "checked" : "") />
+                            <label class="form-check-label small"
+                                   for="type_@type">
+                                @type
+                            </label>
+                        </div>
+                    }
+
+                    @* Budget *@
+                    <div class="mb-4">
+                        <label class="filter-label">
+                            Budget (EGP/month)
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number"
+                                       name="MinPrice"
+                                       value="@req.MinPrice"
+                                       class="form-control form-control-sm"
+                                       placeholder="Min" min="0" />
+                            </div>
+                            <div class="col-6">
+                                <input type="number"
+                                       name="MaxPrice"
+                                       value="@req.MaxPrice"
+                                       class="form-control form-control-sm"
+                                       placeholder="Max" min="0" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Min Rating *@
+                    <div class="mb-4">
+                        <label class="filter-label">Minimum Rating</label>
+                        <select name="MinRating" class="form-select form-select-sm">
+                            <option value="">Any rating</option>
+                            @foreach (var r in new[] { 4.5, 4.0, 3.5, 3.0 })
+                            {
+                                <option value="@r"
+                                        selected="@(req.MinRating?.ToString() == r.ToString())">
+                                    @r+ ★
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    @* Smoking *@
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="SmokingAllowed"
+                                   value="true"
+                                   id="smokingCheck"
+                            @(req.SmokingAllowed == true ? "checked" : "") />
+                            <label class="form-check-label small"
+                                   for="smokingCheck">
+                                Smoking Allowed
+                            </label>
+                        </div>
+                    </div>
+
+                    @* Rooms & Beds *@
+                    <div class="mb-4">
+                        <label class="filter-label">Minimum Rooms / Beds</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="number"
+                                       name="MinRooms"
+                                       value="@req.MinRooms"
+                                       class="form-control form-control-sm"
+                                       placeholder="Rooms" min="1" max="20" />
+                            </div>
+                            <div class="col-6">
+                                <input type="number"
+                                       name="MinBeds"
+                                       value="@req.MinBeds"
+                                       class="form-control form-control-sm"
+                                       placeholder="Beds" min="1" max="50" />
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Amenities *@
+                    <div class="mb-4">
+                        <label class="filter-label">Amenities</label>
+                        <div class="amenity-grid"
+                             style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                            @foreach (var a in ViewBag.Amenities as
+                                IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+                            {
+                                <div class="form-check m-0">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="AmenityIds"
+                                           value="@a.AmenityId"
+                                           id="am_@a.AmenityId"
+                                    @(((List<int>?)req.AmenityIds)?.Contains(
+                                               (int)a.AmenityId) == true ? "checked" : "") />
+                                    <label class="form-check-label small"
+                                           for="am_@a.AmenityId">
+                                        <i class="fas @a.IconClass me-1 text-primary"
+                                           style="font-size:11px;width:14px;"></i>
+                                        @a.NameEn
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Apply Filters
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @* ── RESULTS PANEL ────────────────────────────────────────────────── *@
+        <div class="col-lg-9 p-4">
+
+            @* Sort + Results Count *@
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h5 class="mb-0 fw-bold">
+                        @Model.TotalCount
+                        <span class="text-muted fw-normal fs-6">properties found</span>
+                    </h5>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="text-muted small">Sort by:</label>
+                    <select id="sortSelect" name="SortBy"
+                            class="form-select form-select-sm" style="width:160px">
+                        @foreach (var (label, value) in new[]
+                        {
+                            ("Newest First", "Newest"),
+                            ("Price: Low to High", "PriceLow"),
+                            ("Price: High to Low", "PriceHigh"),
+                            ("Highest Rated", "Rating")
+                        })
+                        {
+                            <option value="@value"
+                                    selected="@(req.SortBy == value)">
+                                @label
+                            </option>
+                        }
+                    </select>
+
+                    @* Mobile filter toggle *@
+                    <button class="btn btn-outline-secondary btn-sm d-lg-none"
+                            id="filterToggle">
+                        <i class="fas fa-filter me-1"></i>Filters
+                    </button>
+                </div>
+            </div>
+
+            @* Property Grid *@
+            <div id="propertyGrid">
+                <partial name="_PropertyGrid" model="Model" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .filter-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #444;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .property-card {
+            transition: transform .2s, box-shadow .2s;
+        }
+
+            .property-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 24px rgba(0,0,0,.12) !important;
+            }
+
+        .hover-lift {
+            transition: transform .2s;
+        }
+
+            .hover-lift:hover {
+                transform: translateY(-3px);
+            }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Auto-submit sort change
+        document.getElementById('sortSelect').addEventListener('change', function () {
+            const form = document.getElementById('filterForm');
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'SortBy';
+            input.value = this.value;
+            form.appendChild(input);
+            form.submit();
+        });
+
+        // Mobile: toggle sidebar
+        document.getElementById('filterToggle')?.addEventListener('click', function () {
+            const sidebar = document.getElementById('filterSidebar');
+            sidebar.classList.toggle('d-none');
+        });
+    </script>
+}

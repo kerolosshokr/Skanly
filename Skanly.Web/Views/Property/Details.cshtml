@@ -1,0 +1,460 @@
+﻿@* Skanly.Web/Views/Property/Details.cshtml *@
+@model Skanly.Application.Features.Properties.DTOs.PropertyDetailDto
+@{
+    ViewData["Title"] = Model.Title;
+    var related = ViewBag.RelatedProperties as
+        IReadOnlyList<Skanly.Application.Features.Properties.DTOs.PropertyCardDto>
+        ?? new List<Skanly.Application.Features.Properties.DTOs.PropertyCardDto>();
+}
+
+<div class="container py-4">
+    <div class="row g-4">
+
+        @* ── LEFT COLUMN ──────────────────────────────────────────────────── *@
+        <div class="col-lg-8">
+
+            @* Image Gallery *@
+            <div class="card border-0 shadow-sm overflow-hidden mb-4">
+                @if (Model.Images.Any())
+                {
+                    <div id="propertyGallery" class="carousel slide"
+                         data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            @foreach (var (img, idx) in Model.Images.Select((i, n) => (i, n)))
+                            {
+                                <div class="carousel-item @(idx == 0 ? "active" : "")">
+                                    <img src="@img.ImageUrl"
+                                         class="d-block w-100 object-fit-cover"
+                                         height="450"
+                                         alt="Property photo @(idx + 1)" />
+                                </div>
+                            }
+                        </div>
+                        @if (Model.Images.Count > 1)
+                        {
+                            <button class="carousel-control-prev" type="button"
+                                    data-bs-target="#propertyGallery"
+                                    data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button"
+                                    data-bs-target="#propertyGallery"
+                                    data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                            </button>
+
+                            @* Thumbnails *@
+                            <div class="d-flex gap-2 p-3 bg-dark bg-opacity-10
+                                overflow-auto">
+                                @foreach (var (img, idx) in Model.Images.Select((i, n) => (i, n)))
+                                {
+                                    <img src="@img.ImageUrl"
+                                         class="rounded cursor-pointer thumbnail-img
+                                    @(img.IsPrimary ? "border border-primary border-2" : "")"
+                                         data-bs-target="#propertyGallery"
+                                         data-bs-slide-to="@idx"
+                                         width="80" height="60"
+                                         style="object-fit:cover;cursor:pointer;flex-shrink:0;" />
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            @* Title & Basic Info *@
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h1 class="fs-3 fw-bold mb-1">@Model.Title</h1>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                            @Model.Address
+                            <span class="mx-2">·</span>
+                            <i class="fas fa-map me-1 text-primary"></i>
+                            @Model.AreaNameEn
+                            @if (!string.IsNullOrEmpty(Model.UniversityNameEn))
+                            {
+                                <span class="mx-2">·</span>
+                                <i class="fas fa-graduation-cap me-1 text-primary"></i>
+                                @Model.UniversityNameEn
+                            }
+                        </p>
+                    </div>
+                    <button class="btn btn-light border shadow-sm favorite-btn flex-shrink-0"
+                            data-property-id="@Model.PropertyId"
+                            data-favorited="@Model.IsFavorited.ToString().ToLower()">
+                        <i class="fas fa-heart @(Model.IsFavorited ? "text-danger" : "text-muted") me-1"></i>
+                        <span class="small">@(Model.IsFavorited ? "Saved" : "Save")</span>
+                    </button>
+                </div>
+            </div>
+
+            @* Quick Stats *@
+            <div class="row g-3 mb-4">
+                @{
+                    var quickStats = new[]
+                    {
+                        new { Label="Type",          Value=Model.PropertyTypeDisplay,  Icon="fa-building" },
+                        new { Label="Rooms",          Value=Model.Rooms.ToString(),     Icon="fa-door-open" },
+                        new { Label="Beds",           Value=Model.Beds.ToString(),      Icon="fa-bed" },
+                        new { Label="Smoking",        Value=Model.SmokingAllowed ? "Allowed" : "Not Allowed",
+                              Icon="fa-smoking" },
+                        new { Label="Rating",         Value=Model.AverageRating.ToString("F1") + " ★",
+                              Icon="fa-star" },
+                    };
+                }
+                @foreach (var stat in quickStats)
+                {
+                    <div class="col-6 col-md-4">
+                        <div class="card border-0 bg-light text-center py-3 h-100">
+                            <i class="fas @stat.Icon text-primary mb-2"></i>
+                            <div class="fw-semibold small">@stat.Value</div>
+                            <div class="text-muted" style="font-size:11px;">@stat.Label</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @* Description *@
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="fw-semibold mb-3">
+                            <i class="fas fa-info-circle me-2 text-primary"></i>About this property
+                        </h5>
+                        <p class="text-muted lh-lg mb-0">@Model.Description</p>
+                    </div>
+                </div>
+            }
+
+            @* Amenities *@
+            @if (Model.Amenities.Any())
+            {
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="fw-semibold mb-3">
+                            <i class="fas fa-concierge-bell me-2 text-primary"></i>Amenities
+                        </h5>
+                        <div class="row g-3">
+                            @foreach (var amenity in Model.Amenities)
+                            {
+                                <div class="col-6 col-md-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="icon-circle bg-primary bg-opacity-10
+                                            text-primary rounded-circle d-flex
+                                            align-items-center justify-content-center"
+                                              style="width:34px;height:34px;flex-shrink:0">
+                                            <i class="fas @(amenity.IconClass ?? "fa-check")"
+                                               style="font-size:13px;"></i>
+                                        </span>
+                                        <span class="small fw-semibold">@amenity.NameEn</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* Map *@
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-3">
+                        <i class="fas fa-map me-2 text-primary"></i>Location
+                    </h5>
+                    <div id="propertyMap" style="height:350px;border-radius:8px;"></div>
+                </div>
+            </div>
+
+            @* Reviews *@
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-semibold mb-1">
+                        <i class="fas fa-star me-2 text-warning"></i>
+                        Reviews
+                        <span class="badge bg-warning text-dark ms-2">
+                            @Model.AverageRating.ToString("F1") ★
+                        </span>
+                    </h5>
+                    <p class="text-muted small mb-4">
+                        @Model.Reviews.Count review(s) from verified tenants
+                    </p>
+
+                    @if (!Model.Reviews.Any())
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-comment-slash fa-2x mb-2 opacity-25"></i>
+                            <p>No reviews yet. Be the first!</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var review in Model.Reviews.Take(5))
+                        {
+                            <div class="d-flex gap-3 mb-4 pb-4 border-bottom">
+                                <img src="@(review.StudentImageUrl ?? "/images/default-avatar.png")"
+                                     class="rounded-circle object-fit-cover flex-shrink-0"
+                                     width="44" height="44" alt="" />
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-semibold small">
+                                            @review.StudentFullName
+                                        </span>
+                                        <span class="text-muted small">
+                                            @review.CreatedAt.ToString("MMM yyyy")
+                                        </span>
+                                    </div>
+                                    @* Overall Stars *@
+                                    <div class="mb-2">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <i class="fas fa-star @(i <= review.OverallRating
+                                                                                               ? "text-warning" : "text-muted opacity-25")"
+                                           style="font-size:12px;"></i>
+                                    }
+                                </div>
+                                @* Category breakdown *@
+                                <div class="row g-1 mb-2" style="font-size:12px;">
+                                    @{
+                                        var cats = new[]
+                                        {
+                                                ("Cleanliness", review.CleanlinessRating),
+                                                ("Safety",      review.SafetyRating),
+                                                ("Internet",    review.InternetRating),
+                                                ("Location",    review.LocationRating),
+                                                ("Quietness",   review.QuietnessRating),
+                                            };
+                                    }
+                                    @foreach (var (catLabel, catRating) in cats)
+                                    {
+                                        <div class="col-6 col-md-4">
+                                            <span class="text-muted">@catLabel: </span>
+                                            <span class="fw-semibold">
+                                                @catRating/5
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(review.Comment))
+                                {
+                                    <p class="text-muted small mb-0">
+                                        "@review.Comment"
+                                    </p>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── RIGHT COLUMN — BOOKING CARD ──────────────────────────────────── *@
+    <div class="col-lg-4">
+        <div style="position:sticky;top:80px;">
+
+            @* Price & Booking Card *@
+            <div class="card border-0 shadow mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-baseline gap-2 mb-1">
+                        <span class="fs-2 fw-bold text-primary">
+                            EGP @Model.PricePerMonth.ToString("N0")
+                        </span>
+                        <span class="text-muted">/month</span>
+                    </div>
+
+                    @* Availability Badge *@
+                    @if (Model.IsAvailable)
+                    {
+                        <span class="badge bg-success mb-3">
+                            <i class="fas fa-check me-1"></i>Available
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger mb-3">
+                            <i class="fas fa-times me-1"></i>Not Available
+                        </span>
+                    }
+
+                    @if (Model.HasActiveBooking)
+                    {
+                        <div class="alert alert-info py-2 small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            You have an active booking for this property.
+                        </div>
+                    }
+                    else if (Model.IsAvailable && Model.IsApproved)
+                    {
+                        @if (User.Identity?.IsAuthenticated == true &&
+                             User.IsInRole("Student"))
+                        {
+                            <a asp-area="Student"
+                               asp-controller="Bookings"
+                               asp-action="Create"
+                               asp-route-propertyId="@Model.PropertyId"
+                               class="btn btn-primary w-100 btn-lg">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                Book Now
+                            </a>
+                        }
+                        else if (User.Identity?.IsAuthenticated != true)
+                        {
+                            <a asp-controller="Account"
+                               asp-action="Login"
+                               asp-route-returnUrl="/Property/@Model.PropertyId"
+                               class="btn btn-primary w-100 btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                Login to Book
+                            </a>
+                        }
+                    }
+
+                    <hr />
+
+                    @* Chat with Owner *@
+                    @if (User.Identity?.IsAuthenticated == true &&
+                         User.IsInRole("Student"))
+                    {
+                        <a asp-area="Student"
+                           asp-controller="Chat"
+                           asp-action="Start"
+                           asp-route-ownerId="@Model.OwnerId"
+                           asp-route-propertyId="@Model.PropertyId"
+                           class="btn btn-outline-primary w-100">
+                            <i class="fas fa-comments me-2"></i>
+                            Chat with Owner
+                        </a>
+                    }
+                </div>
+            </div>
+
+            @* Owner Card *@
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fas fa-user me-2 text-primary"></i>
+                        Property Owner
+                    </h6>
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="@(Model.OwnerImageUrl ?? "/images/default-avatar.png")"
+                             class="rounded-circle object-fit-cover"
+                             width="52" height="52" alt="" />
+                        <div>
+                            <div class="fw-semibold">@Model.OwnerFullName</div>
+                            @if (Model.OwnerIsVerified)
+                            {
+                                <span class="badge bg-success small">
+                                    <i class="fas fa-shield-check me-1"></i>
+                                    Verified
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* Related Properties *@
+            @if (related.Any())
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent fw-semibold">
+                        <i class="fas fa-building me-2 text-primary"></i>
+                        Similar Properties
+                    </div>
+                    <div class="list-group list-group-flush">
+                        @foreach (var rel in related)
+                        {
+                            <a href="/Property/@rel.PropertyId"
+                               class="list-group-item list-group-item-action px-3 py-2">
+                                <div class="d-flex gap-3 align-items-center">
+                                    <img src="@(rel.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                                         class="rounded-2 object-fit-cover flex-shrink-0"
+                                         width="56" height="48" alt="" />
+                                    <div class="min-w-0">
+                                        <div class="small fw-semibold text-truncate">
+                                            @rel.Title
+                                        </div>
+                                        <div class="small text-muted">
+                                            EGP @rel.PricePerMonth.ToString("N0")/mo
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Leaflet Map ────────────────────────────────────────────────────────────
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = function () {
+                    const lat = parseFloat('@Model.Latitude');
+                    const lng = parseFloat('@Model.Longitude');
+
+            const map = L.map('propertyMap').setView([lat, lng], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup(`<strong>@Html.Raw(Model.Title)</strong><br>@Model.Address`)
+                .openPopup();
+        };
+        document.head.appendChild(script);
+
+        // ── Thumbnail Gallery ──────────────────────────────────────────────────────
+        document.querySelectorAll('.thumbnail-img').forEach(img => {
+            img.addEventListener('click', function () {
+                const slideIndex = parseInt(this.dataset.bsSlideTo);
+                const carousel = bootstrap.Carousel.getOrCreateInstance(
+                    document.getElementById('propertyGallery'));
+                carousel.to(slideIndex);
+            });
+        });
+
+        // ── Favorite Toggle ────────────────────────────────────────────────────────
+        document.querySelector('.favorite-btn')?.addEventListener('click', async function () {
+            const isAuth = '@User.Identity?.IsAuthenticated' === 'True';
+            if (!isAuth) {
+                window.location.href = '/Account/Login?returnUrl=/Property/@Model.PropertyId';
+                return;
+            }
+
+            const propertyId = this.dataset.propertyId;
+            const favorited = this.dataset.favorited === 'true';
+            const icon = this.querySelector('i');
+            const label = this.querySelector('span');
+
+            const res = await fetch('/Student/Favorites/Toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector(
+                        'input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: `propertyId=${propertyId}`
+            });
+
+            if (res.ok) {
+                icon.classList.toggle('text-danger', !favorited);
+                icon.classList.toggle('text-muted', favorited);
+                label.textContent = !favorited ? 'Saved' : 'Save';
+                this.dataset.favorited = (!favorited).toString();
+            }
+        });
+    </script>
+}
