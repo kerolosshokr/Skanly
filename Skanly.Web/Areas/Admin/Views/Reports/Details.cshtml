@@ -1,0 +1,318 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Reports/Details.cshtml *@
+@using Skanly.Domain_1.Enums
+@model Skanly.Application.Features.Reports.DTOs.ReportDto
+@{
+    ViewData["Title"] = $"Report #{Model.ReportId}";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+@using Skanly.Domain.Enums
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-1">
+            Report #@Model.ReportId
+        </h1>
+        <p class="text-muted mb-0">
+            <span class="badge @Model.StatusBadgeClass me-2">
+                @Model.StatusDisplay
+            </span>
+            Submitted @Model.TimeAgo
+        </p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Queue
+    </a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-4">
+        <i class="fas fa-check-circle me-2"></i>@ok
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger alert-dismissible fade show mb-4">
+        <i class="fas fa-exclamation-circle me-2"></i>@err
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+
+    @* Left: Report Info *@
+    <div class="col-lg-8">
+
+        @* Type & Description *@
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas @Model.ReportTypeIcon me-2"></i>
+                @Model.ReportTypeDisplay
+            </div>
+            <div class="card-body">
+                <h6 class="fw-semibold mb-2">Description</h6>
+                <p class="text-muted lh-lg mb-0">@Model.Description</p>
+
+                @if (!string.IsNullOrEmpty(Model.EvidenceUrl))
+                {
+                    <hr />
+                    <h6 class="fw-semibold mb-2">Evidence</h6>
+                    @if (Model.EvidenceUrl.EndsWith(".pdf",
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        <a href="@Model.EvidenceUrl"
+                           target="_blank"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-file-pdf me-1"></i>
+                            View PDF Evidence
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="@Model.EvidenceUrl" target="_blank">
+                            <img src="@Model.EvidenceUrl"
+                                 class="img-fluid rounded shadow-sm"
+                                 style="max-height:300px;"
+                                 alt="Evidence" />
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+
+        @* Reported Target *@
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">
+                Reported Target
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model.ReportedPropertyTitle))
+                {
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="@(Model.ReportedPropertyImageUrl ?? "/images/property-placeholder.jpg")"
+                             class="rounded-2 object-fit-cover"
+                             width="72" height="58" alt="" />
+                        <div>
+                            <div class="fw-semibold">
+                                @Model.ReportedPropertyTitle
+                            </div>
+                            <a href="/Property/@Model.ReportedPropertyId"
+                               target="_blank"
+                               class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="fas fa-external-link-alt me-1"></i>
+                                View Property
+                            </a>
+                        </div>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(Model.ReportedUserFullName))
+                {
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="@(Model.ReportedUserImageUrl ?? "/images/default-avatar.png")"
+                             class="rounded-circle object-fit-cover"
+                             width="52" height="52" alt="" />
+                        <div>
+                            <div class="fw-semibold">
+                                @Model.ReportedUserFullName
+                            </div>
+                            <div class="text-muted small">
+                                ID: @Model.ReportedUserId
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Resolution (if closed) *@
+        @if (!string.IsNullOrEmpty(Model.Resolution))
+        {
+            <div class="card border-0 shadow-sm border-@(
+                 Model.Status == ReportStatus.Resolved
+                     ? "success" : "secondary") border-opacity-50">
+                <div class="card-header
+                    bg-@(Model.Status == ReportStatus.Resolved
+                                                     ? "success" : "secondary")
+                    bg-opacity-10 fw-semibold">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Resolution Notes
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">@Model.Resolution</p>
+                    <div class="small text-muted">
+                        By @(Model.ResolvedByAdminName ?? "Admin")
+                        on @Model.ResolvedAt?.ToString("MMMM dd, yyyy HH:mm")
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Right: Reporter & Action Panel *@
+    <div class="col-lg-4">
+
+        @* Reporter Card *@
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">Reporter</div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="@(Model.ReporterImageUrl ?? "/images/default-avatar.png")"
+                         class="rounded-circle object-fit-cover"
+                         width="46" height="46" alt="" />
+                    <div>
+                        <div class="fw-semibold">@Model.ReporterFullName</div>
+                        <div class="text-muted small">ID: @Model.ReporterId</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Action Panel *@
+        @if (Model.IsOpen)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent fw-semibold">
+                    <i class="fas fa-gavel me-2 text-primary"></i>
+                    Take Action
+                </div>
+                <div class="card-body">
+                    <form asp-area="Admin"
+                          asp-controller="Reports"
+                          asp-action="Resolve"
+                          method="post"
+                          id="resolveForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ReportId"
+                               value="@Model.ReportId" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Decision <span class="text-danger">*</span>
+                            </label>
+                            <div class="d-flex flex-column gap-2">
+                                @if (Model.Status == ReportStatus.Open)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               name="NewStatus"
+                                               value="@((int)ReportStatus.UnderInvestigation)"
+                                               id="statusInvestigate" />
+                                        <label class="form-check-label"
+                                               for="statusInvestigate">
+                                            <i class="fas fa-search text-warning me-1"></i>
+                                            Mark Under Investigation
+                                        </label>
+                                    </div>
+                                }
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="radio"
+                                           name="NewStatus"
+                                           value="@((int)ReportStatus.Resolved)"
+                                           id="statusResolved" />
+                                    <label class="form-check-label"
+                                           for="statusResolved">
+                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                        Resolve
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="radio"
+                                           name="NewStatus"
+                                           value="@((int)ReportStatus.Dismissed)"
+                                           id="statusDismissed" />
+                                    <label class="form-check-label"
+                                           for="statusDismissed">
+                                        <i class="fas fa-times-circle text-secondary me-1"></i>
+                                        Dismiss
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Extra actions shown only when Resolving *@
+                        <div id="resolveExtras" style="display:none;">
+                            @if (!string.IsNullOrEmpty(Model.ReportedUserId))
+                            {
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="DeactivateUser"
+                                           value="true"
+                                           id="deactivateUser" />
+                                    <label class="form-check-label small"
+                                           for="deactivateUser">
+                                        <i class="fas fa-user-slash text-danger me-1"></i>
+                                        Also deactivate reported user
+                                    </label>
+                                </div>
+                            }
+                            @if (Model.ReportedPropertyId.HasValue)
+                            {
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="RemoveProperty"
+                                           value="true"
+                                           id="removeProperty" />
+                                    <label class="form-check-label small"
+                                           for="removeProperty">
+                                        <i class="fas fa-home text-danger me-1"></i>
+                                        Also remove reported property
+                                    </label>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Resolution Notes
+                                <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="Resolution"
+                                      class="form-control"
+                                      rows="4"
+                                      placeholder="Describe your findings and the action taken. The reporter will see this."></textarea>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            <i class="fas fa-gavel me-2"></i>Submit Decision
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center text-muted py-4">
+                    <i class="fas fa-lock fa-2x mb-2 opacity-50"></i>
+                    <p class="mb-0 small">
+                        This report has been @Model.StatusDisplay.ToLower()
+                        and is closed.
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Show extra action checkboxes only when "Resolve" is selected
+        document.querySelectorAll('input[name="NewStatus"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const extras = document.getElementById('resolveExtras');
+                if (extras) {
+                    extras.style.display =
+                        this.value === '@((int)ReportStatus.Resolved)'
+                            ? '' : 'none';
+                }
+            });
+        });
+    </script>
+}

@@ -26,15 +26,15 @@ else
                                  loading="lazy" />
                         </a>
 
-                        @* Favorite Toggle *@
-                        <button class="btn position-absolute top-0 end-0 m-2
-                            p-2 rounded-circle bg-white shadow-sm
-                            favorite-btn"
+                        @* Replace the old heart button in the card with: *@
+                        <button class="btn btn-sm position-absolute top-0 end-0 m-2
+                            rounded-circle bg-white shadow-sm skanly-favorite-btn
+                            d-flex align-items-center justify-content-center"
                                 data-property-id="@prop.PropertyId"
                                 data-favorited="@prop.IsFavorited.ToString().ToLower()"
-                                style="width:38px;height:38px;"
-                                title="@(prop.IsFavorited ? "Remove from favorites" : "Save")">
-                            <i class="fas fa-heart @(prop.IsFavorited ? "text-danger" : "text-muted")"></i>
+                                style="width:38px;height:38px;border:none;"
+                                title="@(prop.IsFavorited ? "Remove from saved" : "Save")">
+                            <i class="@(prop.IsFavorited ? "fas text-danger" : "far text-muted") fa-heart"></i>
                         </button>
 
                         @* Type Badge *@

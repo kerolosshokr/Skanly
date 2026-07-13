@@ -1,0 +1,152 @@
+﻿@* Skanly.Web/Views/Reports/MyReports.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Reports.DTOs.ReportDto>
+
+@{
+    ViewData["Title"] = "My Reports";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4" style="max-width:860px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title">
+                <i class="fas fa-flag me-2 text-danger"></i>My Reports
+            </h1>
+            <p class="text-muted mb-0">
+                Track the status of reports you have submitted.
+            </p>
+        </div>
+        <a asp-action="Create" class="btn btn-danger btn-sm">
+            <i class="fas fa-flag me-1"></i>New Report
+        </a>
+    </div>
+
+    @if (TempData["Success"] is string ok)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4">
+            <i class="fas fa-check-circle me-2"></i>@ok
+            <button type="button" class="btn-close"
+                    data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Items.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-flag fa-4x mb-3 opacity-25"></i>
+            <h5>No reports submitted yet</h5>
+            <p class="mb-0 small">
+                If you encounter a suspicious listing or user,
+                use the report button to alert our team.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="list-group list-group-flush">
+                @foreach (var report in Model.Items)
+                {
+                    <a href="/Reports/Details/@report.ReportId"
+                       class="list-group-item list-group-item-action px-4 py-3">
+                        <div class="d-flex gap-3 align-items-start">
+
+                            @* Type Icon *@
+                            <div class="flex-shrink-0 mt-1">
+                                <span class="icon-circle bg-danger bg-opacity-10
+                                    d-flex align-items-center
+                                    justify-content-center rounded-circle"
+                                      style="width:42px;height:42px;">
+                                    <i class="fas @report.ReportTypeIcon"
+                                       style="font-size:14px;"></i>
+                                </span>
+                            </div>
+
+                            @* Content *@
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex justify-content-between
+                                    align-items-start flex-wrap gap-2">
+                                    <div>
+                                        <span class="fw-semibold">
+                                            @report.ReportTypeDisplay
+                                        </span>
+                                        @if (!string.IsNullOrEmpty(
+                                                report.ReportedPropertyTitle))
+                                        {
+                                            <span class="text-muted small ms-2">
+                                                — @report.ReportedPropertyTitle
+                                            </span>
+                                        }
+                                        else if (!string.IsNullOrEmpty(
+                                                    report.ReportedUserFullName))
+                                        {
+                                            <span class="text-muted small ms-2">
+                                                — @report.ReportedUserFullName
+                                            </span>
+                                        }
+                                    </div>
+                                    <span class="badge @report.StatusBadgeClass
+                                        flex-shrink-0">
+                                        @report.StatusDisplay
+                                    </span>
+                                </div>
+
+                                <p class="text-muted small mb-1 mt-1">
+                                    @(report.Description.Length > 120
+                                        ? report.Description[..120] + "…"
+                                        : report.Description)
+                                </p>
+
+                                <div class="small text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Submitted @report.TimeAgo
+                                    @if (report.ResolvedAt.HasValue)
+                                    {
+                                        <span class="ms-3">
+                                            <i class="fas fa-check-circle
+                                            text-success me-1"></i>
+                                            Resolved
+                                            @report.ResolvedAt.Value
+                                            .ToString("MMM dd, yyyy")
+                                        </span>
+                                    }
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(report.Resolution) &&
+                                     !report.IsOpen)
+                                {
+                                    <div class="alert alert-light border
+                                        small py-2 mt-2 mb-0">
+                                        <strong>Resolution:</strong>
+                                        @report.Resolution
+                                    </div>
+                                }
+                            </div>
+
+                            @* Arrow *@
+                            <i class="fas fa-chevron-right text-muted
+                            flex-shrink-0 mt-2"></i>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="MyReports"
+                               asp-route-page="@i">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+</div>

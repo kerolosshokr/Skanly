@@ -18,6 +18,8 @@ public class ReportConfiguration : IEntityTypeConfiguration<Report>
         builder.Property(r => r.Resolution).HasMaxLength(1000);
         builder.Property(r => r.ReportType).HasConversion<byte>();
         builder.Property(r => r.Status).HasConversion<byte>();
+        // Skanly.Infrastructure/Persistence/Configurations/ReportConfiguration.cs — add
+        builder.Property(r => r.EvidenceUrl).HasMaxLength(300);
 
         builder.HasIndex(r => r.Status);
 

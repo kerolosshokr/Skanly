@@ -1,0 +1,28 @@
+﻿@* Inside the student nav — wherever the Favorites link lives *@
+<a asp-area="Student"
+   asp-controller="Favorites"
+   asp-action="Index"
+   class="nav-link position-relative">
+    <i class="fas fa-heart me-1"></i>Saved
+    <span class="position-absolute top-0 start-100 translate-middle
+        badge rounded-pill bg-danger favorite-count-badge"
+          style="font-size:10px;"
+          id="favNavBadge">
+    </span>
+</a>
+
+<script>
+    // Load count on page ready for the nav badge
+    (async function() {
+        try {
+            const res = await fetch('/Student/Favorites/Count');
+            if (!res.ok) return;
+            const { count } = await res.json();
+            const badge = document.getElementById('favNavBadge');
+            if (badge) {
+                badge.textContent  = count > 0 ? count : '';
+                badge.style.display= count > 0 ? '' : 'none';
+            }
+        } catch { /* silent */ }
+    })();
+</script>

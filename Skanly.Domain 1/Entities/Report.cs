@@ -21,6 +21,9 @@ public class Report : BaseEntity<int>, IAggregateRoot
     [Required, MaxLength(1000)]
     public string Description { get; set; } = string.Empty;
 
+    [MaxLength(500)]
+    public string? EvidenceUrl { get; set; }
+
     public ReportStatus Status { get; set; } = ReportStatus.Open;
 
     public string? ResolvedByAdminId { get; set; }

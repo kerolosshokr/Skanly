@@ -1,0 +1,206 @@
+﻿@* Skanly.Web/Areas/Student/Views/Reviews/Edit.cshtml *@
+@model Skanly.Application.Features.Reviews.DTOs.UpdateReviewDto
+@{
+    ViewData["Title"] = "Edit Review";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+    var review = ViewBag.Review as
+        Skanly.Application.Features.Reviews.DTOs.ReviewDto;
+}
+
+<div class="container py-4" style="max-width:720px;">
+
+    <div class="mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-edit me-2 text-primary"></i>Edit Review
+        </h1>
+        @if (review is not null)
+        {
+            <p class="text-muted">
+                Editing your review for
+                <strong>@review.PropertyTitle</strong>.
+                <span class="badge bg-warning text-dark ms-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    You can only edit once
+                </span>
+            </p>
+        }
+    </div>
+
+    <form asp-action="Edit" method="post" id="editForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="ReviewId" />
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger mb-4"
+             id="validationSummary"
+             style="display:none;"></div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <h6 class="fw-semibold mb-4">Update Your Ratings</h6>
+
+                @{
+                    var editCats = new[]
+                    {
+                        new { Field = "CleanlinessRating",
+                              Label = "Cleanliness",
+                              Icon  = "fa-broom",
+                              Color = "info",
+                              CurrentVal = Model.CleanlinessRating },
+                        new { Field = "SafetyRating",
+                              Label = "Safety",
+                              Icon  = "fa-shield-alt",
+                              Color = "success",
+                              CurrentVal = Model.SafetyRating },
+                        new { Field = "InternetRating",
+                              Label = "Internet Quality",
+                              Icon  = "fa-wifi",
+                              Color = "primary",
+                              CurrentVal = Model.InternetRating },
+                        new { Field = "LocationRating",
+                              Label = "Location",
+                              Icon  = "fa-map-marker-alt",
+                              Color = "danger",
+                              CurrentVal = Model.LocationRating },
+                        new { Field = "QuietnessRating",
+                              Label = "Quietness",
+                              Icon  = "fa-volume-mute",
+                              Color = "secondary",
+                              CurrentVal = Model.QuietnessRating },
+                        new { Field = "OverallRating",
+                              Label = "Overall Experience",
+                              Icon  = "fa-star",
+                              Color = "warning",
+                              CurrentVal = Model.OverallRating },
+                    };
+                }
+
+                @foreach (var cat in editCats)
+                {
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas @cat.Icon text-@cat.Color me-2"></i>
+                            @cat.Label
+                        </label>
+
+                        <div class="star-selector d-flex gap-2 align-items-center"
+                             data-field="@cat.Field"
+                             data-initial="@cat.CurrentVal">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <button type="button"
+                                        class="star-btn btn p-0 border-0"
+                                        data-value="@i"
+                                        style="font-size:2rem;line-height:1;
+                                    color:@(i <= cat.CurrentVal ? "#FFC107" : "#dee2e6");
+                                    background:none;transition:transform .1s;">
+                                    ★
+                                </button>
+                            }
+                            <span class="star-label text-muted small ms-2"
+                                  id="label_@cat.Field">
+                                @cat.CurrentVal / 5
+                            </span>
+                        </div>
+
+                        <input type="hidden"
+                               name="@cat.Field"
+                               id="@cat.Field"
+                               value="@cat.CurrentVal" />
+                    </div>
+                }
+
+                <hr />
+
+                <div class="mb-3">
+                    <label asp-for="Comment" class="form-label fw-semibold">
+                        <i class="fas fa-pen me-2 text-primary"></i>
+                        Your Written Review
+                    </label>
+                    <textarea asp-for="Comment"
+                              class="form-control"
+                              rows="5"
+                              id="commentField"
+                              placeholder="Update your written review..."></textarea>
+                    <div class="d-flex justify-content-end mt-1">
+                        <span class="small text-muted">
+                            <span id="charCount">@(Model.Comment?.Length ?? 0)</span> / 1000
+                        </span>
+                    </div>
+                </div>
+
+                <div class="alert alert-info small mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    After updating, you will not be able to edit this review again.
+                    Please make sure your ratings are accurate.
+                </div>
+            </div>
+
+            <div class="card-footer bg-transparent d-flex
+                justify-content-between align-items-center">
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Cancel
+                </a>
+                <button type="submit"
+                        class="btn btn-primary fw-semibold px-4"
+                        id="updateBtn">
+                    <i class="fas fa-save me-2"></i>Update Review
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize stars with existing values
+        document.querySelectorAll('.star-selector').forEach(selector => {
+            const field   = selector.dataset.field;
+            const hidden  = document.getElementById(field);
+            const label   = document.getElementById(`label_${field}`);
+            const stars   = selector.querySelectorAll('.star-btn');
+            let current   = parseInt(selector.dataset.initial) || 0;
+
+            const labels  = {
+                1:'😞 Poor', 2:'😐 Fair', 3:'🙂 Good',
+                4:'😊 Very Good', 5:'🤩 Excellent'
+            };
+
+            function paint(upTo, color) {
+                stars.forEach((s, i) =>
+                    s.style.color = i < upTo ? color : '#dee2e6');
+            }
+
+            paint(current, '#FFC107');
+
+            stars.forEach((star, idx) => {
+                star.addEventListener('mouseenter', () => paint(idx + 1, '#FFC107'));
+                star.addEventListener('mouseleave', () => paint(current, '#FFC107'));
+                star.addEventListener('click', function () {
+                    current           = idx + 1;
+                    hidden.value      = current;
+                    label.textContent = labels[current];
+                    paint(current, '#FFC107');
+                    this.style.transform = 'scale(1.3)';
+                    setTimeout(() => this.style.transform = 'scale(1)', 150);
+                });
+            });
+        });
+
+        // Char counter
+        const commentField = document.getElementById('commentField');
+        const charCount    = document.getElementById('charCount');
+        commentField?.addEventListener('input', function () {
+            charCount.textContent = this.value.length;
+        });
+
+        // Submit spinner
+        document.getElementById('editForm').addEventListener('submit', function () {
+            const btn = document.getElementById('updateBtn');
+            btn.disabled = true;
+            btn.innerHTML =
+                '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+        });
+    </script>
+}

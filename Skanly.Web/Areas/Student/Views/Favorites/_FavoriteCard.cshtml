@@ -1,0 +1,122 @@
+﻿@* Skanly.Web/Areas/Student/Views/Favorites/_FavoriteCard.cshtml *@
+@model Skanly.Application.Features.Favorites.DTOs.FavoriteDto
+
+<div class="col" id="fav-card-@Model.PropertyId">
+    <div class="card h-100 border-0 shadow-sm favorite-card hover-lift"
+         style="transition:transform .2s,box-shadow .2s;">
+
+        @* ── Image Area ────────────────────────────────────────────────────── *@
+        <div class="position-relative overflow-hidden"
+             style="border-radius:8px 8px 0 0;">
+            <a href="/Property/@Model.PropertyId">
+                <img src="@(Model.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                     class="card-img-top object-fit-cover"
+                     height="210"
+                     alt="@Model.Title"
+                     loading="lazy" />
+            </a>
+
+            @* Remove Favorite Button *@
+            <button class="btn btn-sm position-absolute top-0 end-0 m-2
+                rounded-circle bg-white shadow-sm remove-favorite-btn
+                d-flex align-items-center justify-content-center"
+                    data-property-id="@Model.PropertyId"
+                    style="width:38px;height:38px;border:none;"
+                    title="Remove from saved">
+                <i class="fas fa-heart text-danger"></i>
+            </button>
+
+            @* Availability Badge *@
+            <span class="badge @Model.AvailabilityBadgeClass
+                position-absolute bottom-0 start-0 m-2">
+                @Model.AvailabilityDisplay
+            </span>
+
+            @* Property Type Badge *@
+            <span class="badge bg-dark bg-opacity-60
+                position-absolute bottom-0 end-0 m-2">
+                @Model.PropertyTypeDisplay
+            </span>
+        </div>
+
+        @* ── Card Body ─────────────────────────────────────────────────────── *@
+        <div class="card-body pb-2">
+
+            @* Title *@
+            <a href="/Property/@Model.PropertyId"
+               class="text-decoration-none text-dark">
+                <h6 class="fw-semibold mb-1 text-truncate"
+                    title="@Model.Title">
+                    @Model.Title
+                </h6>
+            </a>
+
+            @* Location *@
+            <p class="text-muted small mb-2">
+                <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                @Model.AreaNameEn
+                @if (!string.IsNullOrEmpty(Model.UniversityNameEn))
+                {
+                    <span class="ms-2">
+                        <i class="fas fa-graduation-cap me-1 text-primary"></i>
+                        @Model.UniversityNameEn
+                    </span>
+                }
+            </p>
+
+            @* Quick Stats Row *@
+            <div class="d-flex gap-3 small text-muted mb-2">
+                <span title="Rooms">
+                    <i class="fas fa-door-open me-1"></i>@Model.Rooms rm
+                </span>
+                <span title="Beds">
+                    <i class="fas fa-bed me-1"></i>@Model.Beds bd
+                </span>
+                @if (Model.AverageRating > 0)
+                {
+                    <span class="text-warning">
+                        <i class="fas fa-star me-1"></i>
+                        @Model.AverageRating.ToString("F1")
+                    </span>
+                }
+            </div>
+
+            @* Owner *@
+            @if (!string.IsNullOrEmpty(Model.OwnerFullName))
+            {
+                <div class="d-flex align-items-center gap-1 small text-muted">
+                    <i class="fas fa-user-circle me-1"></i>
+                    <span>@Model.OwnerFullName</span>
+                    @if (Model.OwnerIsVerified)
+                    {
+                        <i class="fas fa-check-circle text-success ms-1"
+                           title="Verified Owner"
+                           style="font-size:11px;"></i>
+                    }
+                </div>
+            }
+        </div>
+
+        @* ── Card Footer ───────────────────────────────────────────────────── *@
+        <div class="card-footer bg-transparent border-0 pt-0
+            d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-bold text-primary">
+                    EGP @Model.PricePerMonth.ToString("N0")
+                </span>
+                <span class="text-muted small">/mo</span>
+            </div>
+
+            <div class="d-flex gap-2 align-items-center">
+                <span class="text-muted" style="font-size:11px;">
+                    <i class="fas fa-bookmark me-1 text-warning"></i>
+                    @Model.TimeAgoSaved
+                </span>
+                <a href="/Property/@Model.PropertyId"
+                   class="btn btn-sm btn-outline-primary px-3">
+                    View
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

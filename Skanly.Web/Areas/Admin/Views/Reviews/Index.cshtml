@@ -1,0 +1,306 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Reviews/Index.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Reviews.DTOs.ReviewDto>
+
+@{
+    ViewData["Title"] = "Review Moderation";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-star me-2 text-warning"></i>Review Moderation
+    </h1>
+    <span class="text-muted">@Model.TotalCount total review(s)</span>
+</div>
+
+@* Filter Bar *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           value="@ViewBag.Search"
+                           class="form-control border-start-0"
+                           placeholder="Search student name, property, comment..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="hiddenOnly" class="form-select">
+                    <option value="">All Reviews</option>
+                    <option value="false"
+                            selected="@(ViewBag.HiddenOnly?.ToString() == "False")">
+                        Visible Only
+                    </option>
+                    <option value="true"
+                            selected="@(ViewBag.HiddenOnly?.ToString() == "True")">
+                        Hidden Only
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-redo me-1"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Reviews Table *@
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-star fa-3x mb-3 opacity-25"></i>
+        <p>No reviews found.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px">#</th>
+                        <th>Student</th>
+                        <th>Property</th>
+                        <th class="text-center">Ratings</th>
+                        <th>Comment</th>
+                        <th class="text-center">Status</th>
+                        <th>Date</th>
+                        <th class="text-center" style="width:120px">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var (review, idx) in Model.Items
+                        .Select((r, i) => (r, i)))
+                    {
+                        <tr id="review-row-@review.ReviewId"
+                            class="@(review.IsHidden ? "table-warning opacity-75" : "")">
+                            <td class="text-muted small">
+                                @(((Model.PageNumber - 1) * Model.PageSize) + idx + 1)
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="@(review.StudentImageUrl ?? "/images/default-avatar.png")"
+                                         class="rounded-circle object-fit-cover"
+                                         width="32" height="32" alt="" />
+                                    <span class="small fw-semibold">
+                                        @review.StudentFullName
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-truncate"
+                                     style="max-width:180px"
+                                     title="@review.PropertyTitle">
+                                    @review.PropertyTitle
+                                </div>
+                                <div class="small text-muted">
+                                    @review.AreaNameEn
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                @* Compact 6-category grid *@
+                                <div style="font-size:11px;line-height:1.6;">
+                                    <span class="text-warning">★</span>
+                                    @review.OverallRating Overall<br />
+                                    @review.CleanlinessRating /
+                                    @review.SafetyRating /
+                                    @review.InternetRating /<br />
+                                    @review.LocationRating /
+                                    @review.QuietnessRating
+                                    <span class="text-muted">
+                                        (C/S/I/L/Q)
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(review.Comment))
+                                {
+                                    <span class="small text-muted"
+                                          title="@review.Comment">
+                                        "@(review.Comment.Length > 80
+                                                                                    ? review.Comment[..80] + "…"
+                                                                                    : review.Comment)"
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">No comment</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (review.IsHidden)
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-eye-slash me-1"></i>Hidden
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-eye me-1"></i>Visible
+                                    </span>
+                                }
+                            </td>
+                            <td class="small text-muted">
+                                @review.CreatedAt.ToString("MMM dd, yyyy")
+                                @if (review.UpdatedAt.HasValue)
+                                {
+                                    <div style="font-size:10px;">
+                                        Edited @review.UpdatedAt.Value.ToString("MMM dd")
+                                    </div>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    @if (!review.IsHidden)
+                                    {
+                                        <button class="btn btn-outline-warning
+                                            hide-btn"
+                                                data-review-id="@review.ReviewId"
+                                                title="Hide review">
+                                            <i class="fas fa-eye-slash"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-success
+                                            unhide-btn"
+                                                data-review-id="@review.ReviewId"
+                                                title="Restore review">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    }
+                                    <button class="btn btn-outline-danger
+                                        delete-btn"
+                                            data-review-id="@review.ReviewId"
+                                            title="Permanently delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <small class="text-muted">@Model.TotalCount reviews</small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@i"
+                                   asp-route-search="@ViewBag.Search"
+                                   asp-route-hiddenOnly="@ViewBag.HiddenOnly">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const token = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        async function adminAction(url, reviewId, successCallback) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `id=${reviewId}`
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                successCallback();
+                showToast('Action completed successfully.', 'success');
+            } else {
+                showToast(data.message ?? 'Action failed.', 'danger');
+            }
+        }
+
+        // Hide
+        document.querySelectorAll('.hide-btn').forEach(btn =>
+            btn.addEventListener('click', function () {
+                const id  = this.dataset.reviewId;
+                const row = document.getElementById(`review-row-${id}`);
+                adminAction('/Admin/Reviews/Hide', id, () => {
+                    row.classList.add('table-warning', 'opacity-75');
+                });
+            }));
+
+        // Unhide
+        document.querySelectorAll('.unhide-btn').forEach(btn =>
+            btn.addEventListener('click', function () {
+                const id  = this.dataset.reviewId;
+                const row = document.getElementById(`review-row-${id}`);
+                adminAction('/Admin/Reviews/Unhide', id, () => {
+                    row.classList.remove('table-warning', 'opacity-75');
+                });
+            }));
+
+        // Delete
+        document.querySelectorAll('.delete-btn').forEach(btn =>
+            btn.addEventListener('click', function () {
+                if (!confirm('Permanently delete this review? ' +
+                    'This will recalculate the property rating.')) return;
+                const id  = this.dataset.reviewId;
+                const row = document.getElementById(`review-row-${id}`);
+                adminAction('/Admin/Reviews/Delete', id, () => {
+                    row.style.transition = 'opacity .3s';
+                    row.style.opacity    = '0';
+                    setTimeout(() => row.remove(), 300);
+                });
+            }));
+
+        function showToast(message, type) {
+            const c = document.getElementById('toastContainer') || (() => {
+                const el = document.createElement('div');
+                el.id = 'toastContainer';
+                el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                el.style.zIndex = '9999';
+                document.body.appendChild(el);
+                return el;
+            })();
+            const t = document.createElement('div');
+            t.className = `toast align-items-center text-bg-${type} border-0`;
+            t.setAttribute('role', 'alert');
+            t.innerHTML = `<div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast"></button>
+            </div>`;
+            c.appendChild(t);
+            new bootstrap.Toast(t, { delay: 3000 }).show();
+            t.addEventListener('hidden.bs.toast', () => t.remove());
+        }
+    </script>
+}

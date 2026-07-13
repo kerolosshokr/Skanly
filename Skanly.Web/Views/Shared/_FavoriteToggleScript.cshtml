@@ -1,0 +1,197 @@
+﻿@* Skanly.Web/Views/Shared/_FavoriteToggleScript.cshtml *@
+@* Include this partial in _Layout.cshtml: @await Html.PartialAsync("_FavoriteToggleScript") *@
+<script>
+    /**
+     * Global Favorite Toggle
+     * ─────────────────────────────────────────────────────────────────────────
+     * Any element with class "skanly-favorite-btn" and data-property-id
+     * gets this behaviour automatically, regardless of page.
+     *
+     * Expected markup:
+     *   <button class="skanly-favorite-btn"
+     *           data-property-id="42"
+     *           data-favorited="true|false">
+     *       <i class="fas fa-heart"></i>
+     *   </button>
+     *
+     * The button updates instantly (optimistic UI), then confirms with server.
+     * On server failure the UI reverts and shows a toast.
+     */
+    (function () {
+        const IS_AUTHENTICATED = '@User.Identity?.IsAuthenticated' === 'True';
+        const ROLE             = '@(User.IsInRole("Student") ? "Student" : "other")';
+
+        function getToken() {
+            return document.querySelector(
+                'input[name="__RequestVerificationToken"]')?.value ?? '';
+        }
+
+        function updateButtonState(btn, favorited) {
+            const icon = btn.querySelector('i, span.heart-icon');
+            if (!icon) return;
+
+            if (favorited) {
+                icon.classList.remove('text-muted', 'far');
+                icon.classList.add('text-danger', 'fas');
+                btn.setAttribute('title', 'Remove from saved');
+                btn.setAttribute('data-favorited', 'true');
+            } else {
+                icon.classList.remove('text-danger', 'fas');
+                icon.classList.add('text-muted', 'far');
+                btn.setAttribute('title', 'Save this home');
+                btn.setAttribute('data-favorited', 'false');
+            }
+        }
+
+        function showMiniToast(message, type) {
+            const c = document.getElementById('toastContainer') || (() => {
+                const el = document.createElement('div');
+                el.id        = 'toastContainer';
+                el.className =
+                    'toast-container position-fixed bottom-0 end-0 p-3';
+                el.style.zIndex = '9999';
+                document.body.appendChild(el);
+                return el;
+            })();
+
+            const t = document.createElement('div');
+            t.className =
+                `toast align-items-center text-bg-${type} border-0`;
+            t.setAttribute('role', 'alert');
+            t.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"></button>
+                </div>`;
+            c.appendChild(t);
+            new bootstrap.Toast(t, { delay: 2500 }).show();
+            t.addEventListener('hidden.bs.toast', () => t.remove());
+        }
+
+        async function handleToggle(btn) {
+            // Redirect unauthenticated users to login
+            if (!IS_AUTHENTICATED) {
+                const returnUrl = encodeURIComponent(window.location.pathname);
+                window.location.href = `/Account/Login?returnUrl=${returnUrl}`;
+                return;
+            }
+
+            // Only students can favorite
+            if (ROLE !== 'Student') {
+                showMiniToast(
+                    'Only students can save properties.', 'warning');
+                return;
+            }
+
+            const propertyId = btn.dataset.propertyId;
+            const wasFavorited = btn.dataset.favorited === 'true';
+
+            // Optimistic update
+            updateButtonState(btn, !wasFavorited);
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/Student/Favorites/Toggle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':
+                            'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': getToken()
+                    },
+                    body: `propertyId=${propertyId}`
+                });
+
+                if (!res.ok) throw new Error('Network error');
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // Confirm final state from server
+                    updateButtonState(btn, data.isFavorited);
+                    showMiniToast(data.message,
+                        data.isFavorited ? 'danger' : 'secondary');
+
+                    // Update any navbar/badge counts
+                    document.querySelectorAll('.favorite-count-badge')
+                        .forEach(el => {
+                            el.textContent = data.totalFavorites;
+                            el.style.display =
+                                data.totalFavorites > 0 ? '' : 'none';
+                        });
+
+                    // If we're on the favorites page and item was removed,
+                    // animate card out
+                    if (!data.isFavorited) {
+                        const card = document.getElementById(
+                            `fav-card-${propertyId}`);
+                        if (card) {
+                            card.style.transition =
+                                'opacity .3s, transform .3s';
+                            card.style.opacity   = '0';
+                            card.style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                card.remove();
+                                const remaining = document.querySelectorAll(
+                                    '[id^="fav-card-"]').length;
+                                if (remaining === 0) location.reload();
+                            }, 300);
+                        }
+                    }
+                } else {
+                    // Revert on failure
+                    updateButtonState(btn, wasFavorited);
+                    showMiniToast(
+                        data.message || 'Something went wrong.', 'danger');
+                }
+            } catch {
+                // Revert on network error
+                updateButtonState(btn, wasFavorited);
+                showMiniToast(
+                    'Connection error. Please try again.', 'danger');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // Attach to all current and future buttons via event delegation
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.skanly-favorite-btn');
+            if (btn) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleToggle(btn);
+            }
+        });
+
+        // On search/browse pages: bulk-load favorite states
+        async function hydrateSearchGrid() {
+            const buttons = document.querySelectorAll(
+                '.skanly-favorite-btn[data-favorited="unknown"]');
+            if (!buttons.length || !IS_AUTHENTICATED || ROLE !== 'Student')
+                return;
+
+            try {
+                const res = await fetch('/Student/Favorites/GetIds');
+                if (!res.ok) return;
+                const { ids } = await res.json();
+                const idSet = new Set(ids);
+
+                buttons.forEach(btn => {
+                    const propertyId = parseInt(btn.dataset.propertyId);
+                    updateButtonState(btn, idSet.has(propertyId));
+                    btn.dataset.favorited = idSet.has(propertyId)
+                        ? 'true' : 'false';
+                });
+            } catch { /* silent fail */ }
+        }
+
+        // Run hydration after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener(
+                'DOMContentLoaded', hydrateSearchGrid);
+        } else {
+            hydrateSearchGrid();
+        }
+    })();
+</script>

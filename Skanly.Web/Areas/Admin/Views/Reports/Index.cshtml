@@ -1,0 +1,479 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Reports/Index.cshtml *@
+@using Skanly.Domain_1.Enums
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Reports.DTOs.ReportDto>
+
+@{
+
+    ViewData["Title"] = "Reports Management";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var summary = ViewBag.Summary as
+        Skanly.Application.Features.Reports.DTOs.ReportSummaryDto;
+}
+@using Skanly.Domain.Enums
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-flag me-2 text-danger"></i>Reports Management
+    </h1>
+</div>
+
+@* Summary Cards *@
+@if (summary is not null)
+{
+    <div class="row g-3 mb-4">
+        @{
+            var summaryCards = new[]
+            {
+                new { Label = "Open",               Value = summary.TotalOpen,
+                      Color = "danger",  Icon = "fa-flag" },
+                new { Label = "Under Investigation",
+                      Value = summary.TotalUnderInvestigation,
+                      Color = "warning", Icon = "fa-search" },
+                new { Label = "Resolved",           Value = summary.TotalResolved,
+                      Color = "success", Icon = "fa-check-circle" },
+                new { Label = "Dismissed",          Value = summary.TotalDismissed,
+                      Color = "secondary",Icon = "fa-times-circle" },
+                new { Label = "All Time",           Value = summary.TotalAllTime,
+                      Color = "primary", Icon = "fa-list" },
+            };
+        }
+        @foreach (var card in summaryCards)
+        {
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card border-0 shadow-sm text-center h-100
+                    @(card.Label == "Open" && card.Value > 0
+                         ? "border-danger border-opacity-50" : "")">
+                    <div class="card-body py-3">
+                        <span class="icon-circle bg-@card.Color bg-opacity-15
+                            text-@card.Color rounded-circle
+                            d-inline-flex align-items-center
+                            justify-content-center mb-2"
+                              style="width:44px;height:44px;">
+                            <i class="fas @card.Icon"></i>
+                        </span>
+                        <div class="fs-4 fw-bold">
+                            @card.Value
+                            @if (card.Label == "Open" && card.Value > 0)
+                            {
+                                <span class="badge bg-danger rounded-pill ms-1"
+                                      style="font-size:11px;">
+                                    !
+                                </span>
+                            }
+                        </div>
+                        <div class="text-muted small">@card.Label</div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* Type breakdown *@
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent fw-semibold small">
+                    By Type
+                </div>
+                <div class="card-body py-2">
+                    @foreach (var tb in summary.ByType)
+                    {
+                        <div class="d-flex justify-content-between
+                            align-items-center py-1">
+                            <span class="small">
+                                <i class="fas @tb.Icon text-danger me-2"></i>
+                                @tb.TypeDisplay
+                            </span>
+                            <span class="badge bg-secondary rounded-pill">
+                                @tb.Count
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Filters *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           value="@ViewBag.Search"
+                           class="form-control border-start-0"
+                           placeholder="Search description..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    @foreach (var s in Enum.GetValues<ReportStatus>())
+                    {
+                        <option value="@((int)s)"
+                                selected="@(ViewBag.StatusFilter != null &&
+                                                                    (ReportStatus)ViewBag.StatusFilter == s)">
+                            @s
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">All Types</option>
+                    @foreach (var t in Enum.GetValues<ReportType>())
+                    {
+                        <option value="@((int)t)"
+                                selected="@(ViewBag.TypeFilter != null &&
+                                                                    (ReportType)ViewBag.TypeFilter == t)">
+                            @t
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="fas fa-redo me-1"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Reports Table *@
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-flag fa-3x mb-3 opacity-25"></i>
+        <p>No reports found.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px">#</th>
+                        <th>Reporter</th>
+                        <th>Type</th>
+                        <th>Target</th>
+                        <th>Description</th>
+                        <th class="text-center">Status</th>
+                        <th>Submitted</th>
+                        <th class="text-center" style="width:120px">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var (report, idx) in Model.Items
+                        .Select((r, i) => (r, i)))
+                    {
+                        <tr id="report-row-@report.ReportId"
+                            class="@(report.Status == ReportStatus.Open
+                                                            ? "table-danger bg-opacity-25" : "")">
+                            <td class="text-muted small">#@report.ReportId</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="@(report.ReporterImageUrl ?? "/images/default-avatar.png")"
+                                         class="rounded-circle object-fit-cover"
+                                         width="30" height="30" alt="" />
+                                    <span class="small fw-semibold">
+                                        @report.ReporterFullName
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="small">
+                                    <i class="fas @report.ReportTypeIcon me-1"></i>
+                                    @report.ReportTypeDisplay
+                                </span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(
+                                        report.ReportedPropertyTitle))
+                                {
+                                    <div class="small fw-semibold">
+                                        <i class="fas fa-home text-muted me-1"></i>
+                                        @report.ReportedPropertyTitle
+                                    </div>
+                                }
+                                else if (!string.IsNullOrEmpty(
+                                            report.ReportedUserFullName))
+                                {
+                                    <div class="small fw-semibold">
+                                        <i class="fas fa-user text-muted me-1"></i>
+                                        @report.ReportedUserFullName
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="small text-muted"
+                                      title="@report.Description">
+                                    @(report.Description.Length > 70
+                                        ? report.Description[..70] + "…"
+                                        : report.Description)
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @report.StatusBadgeClass">
+                                    @report.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="small text-muted">
+                                @report.TimeAgo
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details"
+                                       asp-route-id="@report.ReportId"
+                                       class="btn btn-outline-secondary"
+                                       title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    @if (report.Status == ReportStatus.Open)
+                                    {
+                                        <button class="btn btn-outline-warning
+                                            investigate-btn"
+                                                data-report-id="@report.ReportId"
+                                                title="Mark Under Investigation">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    }
+                                    @if (report.IsOpen)
+                                    {
+                                        <button class="btn btn-outline-danger
+                                            dismiss-btn"
+                                                data-report-id="@report.ReportId"
+                                                title="Dismiss">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    @Model.TotalCount total reports
+                </small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@i"
+                                   asp-route-status="@ViewBag.StatusFilter"
+                                   asp-route-type="@ViewBag.TypeFilter"
+                                   asp-route-search="@ViewBag.Search">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+}
+
+@* Investigate Modal *@
+<div class="modal fade" id="investigateModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-warning">
+                    <i class="fas fa-search me-2"></i>
+                    Mark Under Investigation
+                </h5>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label fw-semibold">
+                    Investigation Notes
+                    <span class="text-danger">*</span>
+                </label>
+                <textarea id="investigateNotes"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Briefly describe what investigation steps will be taken..."></textarea>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-warning fw-semibold"
+                        id="confirmInvestigateBtn">
+                    <i class="fas fa-search me-1"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Dismiss Modal *@
+<div class="modal fade" id="dismissModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-secondary">
+                    <i class="fas fa-times-circle me-2"></i>Dismiss Report
+                </h5>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">
+                    The reporter will be notified with your dismissal reason.
+                </p>
+                <textarea id="dismissReason"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Reason for dismissal (e.g. 'No violation found after review')..."></textarea>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-secondary fw-semibold"
+                        id="confirmDismissBtn">
+                    <i class="fas fa-times me-1"></i>Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentReportId = null;
+        const token = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        async function adminPost(url, body) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body
+            });
+            return res.json();
+        }
+
+        // ── Investigate ─────────────────────────────────────────────────────────
+        document.querySelectorAll('.investigate-btn').forEach(btn =>
+            btn.addEventListener('click', function () {
+                currentReportId = this.dataset.reportId;
+                document.getElementById('investigateNotes').value = '';
+                new bootstrap.Modal(
+                    document.getElementById('investigateModal')).show();
+            }));
+
+        document.getElementById('confirmInvestigateBtn')
+            .addEventListener('click', async function () {
+                const notes = document.getElementById('investigateNotes').value.trim();
+                if (!notes) {
+                    document.getElementById('investigateNotes')
+                        .classList.add('is-invalid');
+                    return;
+                }
+                bootstrap.Modal.getInstance(
+                    document.getElementById('investigateModal')).hide();
+
+                const data = await adminPost('/Admin/Reports/Investigate',
+                    `id=${currentReportId}&notes=${encodeURIComponent(notes)}`);
+
+                if (data.success) {
+                    showToast('Report marked as Under Investigation.', 'warning');
+                    const row = document.getElementById(
+                        `report-row-${currentReportId}`);
+                    if (row) row.classList.remove('table-danger', 'bg-opacity-25');
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            });
+
+        // ── Dismiss ─────────────────────────────────────────────────────────────
+        document.querySelectorAll('.dismiss-btn').forEach(btn =>
+            btn.addEventListener('click', function () {
+                currentReportId = this.dataset.reportId;
+                document.getElementById('dismissReason').value = '';
+                new bootstrap.Modal(
+                    document.getElementById('dismissModal')).show();
+            }));
+
+        document.getElementById('confirmDismissBtn')
+            .addEventListener('click', async function () {
+                const reason = document.getElementById('dismissReason').value.trim();
+                if (!reason) {
+                    document.getElementById('dismissReason')
+                        .classList.add('is-invalid');
+                    return;
+                }
+                bootstrap.Modal.getInstance(
+                    document.getElementById('dismissModal')).hide();
+
+                const data = await adminPost('/Admin/Reports/Dismiss',
+                    `id=${currentReportId}&reason=${encodeURIComponent(reason)}`);
+
+                if (data.success) {
+                    showToast('Report dismissed.', 'secondary');
+                    const badge = document.querySelector(
+                        `#report-row-${currentReportId} .badge`);
+                    if (badge) {
+                        badge.className = 'badge bg-secondary';
+                        badge.textContent = 'Dismissed';
+                    }
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            });
+
+        function showToast(message, type) {
+            const c = document.getElementById('toastContainer') || (() => {
+                const el = document.createElement('div');
+                el.id = 'toastContainer';
+                el.className =
+                    'toast-container position-fixed bottom-0 end-0 p-3';
+                el.style.zIndex = '9999';
+                document.body.appendChild(el);
+                return el;
+            })();
+            const t = document.createElement('div');
+            t.className =
+                `toast align-items-center text-bg-${type} border-0`;
+            t.setAttribute('role', 'alert');
+            t.innerHTML = `<div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast"></button>
+            </div>`;
+            c.appendChild(t);
+            new bootstrap.Toast(t, { delay: 3500 }).show();
+            t.addEventListener('hidden.bs.toast', () => t.remove());
+        }
+    </script>
+}

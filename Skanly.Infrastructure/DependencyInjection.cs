@@ -90,7 +90,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentGateway, SimulatedInstaPayGateway>();
         services.AddScoped<IPaymentGateway, SimulatedFawryGateway>();
         // Factory resolves the right gateway from the collection above
-        services.AddScoped<PaymentGatewayFactory>();
+        services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
 
 
         return services;

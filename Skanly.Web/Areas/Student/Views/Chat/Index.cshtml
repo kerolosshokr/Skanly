@@ -1,0 +1,650 @@
+﻿@* Skanly.Web/Areas/Student/Views/Chat/Index.cshtml *@
+@model IReadOnlyList<Skanly.Application.Features.Chat.DTOs.ConversationDto>
+@{
+    ViewData["Title"] = "Messages";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+    string currentUserId = ViewBag.CurrentUserId;
+    int? activeConvId = ViewBag.ConversationId;
+}
+
+<div class="chat-layout d-flex border rounded-3 overflow-hidden shadow-sm"
+     style="height:calc(100vh - 140px);min-height:500px;">
+
+    @* ── CONVERSATION SIDEBAR ─────────────────────────────────────────────── *@
+    <div class="chat-sidebar bg-white border-end flex-shrink-0"
+         style="width:300px;overflow-y:auto;">
+
+        @* Sidebar Header *@
+        <div class="p-3 border-bottom">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-comments me-2 text-primary"></i>Messages
+            </h6>
+        </div>
+
+        @* Conversation List *@
+        <div id="conversationList">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted px-3">
+                    <i class="fas fa-comment-slash fa-3x mb-3 opacity-25"></i>
+                    <p class="small">
+                        No conversations yet. Click "Chat with Owner" on
+                        any property to start one.
+                    </p>
+                </div>
+            }
+            @foreach (var conv in Model)
+            {
+                <partial name="_ConversationListItem"
+                         model="conv"
+                         view-data='@(new ViewDataDictionary(ViewData)
+                         {
+                             ["ActiveConvId"] = activeConvId,
+                             ["CurrentUserId"] = currentUserId
+                         })' />
+            }
+        </div>
+    </div>
+
+    @* ── CHAT PANEL ───────────────────────────────────────────────────────── *@
+    <div class="chat-panel flex-grow-1 d-flex flex-column bg-light"
+         id="chatPanel">
+
+        @if (activeConvId.HasValue)
+        {
+            <div id="chatContent"
+                 data-conversation-id="@activeConvId"
+                 data-current-user-id="@currentUserId">
+                @* Populated by JS on load *@
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 small">Loading messages...</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @* No conversation selected *@
+            <div class="d-flex flex-column align-items-center
+                justify-content-center h-100 text-muted">
+                <i class="fas fa-comments fa-4x mb-3 opacity-25"></i>
+                <h5>Select a conversation</h5>
+                <p class="small">
+                    Choose from the list on the left to start chatting
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        /* ==========================================================
+        Skanly Chat Client
+        ========================================================== */
+        (function () {
+        'use strict';
+
+        // ── Config ─────────────────────────────────────────────────────────────────
+        const CURRENT_USER_ID  = '@currentUserId'
+        const ACTIVE_CONV_ID   = @(activeConvId.HasValue ? activeConvId.Value.ToString() : "null")
+        const HUB_URL          = '/hubs/chat'
+        const MSG_PAGE_SIZE    = 40;
+        const TYPING_TIMEOUT   = 1500;   // ms of inactivity before StopTyping fires
+
+        // ── State ──────────────────────────────────────────────────────────────────
+        let connection     = null;
+        let activeConvId   = ACTIVE_CONV_ID;
+        let typingTimer    = null;
+        let isTyping       = false;
+        let currentPage    = 1;
+        let allLoaded      = false;
+        let pendingRecipId = null;  // recipient ID for typing relay
+
+        // ── SignalR Connection ─────────────────────────────────────────────────────
+        async function buildConnection() {
+        connection = new signalR.HubConnectionBuilder()
+        .withUrl(HUB_URL, {
+        accessTokenFactory: () => getCookie('skanly_access_token')
+        })
+        .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
+
+        // ── Inbound events ─────────────────────────────────────────────────────
+        connection.on('ReceiveMessage', onReceiveMessage);
+        connection.on('MessageRead',    onMessageRead);
+        connection.on('TypingStarted',  onTypingStarted);
+        connection.on('TypingStopped',  onTypingStopped);
+        connection.on('UserOnline',     onUserOnline);
+        connection.on('UserOffline',    onUserOffline);
+        connection.on('Error',          onHubError);
+
+        connection.onreconnected(() => {
+        showConnectionStatus('Reconnected', 'success');
+        if (activeConvId) joinConversation(activeConvId);
+        });
+        connection.onreconnecting(() =>
+        showConnectionStatus('Reconnecting…', 'warning'));
+        connection.onclose(() =>
+        showConnectionStatus('Disconnected', 'danger'));
+
+        await connection.start();
+
+        if (activeConvId) {
+        await joinConversation(activeConvId);
+        await loadMessages(activeConvId, 1);
+        }
+        }
+
+        // ── Join / Leave ───────────────────────────────────────────────────────────
+        async function joinConversation(convId) {
+        await connection.invoke('JoinConversation', convId);
+        markMessagesRead(convId);
+        }
+
+        async function switchConversation(convId, recipientId) {
+        if (activeConvId && activeConvId !== convId)
+        await connection.invoke('LeaveConversation', activeConvId);
+
+        activeConvId   = convId;
+        pendingRecipId = recipientId;
+        currentPage    = 1;
+        allLoaded      = false;
+
+        await joinConversation(convId);
+        await loadMessages(convId, 1);
+        setActiveSidebar(convId);
+        }
+
+        // ── Load Messages ──────────────────────────────────────────────────────────
+        async function loadMessages(convId, page) {
+        const res = await fetch(
+        `/Chat/Messages?conversationId=${convId}&page=${page}`);
+
+        if (!res.ok) { showToast('Could not load messages.', 'danger'); return; }
+
+        const data = await res.json();
+
+        if (page === 1) {
+        renderMessagePanel(data);
+        } else {
+        prependOlderMessages(data.items);
+        }
+
+        allLoaded = data.pageNumber >= data.totalPages;
+        currentPage = page;
+        }
+
+        // ── Message Panel Render ───────────────────────────────────────────────────
+        function renderMessagePanel(paged) {
+        const panel = document.getElementById('chatContent');
+        if (!panel) return;
+
+        panel.innerHTML = `
+        <div class="chat-header d-flex align-items-center
+        gap-3 p-3 bg-white border-bottom shadow-sm"
+        id="chatHeader">
+        <div class="position-relative">
+        <img src="${paged.items[0]?.senderImageUrl ?? '/images/default-avatar.png'}"
+        class="rounded-circle object-fit-cover"
+        width="42" height="42" id="recipientAvatar" />
+        <span class="online-dot position-absolute bottom-0 end-0
+        rounded-circle border border-white"
+        style="width:12px;height:12px;background:#6c757d;"
+        id="onlineDot"></span>
+        </div>
+        <div class="flex-grow-1">
+        <div class="fw-semibold" id="recipientName">—</div>
+        <div class="small text-muted" id="typingIndicator"
+        style="display:none;">
+        <em>typing...</em>
+        </div>
+        <div class="small text-muted" id="onlineStatus"></div>
+        </div>
+        @if (!string.IsNullOrEmpty(activeConvId.HasValue ? "p" : ""))
+        {
+            <text>
+                <a href="#" class="btn btn-sm btn-outline-secondary"
+                   id="viewPropertyBtn">
+                    <i class="fas fa-home me-1"></i>View Property
+                </a>
+            </text>
+        }
+        </div>
+
+        <div class="messages-container flex-grow-1 overflow-y-auto p-3"
+        id="messagesContainer"
+        style="flex:1;overflow-y:auto;">
+
+        ${!allLoaded ? `
+        <div class="text-center py-2">
+        <button class="btn btn-sm btn-outline-secondary"
+        id="loadMoreBtn"
+        onclick="loadOlderMessages()">
+        <i class="fas fa-chevron-up me-1"></i>Load older
+        </button>
+        </div>` : ''}
+
+        <div id="messagesList">
+        ${paged.items.map(renderMessage).join('')}
+        </div>
+        </div>
+
+        <div class="chat-input-area bg-white border-top p-3"
+        id="inputArea">
+        ${renderInputArea()}
+        </div>
+        `;
+
+        scrollToBottom();
+        attachInputListeners();
+        }
+
+        function renderInputArea() {
+        return `
+        <div class="d-flex gap-2 align-items-end">
+        <label class="btn btn-light border btn-sm flex-shrink-0"
+        for="imagePickerInput" title="Send image"
+        style="width:38px;height:38px;">
+        <i class="fas fa-image text-primary mt-1"></i>
+        </label>
+        <input type="file" id="imagePickerInput"
+        class="d-none" accept="image/*" />
+
+        <div class="input-group">
+        <textarea id="messageInput"
+        class="form-control"
+        rows="1"
+        placeholder="Type a message…"
+        style="resize:none;max-height:120px;"></textarea>
+        </div>
+
+        <button class="btn btn-primary flex-shrink-0"
+        id="sendBtn"
+        style="width:44px;height:38px;">
+        <i class="fas fa-paper-plane"></i>
+        </button>
+        </div>
+        <div id="imagePreviewArea" class="mt-2" style="display:none;">
+        <div class="d-flex align-items-center gap-2 p-2
+        bg-light rounded">
+        <img id="imagePreviewThumb" width="60" height="50"
+        class="rounded object-fit-cover" />
+        <div class="flex-grow-1 small fw-semibold"
+        id="imagePreviewName"></div>
+        <button class="btn btn-sm btn-outline-danger"
+        onclick="clearImagePreview()">✕</button>
+        </div>
+        </div>
+        `;
+        }
+
+        function renderMessage(msg) {
+        const isMine = msg.senderId === CURRENT_USER_ID;
+        const align  = isMine ? 'flex-end' : 'flex-start';
+        const bgCls  = isMine ? 'bg-primary text-white' : 'bg-white border';
+
+        const readTick = isMine ? `
+        <span class="ms-1 read-tick" data-msg-id="${msg.messageId}"
+        style="font-size:10px;opacity:${msg.isRead ? 1 : 0.5}">
+        ${msg.isRead ? '✓✓' : '✓'}
+        </span>` : '';
+
+        const content = msg.isImage
+        ? `<a href="${msg.imageUrl}" target="_blank">
+        <img src="${msg.imageUrl}"
+        class="rounded object-fit-cover"
+        style="max-width:220px;max-height:220px;"
+        loading="lazy" />
+        </a>`
+        : `<span>${escapeHtml(msg.messageText ?? '')}</span>`;
+
+        return `
+        <div class="d-flex flex-column mb-3"
+        style="align-items:${align};"
+        id="msg-${msg.messageId}">
+        <div class="d-flex align-items-end gap-2
+        ${isMine ? 'flex-row-reverse' : ''}">
+        ${!isMine ? `
+        <img src="${msg.senderImageUrl ?? '/images/default-avatar.png'}"
+        class="rounded-circle object-fit-cover flex-shrink-0"
+        width="28" height="28" />` : ''}
+        <div class="${bgCls} rounded-3 px-3 py-2"
+        style="max-width:65%;word-break:break-word;">
+        ${content}
+        </div>
+        </div>
+        <div class="d-flex gap-1 align-items-center mt-1
+        ${isMine ? 'justify-content-end' : ''}"
+        style="font-size:11px;">
+        <span class="text-muted">${msg.timeLabel}</span>
+        ${readTick}
+        </div>
+        </div>`;
+        }
+
+        function prependOlderMessages(messages) {
+        const list      = document.getElementById('messagesList');
+        const container = document.getElementById('messagesContainer');
+        if (!list) return;
+
+        const oldScrollHeight = container.scrollHeight;
+        list.insertAdjacentHTML(
+        'afterbegin',
+        messages.map(renderMessage).join(''));
+
+        // Keep scroll position stable
+        container.scrollTop = container.scrollHeight - oldScrollHeight;
+        }
+
+        // ── Inbound Event Handlers ─────────────────────────────────────────────────
+        function onReceiveMessage(msg) {
+        if (msg.conversationId !== activeConvId) {
+        // Flash sidebar item for background conversation
+        flashSidebarItem(msg.conversationId);
+        updateSidebarLastMessage(msg.conversationId, msg);
+        return;
+        }
+
+        const list = document.getElementById('messagesList');
+        if (!list) return;
+        list.insertAdjacentHTML('beforeend', renderMessage(msg));
+        scrollToBottom();
+
+        // Auto-mark as read since window is open
+        markMessagesRead(activeConvId);
+        updateSidebarLastMessage(msg.conversationId, msg);
+        }
+
+        function onMessageRead(data) {
+        const { messageIds } = data;
+        (messageIds || []).forEach(id => {
+        const tick = document.querySelector(
+        `.read-tick[data-msg-id="${id}"]`);
+        if (tick) {
+        tick.textContent = '✓✓';
+        tick.style.opacity = '1';
+        }
+        });
+        }
+
+        function onTypingStarted(data) {
+        if (data.conversationId !== activeConvId) return;
+        const indicator = document.getElementById('typingIndicator');
+        const status    = document.getElementById('onlineStatus');
+        if (indicator) { indicator.style.display = ''; }
+        if (status)    { status.style.display = 'none'; }
+        }
+
+        function onTypingStopped(data) {
+        if (data.conversationId !== activeConvId) return;
+        const indicator = document.getElementById('typingIndicator');
+        const status    = document.getElementById('onlineStatus');
+        if (indicator) { indicator.style.display = 'none'; }
+        if (status)    { status.style.display = ''; }
+        }
+
+        function onUserOnline(userId) {
+        updateOnlineDot(userId, true);
+        }
+
+        function onUserOffline(userId) {
+        updateOnlineDot(userId, false);
+        }
+
+        function onHubError(message) {
+        showToast(message, 'danger');
+        }
+
+        // ── Send Message ───────────────────────────────────────────────────────────
+        let selectedImageFile = null;
+
+        function attachInputListeners() {
+        const input   = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const imgPick = document.getElementById('imagePickerInput');
+
+        // Auto-resize textarea
+        input?.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        handleTyping();
+        });
+
+        // Send on Enter (Shift+Enter = newline)
+        input?.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+        }
+        });
+
+        sendBtn?.addEventListener('click', sendMessage);
+
+        // Image picker
+        imgPick?.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        selectedImageFile = file;
+
+        const thumb = document.getElementById('imagePreviewThumb');
+        const name  = document.getElementById('imagePreviewName');
+        const area  = document.getElementById('imagePreviewArea');
+
+        thumb.src    = URL.createObjectURL(file);
+        name.textContent = file.name;
+        area.style.display = '';
+        });
+
+        // Load older on scroll to top
+        const container = document.getElementById('messagesContainer');
+        container?.addEventListener('scroll', function () {
+        if (this.scrollTop < 60 && !allLoaded)
+        loadOlderMessages();
+        });
+        }
+
+        window.loadOlderMessages = async function () {
+        if (allLoaded || !activeConvId) return;
+        await loadMessages(activeConvId, currentPage + 1);
+        };
+
+        window.clearImagePreview = function () {
+        selectedImageFile = null;
+        const area  = document.getElementById('imagePreviewArea');
+        const input = document.getElementById('imagePickerInput');
+        if (area)  area.style.display = 'none';
+        if (input) input.value = '';
+        };
+
+        async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text  = input?.value.trim();
+
+        if (!text && !selectedImageFile) return;
+        if (!activeConvId) return;
+
+        // Disable input during send
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) sendBtn.disabled = true;
+
+        try {
+        if (selectedImageFile) {
+        // Upload image via HTTP (safer than base64 over SignalR)
+        const formData = new FormData();
+        formData.append('conversationId', activeConvId);
+        formData.append('image', selectedImageFile);
+
+        const token = document.querySelector(
+        'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        const res = await fetch('/Chat/UploadImage', {
+        method: 'POST',
+        headers: { 'RequestVerificationToken': token },
+        body: formData
+        });
+
+        if (res.ok) {
+        const msg = await res.json();
+        onReceiveMessage(msg);  // Render locally
+        // Hub will broadcast to other clients via notification
+        }
+
+        clearImagePreview();
+        } else {
+        // Text message via SignalR
+        await connection.invoke(
+        'SendMessage', activeConvId, text);
+        }
+
+        if (input) { input.value = ''; input.style.height = 'auto'; }
+        stopTyping();
+        } catch (err) {
+        showToast('Failed to send message. Please try again.', 'danger');
+        } finally {
+        if (sendBtn) sendBtn.disabled = false;
+        }
+        }
+
+        // ── Typing Indicators ──────────────────────────────────────────────────────
+        function handleTyping() {
+        if (!activeConvId || !pendingRecipId) return;
+
+        if (!isTyping) {
+        isTyping = true;
+        connection.invoke('StartTyping', activeConvId, pendingRecipId)
+        .catch(() => {});
+        }
+
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(stopTyping, TYPING_TIMEOUT);
+        }
+
+        function stopTyping() {
+        if (!isTyping || !activeConvId || !pendingRecipId) return;
+        isTyping = false;
+        clearTimeout(typingTimer);
+        connection.invoke('StopTyping', activeConvId, pendingRecipId)
+        .catch(() => {});
+        }
+
+        // ── Mark Read ──────────────────────────────────────────────────────────────
+        async function markMessagesRead(convId) {
+        if (!connection || connection.state !== 'Connected') return;
+        try { await connection.invoke('MarkRead', convId); } catch { /* silent */ }
+        }
+
+        // ── Sidebar helpers ────────────────────────────────────────────────────────
+        function setActiveSidebar(convId) {
+        document.querySelectorAll('.conversation-item').forEach(el => {
+        el.classList.toggle(
+        'active', el.dataset.convId == convId);
+        });
+        }
+
+        function flashSidebarItem(convId) {
+        const item = document.querySelector(
+        `.conversation-item[data-conv-id="${convId}"]`);
+        if (!item) return;
+
+        item.classList.add('bg-warning', 'bg-opacity-25');
+        setTimeout(() =>
+        item.classList.remove('bg-warning', 'bg-opacity-25'), 2000);
+        }
+
+        function updateSidebarLastMessage(convId, msg) {
+        const preview = document.querySelector(
+        `[data-conv-id="${convId}"] .last-msg-preview`);
+        if (!preview) return;
+        preview.textContent = msg.imageUrl
+        ? '📷 Photo'
+        : (msg.messageText?.length > 40
+        ? msg.messageText.slice(0, 40) + '…'
+        : msg.messageText ?? '');
+        }
+
+        function updateOnlineDot(userId, online) {
+        const dot = document.getElementById('onlineDot');
+        const status = document.getElementById('onlineStatus');
+        if (dot) {
+        dot.style.background = online ? '#198754' : '#6c757d';
+        }
+        if (status) {
+        status.textContent = online ? 'Online' : 'Last seen recently';
+        }
+        // Also update sidebar dots
+        document.querySelectorAll(
+        `.online-dot[data-user-id="${userId}"]`).forEach(d => {
+        d.style.background = online ? '#198754' : '#6c757d';
+        });
+        }
+
+        // ── UI Helpers ─────────────────────────────────────────────────────────────
+        function scrollToBottom() {
+        const container = document.getElementById('messagesContainer');
+        if (container)
+        container.scrollTop = container.scrollHeight;
+        }
+
+        function showConnectionStatus(msg, type) {
+        const colors = { success: '#198754', warning: '#fd7e14', danger: '#dc3545' };
+        const banner = document.getElementById('connectionBanner');
+        if (!banner) return;
+        banner.textContent        = msg;
+        banner.style.background   = colors[type] ?? '#6c757d';
+        banner.style.display      = type === 'success' ? 'none' : '';
+        }
+
+        function showToast(message, type = 'info') {
+        const c = document.getElementById('toastContainer') || (() => {
+        const el = document.createElement('div');
+        el.id = 'toastContainer';
+        el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        el.style.zIndex = '9999';
+        document.body.appendChild(el);
+        return el;
+        })();
+
+        const t = document.createElement('div');
+        t.className = `toast align-items-center text-bg-${type} border-0`;
+        t.setAttribute('role', 'alert');
+        t.innerHTML = `<div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"></button>
+        </div>`;
+        c.appendChild(t);
+        new bootstrap.Toast(t, { delay: 3500 }).show();
+        t.addEventListener('hidden.bs.toast', () => t.remove());
+        }
+
+        function escapeHtml(str) {
+        return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, '<br>');
+        }
+
+        function getCookie(name) {
+        return document.cookie.split(';')
+        .find(c => c.trim().startsWith(name + '='))
+        ?.split('=')[1] ?? '';
+        }
+
+        // Expose for sidebar onclick
+        window.openConversation = function (convId, recipientId) {
+        switchConversation(convId, recipientId);
+        };
+
+        // ── Boot ───────────────────────────────────────────────────────────────────
+        buildConnection().catch(err => {
+        console.error('SignalR failed to connect:', err);
+        showToast('Could not connect to messaging service.', 'danger');
+        });
+        })();
+    </script>
+}

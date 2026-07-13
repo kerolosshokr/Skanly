@@ -1,4 +1,3 @@
-// Skanly.Web/Program.cs
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Skanly.Application;
@@ -6,8 +5,9 @@ using Skanly.Infrastructure;
 using Skanly.Infrastructure.ExternalServices.Email;
 using Skanly.Infrastructure.Identity;
 using Skanly.Infrastructure.Persistence.Seed;
+using Skanly.Infrastructure.RealTime;
+using Skanly.Infrastructure.RealTime.Hubs;
 using Skanly.Web.Extensions;
-using Skanly.Web.Hubs;
 using Skanly.Web.Middlewares;
 using System.Text;
 
@@ -16,7 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ── Core MVC ──────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
 
-// ── Application + Infrastructure (Parts 5-6 DI) ───────────────────────────────
+// ── Application + Infrastructure ──────────────────────────────────────────────
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
@@ -37,46 +37,56 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-    .AddJwtBearer(options =>
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings.Issuer,
-            ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-            ClockSkew = TimeSpan.Zero     // Strict expiry — no 5-min grace window
-        };
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+        ClockSkew = TimeSpan.Zero
+    };
 
-        // Allow JWT from SignalR query string (for ChatHub / NotificationHub)
-        options.Events = new JwtBearerEvents
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
         {
-            OnMessageReceived = context =>
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/hubs/chat") ||
+                 path.StartsWithSegments("/hubs/notification")))
             {
-                var accessToken = context.Request.Query["access_token"];
-                var path = context.HttpContext.Request.Path;
-
-                if (!string.IsNullOrEmpty(accessToken) &&
-                    (path.StartsWithSegments("/hubs/chat") ||
-                     path.StartsWithSegments("/hubs/notification")))
-                {
-                    context.Token = accessToken;
-                }
-
-                return Task.CompletedTask;
+                context.Token = accessToken;
             }
-        };
-    });
 
-// ── Authorization Policies ────────────────────────────────────────────────────
+            return Task.CompletedTask;
+        }
+    };
+});
+
+// ── Authorization ─────────────────────────────────────────────────────────────
 builder.Services.AddSkanlyAuthorization();
 
 // ── SignalR ───────────────────────────────────────────────────────────────────
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 10 * 1024 * 1024;
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+});
+
+// ── Custom Services ───────────────────────────────────────────────────────────
+builder.Services.AddSingleton<ConnectionTracker>();
+builder.Services.AddScoped<NotificationHubHelper>();
 
 // ── Anti-forgery ──────────────────────────────────────────────────────────────
 builder.Services.AddAntiforgery(options =>
@@ -101,9 +111,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
 
-// Cookie → Authorization header bridge (before UseAuthentication)
 app.UseMiddleware<JwtCookieMiddleware>();
 
 app.UseAuthentication();
@@ -118,6 +128,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// ── SignalR Hubs ──────────────────────────────────────────────────────────────
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<NotificationHub>("/hubs/notification");
 

@@ -15,6 +15,8 @@ public class Review : BaseEntity<int>, IAggregateRoot
 
     [Required]
     public int PropertyId { get; set; }
+    // Skanly.Domain/Entities/Review.cs  — add this property
+    public bool IsHidden { get; set; } = false;
 
     [Range(1, 5)] public byte CleanlinessRating { get; set; }
     [Range(1, 5)] public byte SafetyRating { get; set; }

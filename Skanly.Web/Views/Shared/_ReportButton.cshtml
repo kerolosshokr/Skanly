@@ -1,0 +1,61 @@
+﻿@* Skanly.Web/Views/Shared/_ReportButton.cshtml *@
+@* Usage on property detail:
+   @await Html.PartialAsync("_ReportButton",
+       new ViewDataDictionary(ViewData)
+       {
+           ["PropertyId"] = Model.PropertyId,
+           ["OwnerId"]    = Model.OwnerId
+       })
+*@
+@{
+    int? propertyId = ViewData["PropertyId"] as int?;
+    string? ownerId = ViewData["OwnerId"] as string;
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            <i class="fas fa-flag me-1 text-danger"></i>Report
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+            @if (propertyId.HasValue)
+            {
+                <li>
+                    <a class="dropdown-item small"
+                       href="/Reports/Create?propertyId=@propertyId">
+                        <i class="fas fa-home text-warning me-2"></i>
+                        Report Fake Listing
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item small"
+                       href="/Reports/Create?propertyId=@propertyId">
+                        <i class="fas fa-wrench text-info me-2"></i>
+                        Report Property Issue
+                    </a>
+                </li>
+            }
+            @if (!string.IsNullOrEmpty(ownerId))
+            {
+                <li>
+                    <a class="dropdown-item small"
+                       href="/Reports/Create?userId=@ownerId">
+                        <i class="fas fa-user-slash text-danger me-2"></i>
+                        Report Fraudulent Owner
+                    </a>
+                </li>
+            }
+            <li>
+                <a class="dropdown-item small"
+                   href="/Reports/Create@(propertyId.HasValue ? $"?propertyId={propertyId}" : "")">
+                    <i class="fas fa-ban text-secondary me-2"></i>
+                    Report Inappropriate Content
+                </a>
+            </li>
+        </ul>
+    </div>
+}

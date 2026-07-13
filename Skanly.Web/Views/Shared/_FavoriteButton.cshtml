@@ -1,0 +1,22 @@
+﻿@* Skanly.Web/Views/Shared/_FavoriteButton.cshtml *@
+@* Usage: @await Html.PartialAsync("_FavoriteButton", new { PropertyId = Model.PropertyId, IsFavorited = Model.IsFavorited }) *@
+@{
+    int propertyId = (int)(ViewData["PropertyId"] ?? 0);
+    bool isFavorited = (bool)(ViewData["IsFavorited"] ?? false);
+    string size = (string)(ViewData["Size"] ?? "normal"); // "sm" | "normal" | "lg"
+
+    string btnClass = size == "sm" ? "btn-sm" : size == "lg" ? "btn-lg" : "";
+}
+
+<button class="btn btn-light border shadow-sm skanly-favorite-btn @btnClass
+    d-inline-flex align-items-center gap-2"
+        data-property-id="@propertyId"
+        data-favorited="@isFavorited.ToString().ToLower()"
+        title="@(isFavorited ? "Remove from saved homes" : "Save this home")">
+    <i class="@(isFavorited ? "fas" : "far") fa-heart
+    @(isFavorited ? "text-danger" : "text-muted")"></i>
+    @if (size != "sm")
+    {
+        <span>@(isFavorited ? "Saved" : "Save")</span>
+    }
+</button>

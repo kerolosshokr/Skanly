@@ -11,6 +11,8 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
     {
         builder.ToTable("Reviews");
         builder.HasKey(r => r.Id);
+        // Skanly.Infrastructure/Persistence/Configurations/ReviewConfiguration.cs — add
+        builder.Property(r => r.IsHidden).HasDefaultValue(false);
 
         builder.Property(r => r.Comment).HasMaxLength(1000);
         builder.HasIndex(r => r.BookingId).IsUnique();

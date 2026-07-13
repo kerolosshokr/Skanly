@@ -1,0 +1,72 @@
+﻿@* Skanly.Web/Views/Shared/_ReviewCard.cshtml *@
+@model Skanly.Application.Features.Reviews.DTOs.ReviewDto
+
+<div class="review-card d-flex gap-3 mb-4 pb-4 border-bottom">
+
+    @* Student Avatar *@
+    <div class="flex-shrink-0">
+        <img src="@(Model.StudentImageUrl ?? "/images/default-avatar.png")"
+             class="rounded-circle object-fit-cover"
+             width="46" height="46"
+             alt="@Model.StudentFullName" />
+    </div>
+
+    <div class="flex-grow-1">
+
+        @* Header *@
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span class="fw-semibold">@Model.StudentFullName</span>
+                <div class="small text-muted mt-1">@Model.TimeAgo</div>
+            </div>
+
+            @* Overall Stars *@
+            <div class="text-end flex-shrink-0">
+                <div>
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span style="color:@(i <= Model.OverallRating ? "#FFC107" : "#dee2e6");font-size:1rem;">★</span>
+                    }
+                </div>
+                <div class="small text-muted">
+                    @Model.OverallRating / 5 Overall
+                </div>
+            </div>
+        </div>
+
+        @* Category breakdown (compact) *@
+        <div class="row g-1 mb-3" style="font-size:12px;">
+            @{
+                var cats = new[]
+                {
+                    ("Cleanliness", Model.CleanlinessRating),
+                    ("Safety",      Model.SafetyRating),
+                    ("Internet",    Model.InternetRating),
+                    ("Location",    Model.LocationRating),
+                    ("Quietness",   Model.QuietnessRating),
+                };
+            }
+            @foreach (var (catName, catVal) in cats)
+            {
+                <div class="col-6 col-md-4">
+                    <div class="d-flex align-items-center gap-1">
+                        <div class="flex-grow-1 bg-light rounded"
+                             style="height:4px;">
+                            <div class="bg-warning rounded"
+                                 style="width:@(catVal * 20)%;height:100%;"></div>
+                        </div>
+                        <span class="text-muted" style="width:55px;">@catName</span>
+                        <span class="fw-semibold" style="width:15px;">@catVal</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* Comment *@
+        @if (!string.IsNullOrEmpty(Model.Comment))
+        {
+            <p class="text-muted mb-0 lh-lg"
+               style="font-size:14px;">"@Model.Comment"</p>
+        }
+    </div>
+</div>

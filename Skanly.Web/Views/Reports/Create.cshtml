@@ -1,0 +1,287 @@
+﻿@* Skanly.Web/Views/Reports/Create.cshtml *@
+@model Skanly.Application.Features.Reports.DTOs.CreateReportDto
+@{
+    ViewData["Title"] = "Submit a Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@using Skanly.Domain.Enums
+
+<div class="container py-4" style="max-width:680px;">
+
+    <div class="mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-flag me-2 text-danger"></i>Submit a Report
+        </h1>
+        <p class="text-muted">
+            Help keep Skanly safe. All reports are reviewed by our team.
+        </p>
+    </div>
+
+    <form asp-action="Create"
+          method="post"
+          enctype="multipart/form-data"
+          id="reportForm">
+        @Html.AntiForgeryToken()
+
+        @* Hidden target fields (pre-filled from query string) *@
+        <input type="hidden" asp-for="ReportedPropertyId" />
+        <input type="hidden" asp-for="ReportedUserId" />
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger mb-4"
+             id="validationSummary"
+             style="display:none;"></div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                @* ── Target Info (read-only display) ─────────────────────── *@
+                @if (ViewBag.PropertyId is int propId)
+                {
+                    <div class="alert alert-light border mb-4">
+                        <i class="fas fa-home text-primary me-2"></i>
+                        <strong>Reporting property:</strong> ID #@propId
+                    </div>
+                }
+                @if (ViewBag.UserId is string uid)
+                {
+                    <div class="alert alert-light border mb-4">
+                        <i class="fas fa-user text-primary me-2"></i>
+                        <strong>Reporting user:</strong> @uid
+                    </div>
+                }
+
+                @* ── Report Type ──────────────────────────────────────────── *@
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        Report Type <span class="text-danger">*</span>
+                    </label>
+                    <div class="row g-3">
+                        @foreach (var (type, icon, label, desc) in new[]
+                        {
+                            (ReportType.FakeListing,
+                             "fa-home", "Fake Listing",
+                             "Property that doesn't exist or is misrepresented"),
+                            (ReportType.FraudulentOwner,
+                             "fa-user-slash", "Fraudulent Owner",
+                             "Owner engaging in scamming or deceptive practices"),
+                            (ReportType.InappropriateContent,
+                             "fa-ban", "Inappropriate Content",
+                             "Offensive, illegal, or adult content in the listing"),
+                            (ReportType.PropertyIssue,
+                             "fa-wrench", "Property Issue",
+                             "Dangerous conditions, false amenities, or major problems"),
+                        })
+                        {
+                            <div class="col-6">
+                                <label class="report-type-option w-100 h-100"
+                                       for="type_@((int)type)"
+                                       style="cursor:pointer;">
+                                    <input type="radio"
+                                           asp-for="ReportType"
+                                           value="@((int)type)"
+                                           id="type_@((int)type)"
+                                           class="report-radio d-none" />
+                                    <div class="border rounded-3 p-3 h-100
+                                        type-card hover-lift"
+                                         style="transition:all .15s;">
+                                        <i class="fas @icon fa-lg
+                                        text-danger mb-2 d-block"></i>
+                                        <div class="fw-semibold small mb-1">
+                                            @label
+                                        </div>
+                                        <div class="text-muted"
+                                             style="font-size:11px;">
+                                            @desc
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                    <span asp-validation-for="ReportType"
+                          class="text-danger small"></span>
+                </div>
+
+                @* ── Description ──────────────────────────────────────────── *@
+                <div class="mb-4">
+                    <label asp-for="Description"
+                           class="form-label fw-semibold">
+                        Describe the Issue
+                        <span class="text-danger">*</span>
+                    </label>
+                    <textarea asp-for="Description"
+                              class="form-control"
+                              rows="5"
+                              id="descriptionField"
+                              placeholder="Please be as specific as possible. Include dates, amounts, URLs, or any other details that can help our team investigate..."></textarea>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span asp-validation-for="Description"
+                              class="text-danger small"></span>
+                        <span class="small text-muted">
+                            <span id="descCount">0</span> / 1000
+                            <span id="minHint" class="text-danger"
+                                  style="display:none;">
+                                (min 20)
+                            </span>
+                        </span>
+                    </div>
+                </div>
+
+                @* ── Evidence Upload ──────────────────────────────────────── *@
+                <div class="mb-4">
+                    <label asp-for="Evidence"
+                           class="form-label fw-semibold">
+                        Evidence
+                        <span class="text-muted fw-normal">(Optional)</span>
+                    </label>
+                    <div class="evidence-drop-zone border-2 border-dashed
+                        rounded-3 p-4 text-center"
+                         id="evidenceZone"
+                         style="border-color:#dee2e6;cursor:pointer;">
+                        <i class="fas fa-paperclip fa-2x text-muted mb-2"></i>
+                        <p class="text-muted small mb-1">
+                            Drag & drop a screenshot or PDF
+                        </p>
+                        <label class="btn btn-sm btn-outline-secondary"
+                               for="evidenceInput">
+                            <i class="fas fa-upload me-1"></i>Choose File
+                        </label>
+                        <input type="file"
+                               asp-for="Evidence"
+                               id="evidenceInput"
+                               class="d-none"
+                               accept=".jpg,.jpeg,.png,.webp,.pdf" />
+                    </div>
+                    <div id="evidencePreview" class="mt-2" style="display:none;">
+                        <div class="d-flex align-items-center gap-2
+                            p-2 bg-light rounded border">
+                            <i class="fas fa-file-image text-primary fa-lg"></i>
+                            <span class="small fw-semibold flex-grow-1"
+                                  id="evidenceFileName"></span>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger"
+                                    id="clearEvidenceBtn">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                    <span asp-validation-for="Evidence"
+                          class="text-danger small"></span>
+                    <div class="text-muted small mt-1">
+                        Max 10 MB. JPG, PNG, WEBP, or PDF.
+                    </div>
+                </div>
+
+                @* ── Disclaimer ───────────────────────────────────────────── *@
+                <div class="alert alert-warning small mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong>
+                    False or malicious reports may result in your account
+                    being restricted. Please only submit reports for
+                    genuine issues.
+                </div>
+            </div>
+
+            <div class="card-footer bg-transparent
+                d-flex justify-content-between align-items-center">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        onclick="history.back()">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </button>
+                <button type="submit"
+                        class="btn btn-danger fw-semibold px-4"
+                        id="submitBtn">
+                    <i class="fas fa-flag me-2"></i>Submit Report
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+    <style>
+        .report-radio:checked + .type-card {
+            border-color: #dc3545 !important;
+            background: #fff5f5;
+            box-shadow: 0 0 0 2px rgba(220,53,69,.2);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // ── Report Type Card Selection ─────────────────────────────────────────────
+        document.querySelectorAll('.report-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.type-card').forEach(c =>
+                    c.style.borderColor = '#dee2e6');
+            });
+        });
+
+        // ── Description Counter ────────────────────────────────────────────────────
+        const descField = document.getElementById('descriptionField');
+        const descCount = document.getElementById('descCount');
+        const minHint   = document.getElementById('minHint');
+
+        descField?.addEventListener('input', function () {
+            descCount.textContent = this.value.length;
+            minHint.style.display = this.value.length < 20 ? '' : 'none';
+        });
+
+        // ── Evidence Upload ────────────────────────────────────────────────────────
+        const evidenceInput   = document.getElementById('evidenceInput');
+        const evidencePreview = document.getElementById('evidencePreview');
+        const evidenceZone    = document.getElementById('evidenceZone');
+        const evidenceName    = document.getElementById('evidenceFileName');
+
+        function showEvidencePreview(file) {
+            evidenceName.textContent  = file.name;
+            evidencePreview.style.display = '';
+        }
+
+        evidenceInput?.addEventListener('change', function () {
+            if (this.files[0]) showEvidencePreview(this.files[0]);
+        });
+
+        document.getElementById('clearEvidenceBtn')?.addEventListener('click', () => {
+            evidenceInput.value           = '';
+            evidencePreview.style.display = 'none';
+        });
+
+        evidenceZone?.addEventListener('dragover', e => {
+            e.preventDefault();
+            evidenceZone.style.borderColor = '#dc3545';
+        });
+
+        evidenceZone?.addEventListener('dragleave', () => {
+            evidenceZone.style.borderColor = '#dee2e6';
+        });
+
+        evidenceZone?.addEventListener('drop', e => {
+            e.preventDefault();
+            evidenceZone.style.borderColor = '#dee2e6';
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            evidenceInput.files = dt.files;
+            showEvidencePreview(file);
+        });
+
+        // ── Submit Spinner ─────────────────────────────────────────────────────────
+        document.getElementById('reportForm').addEventListener('submit', function () {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML =
+                '<span class="spinner-border spinner-border-sm me-2"></span>' +
+                'Submitting...';
+        });
+    </script>
+}

@@ -1,5 +1,11 @@
 ﻿@* Skanly.Web/Views/Property/Details.cshtml *@
+
 @model Skanly.Application.Features.Properties.DTOs.PropertyDetailDto
+@inject Skanly.Application.Features.Reviews.Interfaces.IReviewService reviewService
+@{
+    var summaryResult = await reviewService.GetSummaryAsync(Model.PropertyId);
+    var summary = summaryResult.Data;
+}
 @{
     ViewData["Title"] = Model.Title;
     var related = ViewBag.RelatedProperties as
@@ -9,6 +15,7 @@
 
 <div class="container py-4">
     <div class="row g-4">
+        
 
         @* ── LEFT COLUMN ──────────────────────────────────────────────────── *@
         <div class="col-lg-8">
@@ -42,6 +49,7 @@
                                     data-bs-slide="next">
                                 <span class="carousel-control-next-icon"></span>
                             </button>
+                            
 
                             @* Thumbnails *@
                             <div class="d-flex gap-2 p-3 bg-dark bg-opacity-10
@@ -81,12 +89,13 @@
                             }
                         </p>
                     </div>
-                    <button class="btn btn-light border shadow-sm favorite-btn flex-shrink-0"
-                            data-property-id="@Model.PropertyId"
-                            data-favorited="@Model.IsFavorited.ToString().ToLower()">
-                        <i class="fas fa-heart @(Model.IsFavorited ? "text-danger" : "text-muted") me-1"></i>
-                        <span class="small">@(Model.IsFavorited ? "Saved" : "Save")</span>
-                    </button>
+                    @* Replace the old ad-hoc button with the shared partial *@
+                    @await Html.PartialAsync("_FavoriteButton", new ViewDataDictionary(ViewData)
+                    {
+                        ["PropertyId"] = Model.PropertyId,
+                        ["IsFavorited"] = Model.IsFavorited,
+                        ["Size"] = "normal"
+                    })
                 </div>
             </div>
 
@@ -171,86 +180,78 @@
             @* Reviews *@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <h5 class="fw-semibold mb-1">
+                    <h5 class="fw-semibold mb-3">
                         <i class="fas fa-star me-2 text-warning"></i>
                         Reviews
                         <span class="badge bg-warning text-dark ms-2">
-                            @Model.AverageRating.ToString("F1") ★
+                            @(summary?.OverallAverage.ToString("F1") ?? "—") ★
                         </span>
                     </h5>
-                    <p class="text-muted small mb-4">
-                        @Model.Reviews.Count review(s) from verified tenants
-                    </p>
 
-                    @if (!Model.Reviews.Any())
+                    @if (summary is not null && summary.TotalReviews > 0)
                     {
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-comment-slash fa-2x mb-2 opacity-25"></i>
-                            <p>No reviews yet. Be the first!</p>
-                        </div>
+                        @* Summary bars *@
+                        <partial name="_ReviewSummary" model="summary" />
                     }
-                    else
+
+                    @* Individual review cards *@
+                    @foreach (var review in Model.Reviews)
                     {
-                        @foreach (var review in Model.Reviews.Take(5))
-                        {
-                            <div class="d-flex gap-3 mb-4 pb-4 border-bottom">
-                                <img src="@(review.StudentImageUrl ?? "/images/default-avatar.png")"
-                                     class="rounded-circle object-fit-cover flex-shrink-0"
-                                     width="44" height="44" alt="" />
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between">
-                                        <span class="fw-semibold small">
+                        <div class="card mb-3 border-0 shadow-sm">
+                            <div class="card-body">
+
+                                <div class="d-flex align-items-center mb-2">
+                                    <img src="@(review.StudentImageUrl ?? "/images/default-avatar.png")"
+                                         class="rounded-circle me-2"
+                                         width="45"
+                                         height="45" />
+
+                                    <div>
+                                        <div class="fw-bold">
                                             @review.StudentFullName
-                                        </span>
-                                        <span class="text-muted small">
-                                            @review.CreatedAt.ToString("MMM yyyy")
-                                        </span>
-                                    </div>
-                                    @* Overall Stars *@
-                                    <div class="mb-2">
-                                        @for (int i = 1; i <= 5; i++)
-                                        {
-                                            <i class="fas fa-star @(i <= review.OverallRating
-                                                                                               ? "text-warning" : "text-muted opacity-25")"
-                                           style="font-size:12px;"></i>
-                                    }
-                                </div>
-                                @* Category breakdown *@
-                                <div class="row g-1 mb-2" style="font-size:12px;">
-                                    @{
-                                        var cats = new[]
-                                        {
-                                                ("Cleanliness", review.CleanlinessRating),
-                                                ("Safety",      review.SafetyRating),
-                                                ("Internet",    review.InternetRating),
-                                                ("Location",    review.LocationRating),
-                                                ("Quietness",   review.QuietnessRating),
-                                            };
-                                    }
-                                    @foreach (var (catLabel, catRating) in cats)
-                                    {
-                                        <div class="col-6 col-md-4">
-                                            <span class="text-muted">@catLabel: </span>
-                                            <span class="fw-semibold">
-                                                @catRating/5
-                                            </span>
                                         </div>
+
+                                        <small class="text-muted">
+                                            @review.CreatedAt.ToString("dd MMM yyyy")
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <i class="fas fa-star @(i <= review.OverallRating ? "text-warning" : "text-muted")"></i>
                                     }
                                 </div>
-                                @if (!string.IsNullOrEmpty(review.Comment))
+
+                                @if (!string.IsNullOrWhiteSpace(review.Comment))
                                 {
-                                    <p class="text-muted small mb-0">
-                                        "@review.Comment"
+                                    <p class="mb-0">
+                                        @review.Comment
                                     </p>
                                 }
+
                             </div>
                         </div>
                     }
-                }
+                    
+
+                    @* Write review CTA (for eligible students) *@
+                    @if (User.IsInRole("Student") && Model.HasActiveBooking)
+                    {
+                        <div class="text-center mt-3">
+                            <a asp-area="Student"
+                               asp-controller="Reviews"
+                               asp-action="Create"
+                               asp-route-propertyId="@Model.PropertyId"
+                               class="btn btn-warning">
+                                <i class="fas fa-star me-2"></i>Write a Review
+                            </a>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
-    </div>
-
     @* ── RIGHT COLUMN — BOOKING CARD ──────────────────────────────────── *@
     <div class="col-lg-4">
         <div style="position:sticky;top:80px;">

@@ -1,0 +1,79 @@
+﻿@* Skanly.Web/Views/Shared/_ReviewSummary.cshtml *@
+@model Skanly.Application.Features.Reviews.DTOs.ReviewSummaryDto
+
+<div class="review-summary mb-4">
+
+    @* Overall Score *@
+    <div class="d-flex align-items-center gap-4 mb-4">
+        <div class="text-center">
+            <div class="display-4 fw-bold text-warning">
+                @Model.OverallAverage.ToString("F1")
+            </div>
+            <div class="mb-1">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    <span style="color:@(i <= Math.Round((double)Model.OverallAverage) ? "#FFC107" : "#dee2e6");font-size:1.2rem;">★</span>
+                }
+            </div>
+            <div class="text-muted small">
+                @Model.TotalReviews review@(Model.TotalReviews == 1 ? "" : "s")
+            </div>
+        </div>
+
+        @* Star Distribution Bar Chart *@
+        <div class="flex-grow-1">
+            @foreach (var star in new[] { 5, 4, 3, 2, 1 })
+            {
+                var pct = Model.PercentageForStar(star);
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="small text-muted" style="width:12px;">@star</span>
+                    <span style="color:#FFC107;font-size:12px;">★</span>
+                    <div class="flex-grow-1 bg-light rounded"
+                         style="height:8px;">
+                        <div class="bg-warning rounded"
+                             style="width:@pct%;height:100%;transition:width .5s;"></div>
+                    </div>
+                    <span class="small text-muted" style="width:36px;">@pct%</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Category Averages *@
+    <div class="row g-3">
+        @{
+            var catAvgs = new[]
+            {
+                ("Cleanliness",  Model.CleanlinessAverage, "fa-broom",         "info"),
+                ("Safety",       Model.SafetyAverage,      "fa-shield-alt",    "success"),
+                ("Internet",     Model.InternetAverage,    "fa-wifi",          "primary"),
+                ("Location",     Model.LocationAverage,    "fa-map-marker-alt","danger"),
+                ("Quietness",    Model.QuietnessAverage,   "fa-volume-mute",   "secondary"),
+            };
+        }
+        @foreach (var (name, avg, icon, color) in catAvgs)
+        {
+            <div class="col-6 col-md-4">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="icon-circle bg-@color bg-opacity-15
+                        text-@color rounded-circle d-flex
+                        align-items-center justify-content-center
+                        flex-shrink-0"
+                          style="width:34px;height:34px;">
+                        <i class="fas @icon" style="font-size:12px;"></i>
+                    </span>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">@name</span>
+                            <span class="small fw-bold">@avg.ToString("F1")</span>
+                        </div>
+                        <div class="bg-light rounded" style="height:4px;">
+                            <div class="bg-@color rounded"
+                                 style="width:@(avg * 20)%;height:100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

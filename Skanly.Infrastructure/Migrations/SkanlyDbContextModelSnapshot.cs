@@ -902,6 +902,10 @@ namespace Skanly.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<string>("EvidenceUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<byte>("ReportType")
                         .HasColumnType("tinyint");
 
@@ -970,6 +974,11 @@ namespace Skanly.Infrastructure.Migrations
 
                     b.Property<byte>("InternetRating")
                         .HasColumnType("tinyint");
+
+                    b.Property<bool>("IsHidden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<byte>("LocationRating")
                         .HasColumnType("tinyint");
