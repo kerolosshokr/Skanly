@@ -400,6 +400,84 @@ namespace Skanly.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Skanly.Domain.Entities.ChatbotConversation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConversationTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastMessageAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RelatedPropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RelatedPropertyId");
+
+                    b.HasIndex("UserId", "LastMessageAt");
+
+                    b.ToTable("ChatbotConversations");
+                });
+
+            modelBuilder.Entity("Skanly.Domain.Entities.ChatbotMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DetectedIntent")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsInstantAnswer")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("TokensUsed")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "SentAt");
+
+                    b.ToTable("ChatbotMessages");
+                });
+
             modelBuilder.Entity("Skanly.Domain.Entities.CommissionSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -1067,6 +1145,46 @@ namespace Skanly.Infrastructure.Migrations
                     b.ToTable("Students", (string)null);
                 });
 
+            modelBuilder.Entity("Skanly.Domain.Entities.StudentSearchHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AreaId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MaxPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal?>("MinPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<byte?>("PropertyType")
+                        .HasColumnType("tinyint");
+
+                    b.Property<DateTime>("SearchedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("UniversityId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId", "SearchedAt");
+
+                    b.ToTable("StudentSearchHistories");
+                });
+
             modelBuilder.Entity("Skanly.Domain.Entities.University", b =>
                 {
                     b.Property<int>("Id")
@@ -1310,6 +1428,27 @@ namespace Skanly.Infrastructure.Migrations
                     b.Navigation("Conversation");
                 });
 
+            modelBuilder.Entity("Skanly.Domain.Entities.ChatbotConversation", b =>
+                {
+                    b.HasOne("Skanly.Domain.Entities.Property", "RelatedProperty")
+                        .WithMany()
+                        .HasForeignKey("RelatedPropertyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("RelatedProperty");
+                });
+
+            modelBuilder.Entity("Skanly.Domain.Entities.ChatbotMessage", b =>
+                {
+                    b.HasOne("Skanly.Domain.Entities.ChatbotConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
             modelBuilder.Entity("Skanly.Domain.Entities.CommissionSetting", b =>
                 {
                     b.HasOne("Skanly.Domain.Entities.Admin", "SetByAdmin")
@@ -1537,6 +1676,11 @@ namespace Skanly.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("Skanly.Domain.Entities.ChatConversation", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Skanly.Domain.Entities.ChatbotConversation", b =>
                 {
                     b.Navigation("Messages");
                 });

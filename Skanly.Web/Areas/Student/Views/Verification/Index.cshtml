@@ -1,0 +1,210 @@
+﻿@* Skanly.Web/Areas/Student/Views/Verification/Index.cshtml *@
+@model Skanly.Application.Features.Verification.DTOs.VerificationDto?
+@{
+    ViewData["Title"] = "Identity Verification";
+    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+}
+
+<div class="container py-4" style="max-width:680px;">
+
+    <h1 class="page-title mb-4">
+        <i class="fas fa-shield-alt me-2 text-warning"></i>
+        Identity Verification
+    </h1>
+
+    @if (TempData["Success"] is string ok)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4">
+            <i class="fas fa-check-circle me-2"></i>@ok
+            <button type="button" class="btn-close"
+                    data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model is null)
+    {
+        @* Not submitted yet *@
+        <div class="card border-0 shadow-sm text-center py-5">
+            <div class="mb-4">
+                <div class="d-inline-flex align-items-center
+                    justify-content-center rounded-circle
+                    bg-warning bg-opacity-15"
+                     style="width:90px;height:90px;">
+                    <i class="fas fa-shield-alt fa-3x
+                    text-warning opacity-75"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-2">Identity Not Yet Verified</h4>
+            <p class="text-muted mb-4">
+                Verify your identity to unlock full access to Skanly.
+                Verified users get priority access to listings and
+                can proceed with bookings.
+            </p>
+            <div class="d-flex gap-3 justify-content-center">
+                <a asp-action="Submit"
+                   class="btn btn-warning fw-semibold px-4">
+                    <i class="fas fa-id-card me-2"></i>
+                    Start Verification
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* Show current status *@
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-4">
+
+                    @* Status Icon *@
+                    <div class="flex-shrink-0">
+                        @if (Model.Status == Skanly.Domain.Enums.VerificationStatus.Approved)
+                        {
+                            <div class="rounded-circle bg-success d-flex
+                                align-items-center justify-content-center"
+                                 style="width:80px;height:80px;">
+                                <i class="fas fa-check fa-2x text-white"></i>
+                            </div>
+                        }
+                        else if (Model.Status == Skanly.Domain.Enums.VerificationStatus.Pending)
+                        {
+                            <div class="rounded-circle bg-warning d-flex
+                                align-items-center justify-content-center"
+                                 style="width:80px;height:80px;">
+                                <i class="fas fa-clock fa-2x text-white"></i>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="rounded-circle bg-danger d-flex
+                                align-items-center justify-content-center"
+                                 style="width:80px;height:80px;">
+                                <i class="fas fa-times fa-2x text-white"></i>
+                            </div>
+                        }
+                    </div>
+
+                    @* Status Info *@
+                    <div class="flex-grow-1">
+                        <h5 class="fw-bold mb-1">
+                            @Model.StatusDisplay
+                        </h5>
+                        <p class="text-muted small mb-2">
+                            Submitted @Model.TimeAgo
+                        </p>
+                        <span class="badge @Model.StatusBadgeClass">
+                            @Model.StatusDisplay
+                        </span>
+                    </div>
+                </div>
+
+                @if (Model.Status == Skanly.Domain.Enums.VerificationStatus.Pending)
+                {
+                    <div class="alert alert-info mt-3 mb-0 small">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Your documents are in our review queue.
+                        Average review time is 24–48 hours.
+                        You will receive a notification once reviewed.
+                    </div>
+                }
+
+                @if (Model.Status == Skanly.Domain.Enums.VerificationStatus.Rejected)
+                {
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <strong>
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Reason for Rejection:
+                        </strong>
+                        <p class="mb-2 mt-1">@Model.RejectionReason</p>
+                        <a asp-action="Submit"
+                           class="btn btn-sm btn-danger">
+                            <i class="fas fa-redo me-1"></i>
+                            Resubmit Documents
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* OCR Extracted Data Card *@
+        @if (!string.IsNullOrEmpty(Model.ExtractedName) ||
+             !string.IsNullOrEmpty(Model.ExtractedNationalId))
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent fw-semibold">
+                    <i class="fas fa-robot me-2 text-info"></i>
+                    AI Extracted Information
+                    <span class="badge bg-info ms-2 small">Auto-detected</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @if (!string.IsNullOrEmpty(Model.ExtractedName))
+                        {
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Name</div>
+                                <div class="fw-semibold">@Model.ExtractedName</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ExtractedNationalId))
+                        {
+                            <div class="col-sm-6">
+                                <div class="text-muted small">National ID</div>
+                                <div class="fw-semibold font-monospace">
+                                    @Model.ExtractedNationalId
+                                    @if (Model.NationalIdFormatValid)
+                                    {
+                                        <i class="fas fa-check-circle
+                                        text-success ms-1"
+                                           title="Valid format"></i>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        @if (Model.ExtractedBirthDate.HasValue)
+                        {
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Date of Birth</div>
+                                <div class="fw-semibold">
+                                    @Model.ExtractedBirthDate.Value
+                                    .ToString("MMMM dd, yyyy")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <p class="text-muted small mb-0 mt-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Admin will verify these details against your documents
+                        before approval.
+                    </p>
+                </div>
+            </div>
+        }
+
+        @* Uploaded Images *@
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-id-card me-2 text-primary"></i>
+                Submitted Documents
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small mb-2">Front Side</div>
+                        <img src="@Model.NationalIdFrontUrl"
+                             class="img-fluid rounded shadow-sm border"
+                             alt="National ID Front" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.NationalIdBackUrl))
+                    {
+                        <div class="col-sm-6">
+                            <div class="text-muted small mb-2">Back Side</div>
+                            <img src="@Model.NationalIdBackUrl"
+                                 class="img-fluid rounded shadow-sm border"
+                                 alt="National ID Back" />
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Skanly.Application.Features.Notifications.DTOs;
 using Skanly.Infrastructure.RealTime.Hubs;
+using Skanly.Application.Common.Interfaces;
 
 namespace Skanly.Infrastructure.RealTime;
 
@@ -10,7 +11,7 @@ namespace Skanly.Infrastructure.RealTime;
 /// real-time events without depending on SignalR directly.
 /// Registered as Scoped in Infrastructure DI.
 /// </summary>
-public class NotificationHubHelper
+public class NotificationHubHelper : INotificationHub
 {
     private readonly IHubContext<NotificationHub> _notificationHub;
     private readonly IHubContext<ChatHub> _chatHub;

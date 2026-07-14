@@ -6,6 +6,7 @@ using Skanly.Application.Common.Models;
 using Skanly.Application.Features.Payments.DTOs;
 using Skanly.Application.Features.Payments.Interfaces;
 using Skanly.Domain.Entities;
+using Skanly.Application.Features.Notifications.Interfaces;
 using Skanly.Domain.Enums;
 using Skanly.Domain_1.Enums;
 
@@ -18,17 +19,20 @@ public class PaymentService : IPaymentService
     private readonly IPaymentGatewayFactory _gatewayFactory;
     private readonly IValidator<InitiatePaymentDto> _validator;
     private readonly ILogger<PaymentService> _logger;
+    private readonly INotificationService _notificationService;
 
     public PaymentService(
         IUnitOfWork uow,
         IPaymentGatewayFactory gatewayFactory,
         IValidator<InitiatePaymentDto> validator,
-        ILogger<PaymentService> logger)
+        ILogger<PaymentService> logger,
+        INotificationService notificationService)
     {
         _uow = uow;
         _gatewayFactory = gatewayFactory;
         _validator = validator;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     // ── GetCheckoutAsync ──────────────────────────────────────────────────────
@@ -190,29 +194,20 @@ public class PaymentService : IPaymentService
                 _uow.Bookings.Update(booking);
 
                 // Notify student
-                await _uow.Notifications.AddAsync(new Notification
-                {
-                    UserId = studentId,
-                    Title = "Payment Successful!",
-                    Message = $"Your deposit for {booking.Property.Title} " +
-                                        $"was received. Reference: " +
-                                        $"{gatewayResult.TransactionReference}",
-                    Type = NotificationType.PaymentConfirmation,
-                    RelatedEntityId = booking.Id,
-                    RelatedEntityType = "Booking"
-                }, ct);
+                await _notificationService.SendPaymentSuccessAsync(
+            studentId,
+            booking.Id,
+            booking.Property.Title,
+            payment.Amount,
+            gatewayResult.TransactionReference,
+            ct);
 
-                // Notify owner
-                await _uow.Notifications.AddAsync(new Notification
-                {
-                    UserId = booking.Property.OwnerId,
-                    Title = "Booking Confirmed & Deposit Received",
-                    Message = $"{booking.Student.FullName} has completed " +
-                                        $"payment for {booking.Property.Title}.",
-                    Type = NotificationType.PaymentConfirmation,
-                    RelatedEntityId = booking.Id,
-                    RelatedEntityType = "Booking"
-                }, ct);
+                await _notificationService.SendOwnerPayoutNoticeAsync(
+                    booking.Property.OwnerId,
+                    booking.Id,
+                    booking.Property.Title,
+                    booking.TotalAmount - (booking.CommissionAmount ?? 0),
+                    ct);
             }
             else
             {
@@ -221,17 +216,13 @@ public class PaymentService : IPaymentService
                 _uow.Bookings.Update(booking);
 
                 // Notify student of failure
-                await _uow.Notifications.AddAsync(new Notification
-                {
-                    UserId = studentId,
-                    Title = "Payment Failed",
-                    Message = $"Your payment for {booking.Property.Title} " +
-                                        $"failed: {gatewayResult.FailureMessage}",
-                    Type = NotificationType.PaymentConfirmation,
-                    RelatedEntityId = booking.Id,
-                    RelatedEntityType = "Booking"
-                }, ct);
-            }
+                await _notificationService.SendPaymentFailedAsync(
+                    studentId,
+                   booking.Id,
+                     booking.Property.Title,
+                     gatewayResult.FailureMessage ?? "Unknown error",
+                          ct);
+                                }
 
             await _uow.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);

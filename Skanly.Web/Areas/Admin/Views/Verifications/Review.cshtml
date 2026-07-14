@@ -1,0 +1,387 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Verifications/Review.cshtml *@
+@model Skanly.Application.Features.Verification.DTOs.VerificationDto
+@{
+    ViewData["Title"] = $"Review — {Model.UserFullName}";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+@using Skanly.Domain.Enums
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-1">Review Verification</h1>
+        <p class="text-muted mb-0">
+            <span class="badge @Model.StatusBadgeClass me-2">
+                @Model.StatusDisplay
+            </span>
+            Submitted @Model.TimeAgo
+        </p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back to Queue
+    </a>
+</div>
+
+<div class="row g-4">
+
+    @* Left: Documents + User Info *@
+    <div class="col-lg-7">
+
+        @* User Info *@
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">
+                Submitted By
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="@(Model.UserImageUrl ?? "/images/default-avatar.png")"
+                         class="rounded-circle object-fit-cover"
+                         width="56" height="56" alt="" />
+                    <div>
+                        <div class="fw-bold fs-6">@Model.UserFullName</div>
+                        <div class="text-muted small">
+                            @Model.UserEmail
+                        </div>
+                        <span class="badge bg-primary small">
+                            @Model.UserRole
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Document Images *@
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-id-card me-2 text-primary"></i>
+                ID Documents
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="small text-muted fw-semibold mb-2">
+                            Front Side
+                        </div>
+                        <a href="@Model.NationalIdFrontUrl"
+                           target="_blank">
+                            <img src="@Model.NationalIdFrontUrl"
+                                 class="img-fluid rounded border shadow-sm"
+                                 alt="Front" />
+                        </a>
+                        <div class="small text-muted mt-1">
+                            Click to open full size
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.NationalIdBackUrl))
+                    {
+                        <div class="col-sm-6">
+                            <div class="small text-muted fw-semibold mb-2">
+                                Back Side
+                            </div>
+                            <a href="@Model.NationalIdBackUrl"
+                               target="_blank">
+                                <img src="@Model.NationalIdBackUrl"
+                                     class="img-fluid rounded border shadow-sm"
+                                     alt="Back" />
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* OCR Results Card *@
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-robot me-2 text-info"></i>
+                AI OCR Results
+                @if (Model.IsHighConfidence)
+                {
+                    <span class="badge bg-success ms-2">High Confidence</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark ms-2">
+                        Manual Review Required
+                    </span>
+                }
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <div class="small text-muted">Extracted Name</div>
+                        <div class="fw-semibold">
+                            @(Model.ExtractedName ?? "Not detected")
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="small text-muted">National ID Number</div>
+                        <div class="fw-semibold font-monospace d-flex align-items-center gap-2">
+                            @(Model.ExtractedNationalId ?? "Not detected")
+                            @if (Model.NationalIdFormatValid)
+                            {
+                                <span class="badge bg-success small">
+                                    Valid Format ✓
+                                </span>
+                            }
+                            else if (!string.IsNullOrEmpty(Model.ExtractedNationalId))
+                            {
+                                <span class="badge bg-danger small">
+                                    Invalid Format ✗
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    @if (Model.ExtractedBirthDate.HasValue)
+                    {
+                        <div class="col-sm-6">
+                            <div class="small text-muted">Date of Birth</div>
+                            <div class="fw-semibold">
+                                @Model.ExtractedBirthDate.Value
+                                .ToString("MMMM dd, yyyy")
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (!Model.IsHighConfidence)
+                {
+                    <div class="alert alert-warning small mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        OCR confidence is low. Please carefully compare
+                        the extracted data with the physical ID documents
+                        shown above before approving.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Right: Decision Panel *@
+    <div class="col-lg-5">
+        <div style="position:sticky;top:80px;">
+
+            @if (Model.Status == VerificationStatus.Pending)
+            {
+                @* Approve Form *@
+                <div class="card border-0 shadow-sm border-success
+                    border-opacity-25 mb-3">
+                    <div class="card-header bg-success bg-opacity-10 fw-semibold">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Approve Verification
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            Confirm the information extracted from the ID.
+                            You can correct any OCR errors below.
+                        </p>
+
+                        <form asp-area="Admin"
+                              asp-controller="Verifications"
+                              asp-action="Approve"
+                              method="post"
+                              id="approveForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="VerificationId"
+                                   value="@Model.VerificationId" />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">
+                                    Full Name (as on ID)
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       name="VerifiedName"
+                                       value="@Model.ExtractedName"
+                                       class="form-control form-control-sm"
+                                       placeholder="Full name as it appears on ID" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">
+                                    National ID Number
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       name="VerifiedNationalId"
+                                       value="@Model.ExtractedNationalId"
+                                       class="form-control form-control-sm font-monospace"
+                                       placeholder="14-digit National ID"
+                                       maxlength="14"
+                                       id="nationalIdInput" />
+                                <div id="idValidationMsg" class="small mt-1"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">
+                                    Date of Birth
+                                </label>
+                                <input type="date"
+                                       name="VerifiedBirthDate"
+                                       value="@Model.ExtractedBirthDate?.ToString("yyyy-MM-dd")"
+                                       class="form-control form-control-sm" />
+                            </div>
+
+                            <button type="submit"
+                                    class="btn btn-success w-100 fw-semibold"
+                                    id="approveBtn">
+                                <i class="fas fa-check me-2"></i>
+                                Approve & Verify Identity
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                @* Reject Form *@
+                <div class="card border-0 shadow-sm border-danger border-opacity-25">
+                    <div class="card-header bg-danger bg-opacity-10 fw-semibold">
+                        <i class="fas fa-times-circle text-danger me-2"></i>
+                        Reject Verification
+                    </div>
+                    <div class="card-body">
+                        <form asp-area="Admin"
+                              asp-controller="Verifications"
+                              asp-action="Reject"
+                              method="post"
+                              id="rejectForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="VerificationId"
+                                   value="@Model.VerificationId" />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">
+                                    Rejection Reason
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select form-select-sm mb-2"
+                                        id="rejectReasonPreset"
+                                        onchange="fillRejectReason(this.value)">
+                                    <option value="">Select common reason...</option>
+                                    @foreach (var reason in new[]
+                                    {
+                                        "Image is blurry or unreadable",
+                                        "ID appears to be expired",
+                                        "ID does not match the uploaded photo",
+                                        "The ID number is not visible",
+                                        "This does not appear to be a valid National ID",
+                                        "Please upload both front and back of the ID",
+                                        "The uploaded file is not a National ID document"
+                                    })
+                                    {
+                                        <option value="@reason">@reason</option>
+                                    }
+                                </select>
+                                <textarea name="RejectionReason"
+                                          class="form-control form-control-sm"
+                                          rows="3"
+                                          id="rejectionReasonField"
+                                          placeholder="Explain why this verification is being rejected..."></textarea>
+                            </div>
+
+                            <button type="submit"
+                                    class="btn btn-danger w-100">
+                                <i class="fas fa-times me-2"></i>
+                                Reject — Notify User
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @* Already reviewed *@
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-lock fa-2x text-muted mb-2 opacity-50"></i>
+                        <p class="text-muted mb-1">
+                            This verification was
+                            <strong>@Model.StatusDisplay.ToLower()</strong>
+                            by @(Model.ReviewedByAdminName ?? "Admin")
+                        </p>
+                        <p class="text-muted small">
+                            @Model.ReviewedAt?.ToString("MMMM dd, yyyy HH:mm")
+                        </p>
+                        @if (!string.IsNullOrEmpty(Model.RejectionReason))
+                        {
+                            <div class="alert alert-danger text-start small mt-3 mb-0">
+                                <strong>Rejection Reason:</strong><br />
+                                @Model.RejectionReason
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Pre-fill rejection reason from dropdown ────────────────────────────────
+        window.fillRejectReason = function (value) {
+            if (value)
+                document.getElementById('rejectionReasonField').value = value;
+        };
+
+        // ── Live National ID validation ────────────────────────────────────────────
+        const idInput  = document.getElementById('nationalIdInput');
+        const idMsg    = document.getElementById('idValidationMsg');
+
+        idInput?.addEventListener('input', function () {
+            const val = this.value.replace(/\D/g, '');
+            this.value = val;
+
+            if (val.length === 0) {
+                idMsg.textContent = '';
+                return;
+            }
+
+            if (val.length !== 14) {
+                idMsg.innerHTML =
+                    '<span class="text-danger">⚠ Must be exactly 14 digits</span>';
+                return;
+            }
+
+            const century = parseInt(val[0]);
+            if (century !== 2 && century !== 3) {
+                idMsg.innerHTML =
+                    '<span class="text-danger">⚠ First digit must be 2 or 3</span>';
+                return;
+            }
+
+            const year  = (century === 2 ? 1900 : 2000) +
+                          parseInt(val.substring(1, 3));
+            const month = parseInt(val.substring(3, 5));
+            const day   = parseInt(val.substring(5, 7));
+            const seq   = parseInt(val.substring(10, 13));
+            const gender= seq % 2 !== 0 ? 'Male' : 'Female';
+
+            idMsg.innerHTML =
+                `<span class="text-success">✓ Valid format</span>` +
+                ` &nbsp;·&nbsp; Born: ${day}/${month}/${year}` +
+                ` &nbsp;·&nbsp; ${gender}`;
+
+            // Auto-fill birth date
+            const bdInput = document.querySelector('input[name="VerifiedBirthDate"]');
+            if (bdInput && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                try {
+                    new Date(year, month - 1, day); // validate
+                    bdInput.value = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                } catch {}
+            }
+        });
+
+        // ── Confirm before approve ────────────────────────────────────────────────
+        document.getElementById('approveForm')?.addEventListener('submit', function (e) {
+            const idVal = document.querySelector('input[name="VerifiedNationalId"]')?.value;
+            if (!idVal || idVal.length !== 14) {
+                e.preventDefault();
+                alert('Please enter a valid 14-digit National ID before approving.');
+                return;
+            }
+
+            if (!confirm('Approve this identity verification? ' +
+                         'The user will be notified and granted full access.'))
+                e.preventDefault();
+        });
+    </script>
+}

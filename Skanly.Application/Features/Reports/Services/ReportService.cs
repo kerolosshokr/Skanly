@@ -8,6 +8,7 @@ using Skanly.Application.Features.Reports.Interfaces;
 using Skanly.Domain.Entities;
 using Skanly.Domain.Enums;
 using Skanly.Domain_1.Enums;
+using Skanly.Application.Features.Notifications.Interfaces;
 
 namespace Skanly.Application.Features.Reports.Services;
 
@@ -19,6 +20,7 @@ public class ReportService : IReportService
     private readonly IValidator<CreateReportDto> _createValidator;
     private readonly IValidator<ResolveReportDto> _resolveValidator;
     private readonly ILogger<ReportService> _logger;
+    private readonly INotificationService _notificationService;
 
     public ReportService(
         IUnitOfWork uow,
@@ -26,7 +28,8 @@ public class ReportService : IReportService
         IIdentityService identityService,
         IValidator<CreateReportDto> createValidator,
         IValidator<ResolveReportDto> resolveValidator,
-        ILogger<ReportService> logger)
+        ILogger<ReportService> logger,
+          INotificationService notificationService)
     {
         _uow = uow;
         _fileStorage = fileStorage;
@@ -34,6 +37,7 @@ public class ReportService : IReportService
         _createValidator = createValidator;
         _resolveValidator = resolveValidator;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     // ── CreateAsync ───────────────────────────────────────────────────────────
@@ -93,19 +97,7 @@ public class ReportService : IReportService
         await _uow.Repository<Report>().AddAsync(report, ct);
 
         // 6. Notify all admins
-        var admins = await _uow.Repository<Admin>().GetAllAsync(ct);
-        foreach (var admin in admins)
-        {
-            await _uow.Notifications.AddAsync(new Notification
-            {
-                UserId = admin.UserId,
-                Title = "New Report Submitted",
-                Message = $"A new {report.ReportType} report requires review.",
-                Type = NotificationType.BookingUpdate,
-                RelatedEntityId = report.Id,
-                RelatedEntityType = "Report"
-            }, ct);
-        }
+      
 
         await _uow.SaveChangesAsync(ct);
 
@@ -280,16 +272,13 @@ public class ReportService : IReportService
                     : "Your report has been reviewed and dismissed. " +
                       $"Notes: {dto.Resolution}";
 
-                await _uow.Notifications.AddAsync(new Notification
-                {
-                    UserId = report.ReporterId,
-                    Title = $"Report {dto.NewStatus}",
-                    Message = notificationMessage,
-                    Type = NotificationType.BookingUpdate,
-                    RelatedEntityId = report.Id,
-                    RelatedEntityType = "Report"
-                }, ct);
-            }
+                await _notificationService.SendReportStatusUpdateAsync(
+                    report.ReporterId,
+                              report.Id,
+                        dto.NewStatus.ToString(),
+                          dto.Resolution,
+                                ct);
+                                  }
 
             await _uow.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);

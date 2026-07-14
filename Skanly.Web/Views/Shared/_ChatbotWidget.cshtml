@@ -1,0 +1,420 @@
+﻿@* Skanly.Web/Views/Shared/_ChatbotWidget.cshtml *@
+@* Include in _Layout.cshtml (authenticated users only):
+   @if (User.Identity?.IsAuthenticated == true)
+   {
+       @await Html.PartialAsync("_ChatbotWidget")
+   }
+*@
+@{
+    int? propertyId = ViewContext.RouteData.Values["id"] as int?;
+}
+
+
+@* ── Floating Button ──────────────────────────────────────────────────────── *@
+<button id="chatbotToggle"
+        class="btn btn-primary rounded-circle shadow-lg
+    d-flex align-items-center justify-content-center"
+        style="position:fixed;bottom:24px;right:24px;
+    width:56px;height:56px;z-index:1050;
+    transition:transform .2s;"
+        title="Chat with Sana — Skanly AI Assistant"
+        aria-label="Open AI chatbot">
+    <i class="fas fa-comment-dots fa-lg" id="chatbotToggleIcon"></i>
+</button>
+
+@* ── Chat Panel ───────────────────────────────────────────────────────────── *@
+<div id="chatbotPanel"
+     class="card shadow-lg border-0"
+     style="position:fixed;bottom:92px;right:24px;
+    width:380px;height:580px;z-index:1049;
+    display:none;flex-direction:column;
+    border-radius:20px;overflow:hidden;">
+
+    @* Header *@
+    <div class="card-header d-flex align-items-center gap-3 py-3 px-4"
+         style="background:linear-gradient(135deg,#6C63FF,#4f46e5);">
+        <div class="rounded-circle bg-white bg-opacity-20
+            d-flex align-items-center justify-content-center"
+             style="width:40px;height:40px;flex-shrink:0;">
+            <i class="fas fa-robot text-white"></i>
+        </div>
+        <div class="flex-grow-1">
+            <div class="text-white fw-bold" style="font-size:15px;">Sana</div>
+            <div class="text-white text-opacity-75" style="font-size:11px;">
+                Skanly AI Assistant
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm text-white opacity-75 p-1"
+                    id="chatbotNewConv"
+                    title="New conversation">
+                <i class="fas fa-plus" style="font-size:12px;"></i>
+            </button>
+            <button class="btn btn-sm text-white opacity-75 p-1"
+                    id="chatbotClose"
+                    title="Close">
+                <i class="fas fa-times" style="font-size:14px;"></i>
+            </button>
+        </div>
+    </div>
+
+    @* Messages *@
+    <div id="chatbotMessages"
+         style="flex:1;overflow-y:auto;padding:16px;
+        background:#f8f9fa;
+        display:flex;flex-direction:column;gap:12px;">
+
+        @* Welcome message — shown when no conversation loaded *@
+        <div class="chatbot-bubble assistant" id="welcomeMessage">
+            <div class="d-flex gap-2 align-items-end">
+                <div class="rounded-circle bg-primary bg-opacity-15
+                    d-flex align-items-center justify-content-center
+                    flex-shrink-0"
+                     style="width:28px;height:28px;">
+                    <i class="fas fa-robot text-primary"
+                       style="font-size:12px;"></i>
+                </div>
+                <div class="bubble assistant-bubble">
+                    Hi! I'm <strong>Sana</strong>, your Skanly assistant. 👋<br />
+                    I can help you find housing, understand bookings,
+                    answer questions about properties, and more.
+                    What can I help you with today?
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Suggested Prompts *@
+    <div id="suggestedPrompts"
+         class="px-3 py-2 border-top"
+         style="background:#f8f9fa;">
+        <div class="d-flex gap-2 flex-wrap" id="promptsList">
+            @foreach (var prompt in new[]
+            {
+                "How do I book a property?",
+                "Check my booking status",
+                "How do I verify my identity?",
+                "What payment methods are available?",
+            })
+            {
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary
+                    suggested-prompt"
+                        style="font-size:11px;padding:3px 10px;
+                    border-radius:20px;"
+                        data-prompt="@prompt">
+                    @prompt
+                </button>
+            }
+        </div>
+    </div>
+
+    @* Input Area *@
+    <div class="p-3 bg-white border-top">
+        <div class="d-flex gap-2 align-items-end">
+            <textarea id="chatbotInput"
+                      class="form-control border-0 bg-light"
+                      rows="1"
+                      placeholder="Ask Sana anything..."
+                      maxlength="1000"
+                      style="resize:none;max-height:100px;
+            border-radius:20px;padding:10px 16px;
+            font-size:13px;"></textarea>
+            <button id="chatbotSend"
+                    class="btn btn-primary d-flex align-items-center
+                justify-content-center flex-shrink-0"
+                    style="width:40px;height:40px;border-radius:50%;">
+                <i class="fas fa-paper-plane" style="font-size:13px;"></i>
+            </button>
+        </div>
+        <div class="text-center mt-2">
+            <span style="font-size:10px;color:#aaa;">
+                <i class="fas fa-robot me-1"></i>
+                Powered by Claude AI · Sana may make mistakes
+            </span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        /* ==========================================================
+           Skanly Chatbot Widget
+           ========================================================== */
+        (function () {
+            'use strict';
+
+            // ── Config ─────────────────────────────────────────────────────────────────
+            const PROPERTY_ID      = @(propertyId.HasValue ? propertyId.Value.ToString() : "null");
+            const TOKEN            = document.querySelector(
+                'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+            // ── State ──────────────────────────────────────────────────────────────────
+            let conversationId     = null;
+            let isStreaming        = false;
+            let currentStreamDiv   = null;
+            let abortController    = null;
+
+            // ── DOM References ─────────────────────────────────────────────────────────
+            const panel       = document.getElementById('chatbotPanel');
+            const toggleBtn   = document.getElementById('chatbotToggle');
+            const closeBtn    = document.getElementById('chatbotClose');
+            const newConvBtn  = document.getElementById('chatbotNewConv');
+            const input       = document.getElementById('chatbotInput');
+            const sendBtn     = document.getElementById('chatbotSend');
+            const messages    = document.getElementById('chatbotMessages');
+            const prompts     = document.getElementById('suggestedPrompts');
+
+            // ── Toggle Panel ───────────────────────────────────────────────────────────
+            toggleBtn.addEventListener('click', () => {
+                const isOpen = panel.style.display !== 'none';
+                panel.style.display = isOpen ? 'none' : 'flex';
+                document.getElementById('chatbotToggleIcon').className =
+                    isOpen ? 'fas fa-comment-dots fa-lg'
+                           : 'fas fa-times fa-lg';
+                toggleBtn.style.transform = isOpen ? '' : 'rotate(0deg)';
+            });
+
+            closeBtn.addEventListener('click', () => {
+                panel.style.display = 'none';
+                document.getElementById('chatbotToggleIcon').className =
+                    'fas fa-comment-dots fa-lg';
+            });
+
+            // ── New Conversation ───────────────────────────────────────────────────────
+            newConvBtn.addEventListener('click', async () => {
+                if (isStreaming && abortController) abortController.abort();
+                conversationId = null;
+                messages.innerHTML = '';
+                document.getElementById('welcomeMessage').style.display = '';
+                messages.appendChild(document.getElementById('welcomeMessage'));
+                resetSuggestedPrompts();
+            });
+
+            // ── Suggested Prompts ──────────────────────────────────────────────────────
+            document.querySelectorAll('.suggested-prompt').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    input.value = this.dataset.prompt;
+                    sendMessage();
+                });
+            });
+
+            function resetSuggestedPrompts() {
+                document.getElementById('promptsList')
+                    .querySelectorAll('.suggested-prompt')
+                    .forEach(btn => btn.style.display = '');
+            }
+
+            // ── Send Message ───────────────────────────────────────────────────────────
+            sendBtn.addEventListener('click', sendMessage);
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Auto-resize textarea
+            input.addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            });
+
+            async function sendMessage() {
+                const text = input.value.trim();
+                if (!text || isStreaming) return;
+
+                // Hide prompts after first message
+                prompts.style.display = 'none';
+                document.getElementById('welcomeMessage').style.display = 'none';
+
+                // Render user message
+                appendMessage('user', text);
+                input.value = '';
+                input.style.height = 'auto';
+
+                // Prepare assistant message container
+                currentStreamDiv = appendMessage('assistant', '', isStreaming: true);
+
+                isStreaming      = true;
+                sendBtn.disabled = true;
+                abortController  = new AbortController();
+
+                try {
+                    // Build SSE URL
+                    const url = new URL('/Chatbot/Stream', window.location.origin);
+                    url.searchParams.set('message', text);
+                    if (conversationId) url.searchParams.set('conversationId', conversationId);
+                    if (PROPERTY_ID)    url.searchParams.set('currentPropertyId', PROPERTY_ID);
+
+                    const response = await fetch(url.toString(), {
+                        signal: abortController.signal
+                    });
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer   = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() ?? '';
+
+                        for (const line of lines) {
+                            if (!line.startsWith('data: ')) continue;
+                            const data = line.slice(6).trim();
+                            if (!data) continue;
+
+                            try {
+                                const parsed = JSON.parse(data);
+
+                                if (parsed.type === 'token') {
+                                    appendToken(currentStreamDiv, parsed.text);
+                                }
+                                else if (parsed.type === 'done') {
+                                    conversationId = parsed.conversationId;
+                                    finaliseStreamBubble(currentStreamDiv);
+                                }
+                            } catch { /* malformed chunk — ignore */ }
+                        }
+                    }
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        appendToken(currentStreamDiv,
+                            'Sorry, I had trouble connecting. Please try again.');
+                    }
+                } finally {
+                    isStreaming      = false;
+                    sendBtn.disabled = false;
+                    abortController  = null;
+                    if (currentStreamDiv) finaliseStreamBubble(currentStreamDiv);
+                }
+            }
+
+            // ── Message Rendering ──────────────────────────────────────────────────────
+            function appendMessage(role, content, isStreamingParam = false) {
+                const isUser = role === 'user';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = `d-flex gap-2 align-items-end
+                    ${isUser ? 'flex-row-reverse' : ''}`;
+
+                if (!isUser) {
+                    const avatar = document.createElement('div');
+                    avatar.className = 'rounded-circle bg-primary bg-opacity-15 ' +
+                        'd-flex align-items-center justify-content-center flex-shrink-0';
+                    avatar.style.cssText = 'width:28px;height:28px;';
+                    avatar.innerHTML =
+                        '<i class="fas fa-robot text-primary" style="font-size:12px;"></i>';
+                    wrapper.appendChild(avatar);
+                }
+
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble ' + (isUser ? 'user-bubble' : 'assistant-bubble');
+
+                if (isStreamingParam) {
+                    bubble.innerHTML = '<span class="typing-dot"></span>' +
+                                       '<span class="typing-dot"></span>' +
+                                       '<span class="typing-dot"></span>';
+                } else {
+                    bubble.innerHTML = renderMarkdown(content);
+                }
+
+                wrapper.appendChild(bubble);
+                messages.appendChild(wrapper);
+                scrollToBottom();
+
+                return bubble;
+            }
+
+            function appendToken(bubble, token) {
+                // Remove typing indicator on first token
+                const typing = bubble.querySelector('.typing-dot');
+                if (typing) bubble.innerHTML = '';
+
+                // Append raw token — we render markdown on completion
+                bubble.dataset.raw = (bubble.dataset.raw ?? '') + token;
+
+                // Live-render partial markdown (simplified)
+                bubble.innerHTML = renderMarkdown(bubble.dataset.raw ?? '');
+                scrollToBottom();
+            }
+
+            function finaliseStreamBubble(bubble) {
+                if (!bubble) return;
+                bubble.innerHTML = renderMarkdown(bubble.dataset.raw ?? bubble.innerHTML);
+                scrollToBottom();
+            }
+
+            // ── Minimal Markdown Renderer ──────────────────────────────────────────────
+            function renderMarkdown(text) {
+                if (!text) return '';
+                return text
+                    // Bold
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    // Links
+                    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+                        '<a href="$2" class="text-decoration-underline">$1</a>')
+                    // Bullet points
+                    .replace(/^• (.+)$/gm, '<li>$1</li>')
+                    .replace(/(<li>.*<\/li>)+/gs, '<ul class="ps-3 mb-0">$&</ul>')
+                    // Line breaks
+                    .replace(/\n/g, '<br>');
+            }
+
+            function scrollToBottom() {
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            // ── Load latest conversation on panel open ─────────────────────────────────
+            toggleBtn.addEventListener('click', async () => {
+                if (panel.style.display === 'none') return;
+                if (conversationId) return; // already loaded
+
+                // Attempt to reload most recent conversation
+                try {
+                    const res   = await fetch('/Chatbot/Context' +
+                        (PROPERTY_ID ? `?propertyId=${PROPERTY_ID}` : ''));
+                    const ctx   = await res.json();
+
+                    // Adjust suggested prompts based on context
+                    if (ctx.hasPropertyContext && ctx.propertyTitle) {
+                        addContextualPrompt(`Tell me about ${ctx.propertyTitle}`);
+                        addContextualPrompt('Is this within my budget?');
+                    }
+                    if (ctx.activeBookings > 0) {
+                        addContextualPrompt('What are my active bookings?');
+                    }
+                    if (!ctx.hasVerification) {
+                        addContextualPrompt('How do I verify my identity?');
+                    }
+                } catch { /* silent */ }
+            });
+
+            function addContextualPrompt(text) {
+                const list = document.getElementById('promptsList');
+                const btn  = document.createElement('button');
+                btn.type  = 'button';
+                btn.className =
+                    'btn btn-sm btn-outline-primary suggested-prompt';
+                btn.style.cssText =
+                    'font-size:11px;padding:3px 10px;border-radius:20px;';
+                btn.dataset.prompt = text;
+                btn.textContent    = text;
+                btn.addEventListener('click', function () {
+                    input.value = this.dataset.prompt;
+                    sendMessage();
+                });
+                list.appendChild(btn);
+            }
+
+        })();
+    </script>
+    
+
+    
+}

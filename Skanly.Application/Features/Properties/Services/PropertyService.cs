@@ -7,6 +7,7 @@ using Skanly.Application.Common.Interfaces.Repositories;
 using Skanly.Application.Common.Models;
 using Skanly.Application.Features.Properties.DTOs;
 using Skanly.Application.Features.Properties.Interfaces;
+using Skanly.Application.Features.Notifications.Interfaces;
 using Skanly.Domain.Entities;
 using Skanly.Domain.Enums;
 
@@ -19,19 +20,22 @@ public class PropertyService : IPropertyService
     private readonly IValidator<CreatePropertyDto> _createValidator;
     private readonly IValidator<UpdatePropertyDto> _updateValidator;
     private readonly ILogger<PropertyService> _logger;
+    private readonly INotificationService _notificationService;
 
     public PropertyService(
         IUnitOfWork uow,
         IFileStorageService fileStorage,
         IValidator<CreatePropertyDto> createValidator,
         IValidator<UpdatePropertyDto> updateValidator,
-        ILogger<PropertyService> logger)
+        ILogger<PropertyService> logger,
+        INotificationService notificationService)
     {
         _uow = uow;
         _fileStorage = fileStorage;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     // ── SearchAsync ───────────────────────────────────────────────────────────
@@ -493,15 +497,11 @@ public class PropertyService : IPropertyService
         _uow.Repository<Property>().Update(property);
 
         // Notify owner
-        await _uow.Notifications.AddAsync(new Notification
-        {
-            UserId = property.OwnerId,
-            Title = "Property Approved!",
-            Message = $"Your property '{property.Title}' has been approved and is now live.",
-            Type = NotificationType.PropertyApproval,
-            RelatedEntityId = property.Id,
-            RelatedEntityType = "Property"
-        }, ct);
+        await _notificationService.SendPropertyApprovedAsync(
+     property.OwnerId,
+     property.Id,
+     property.Title,
+     ct);
 
         await _uow.SaveChangesAsync(ct);
 
@@ -523,15 +523,12 @@ public class PropertyService : IPropertyService
         property.IsApproved = false;
         _uow.Repository<Property>().Update(property);
 
-        await _uow.Notifications.AddAsync(new Notification
-        {
-            UserId = property.OwnerId,
-            Title = "Property Listing Rejected",
-            Message = $"Your listing '{property.Title}' was not approved. Reason: {reason}",
-            Type = NotificationType.PropertyApproval,
-            RelatedEntityId = property.Id,
-            RelatedEntityType = "Property"
-        }, ct);
+        await _notificationService.SendPropertyRejectedAsync(
+    property.OwnerId,
+    property.Id,
+    property.Title,
+    reason,
+    ct);
 
         await _uow.SaveChangesAsync(ct);
 

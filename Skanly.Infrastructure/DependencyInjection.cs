@@ -1,18 +1,28 @@
-﻿// Skanly.Infrastructure/DependencyInjection.cs  (complete updated file)
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
 using Skanly.Application.Common.Interfaces;
 using Skanly.Application.Common.Interfaces.Repositories;
 using Skanly.Application.Features.Auth.Interfaces;
+using Skanly.Application.Features.Chatbot.Interfaces;
+using Skanly.Application.Features.Maps.Interfaces;
 using Skanly.Application.Features.Payments.Interfaces;
+using Skanly.Application.Features.Recommendations.Interfaces;
+using Skanly.Application.Features.Verification.Interfaces;
+
+using Skanly.Infrastructure.AI;
 using Skanly.Infrastructure.ExternalServices.Email;
+using Skanly.Infrastructure.ExternalServices.GoogleMaps;
+using Skanly.Infrastructure.ExternalServices.Ocr;
 using Skanly.Infrastructure.ExternalServices.Payment;
 using Skanly.Infrastructure.FileStorage;
 using Skanly.Infrastructure.Identity;
 using Skanly.Infrastructure.Persistence;
 using Skanly.Infrastructure.Persistence.Repositories;
+using Skanly.Infrastructure.RealTime;
 
 namespace Skanly.Infrastructure;
 
@@ -22,11 +32,9 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // ── DbContext ──────────────────────────────────────────────────────────
-        // Scoped lifetime is critical — one DbContext per HTTP request ensures
-        // ALL repositories and the UnitOfWork share the same EF Core change
-        // tracker within a single request. Never register as Singleton or
-        // Transient for a web application.
+        // ─────────────────────────────────────────────────────────────
+        // DbContext
+        // ─────────────────────────────────────────────────────────────
         services.AddDbContext<SkanlyDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
@@ -38,34 +46,81 @@ public static class DependencyInjection
                     .CommandTimeout(30)
                     .MigrationsAssembly(typeof(SkanlyDbContext).Assembly.FullName)));
 
-        // ── Identity ───────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────
+        // Identity
+        // ─────────────────────────────────────────────────────────────
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         {
             options.Password.RequiredLength = 8;
             options.Password.RequireUppercase = true;
             options.Password.RequireDigit = true;
             options.Password.RequireNonAlphanumeric = false;
+
             options.User.RequireUniqueEmail = true;
+
             options.SignIn.RequireConfirmedEmail = true;
+
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             options.Lockout.MaxFailedAccessAttempts = 5;
         })
-            .AddEntityFrameworkStores<SkanlyDbContext>()
-            .AddDefaultTokenProviders();
+        .AddEntityFrameworkStores<SkanlyDbContext>()
+        .AddDefaultTokenProviders();
 
-        // ── Unit of Work ───────────────────────────────────────────────────────
-        // Scoped: one UoW per request, sharing the same DbContext instance.
-        // Application services inject IUnitOfWork — NEVER UnitOfWork directly.
+        // ─────────────────────────────────────────────────────────────
+        // Google Maps
+        // ─────────────────────────────────────────────────────────────
+        services.Configure<GoogleMapsSettings>(
+            configuration.GetSection(GoogleMapsSettings.SectionName));
+
+        services.AddHttpClient<IGoogleMapsService, GoogleMapsService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // Claude Settings
+        // ─────────────────────────────────────────────────────────────
+        services.Configure<ClaudeClientSettings>(
+            configuration.GetSection(ClaudeClientSettings.SectionName));
+
+        // Claude Recommendation Client
+        services.AddHttpClient<IClaudeRecommendationClient, ClaudeRecommendationClient>(
+            (sp, client) =>
+            {
+                var settings = sp.GetRequiredService<IOptions<ClaudeClientSettings>>().Value;
+
+                client.BaseAddress = new Uri("https://api.anthropic.com");
+                client.DefaultRequestHeaders.Add("x-api-key", settings.ApiKey);
+                client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds + 5);
+            });
+
+        // Claude Chat Client
+        services.AddHttpClient<IClaudeChatClient, ClaudeChatClient>(
+            (sp, client) =>
+            {
+                var settings = sp.GetRequiredService<IOptions<ClaudeClientSettings>>().Value;
+
+                client.BaseAddress = new Uri("https://api.anthropic.com");
+                client.DefaultRequestHeaders.Add("x-api-key", settings.ApiKey);
+                client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds + 60);
+            });
+
+        // ─────────────────────────────────────────────────────────────
+        // Unit Of Work
+        // ─────────────────────────────────────────────────────────────
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // ── Generic Repository (open generic) ──────────────────────────────────
-        // Allows injecting IRepository<T> directly in edge cases.
-        // Normally accessed via IUnitOfWork.Repository<T>() instead.
+        // Generic Repository
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 
-        // ── Specific Repositories ──────────────────────────────────────────────
-        // Registered separately so they can be injected directly if ever needed,
-        // but the standard approach is always through IUnitOfWork.
+        // Repositories
         services.AddScoped<IPropertyRepository, PropertyRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
@@ -76,22 +131,37 @@ public static class DependencyInjection
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
         services.AddScoped<IUniversityRepository, UniversityRepository>();
-        // ── Auth Services ──────────────────────────────────────────────────────────
+
+        // Identity
+        services.AddScoped<IIdentityService, IdentityService>();
+
+        // Auth
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        // Email
         services.AddScoped<IEmailService, EmailService>();
-        // Skanly.Infrastructure/DependencyInjection.cs — أضف السطر ده
-        services.AddScoped<IIdentityService, IdentityService>();
+
+        // File Storage
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
-        // ── Payment Gateways (all registered so factory can resolve by Method) ────────
+
+        // OCR
+        services.Configure<OcrSettings>(
+            configuration.GetSection(OcrSettings.SectionName));
+
+        services.AddScoped<IOcrService, TesseractOcrService>();
+
+        // Payment
         services.AddScoped<IPaymentGateway, SimulatedVisaGateway>();
         services.AddScoped<IPaymentGateway, SimulatedMastercardGateway>();
         services.AddScoped<IPaymentGateway, SimulatedVodafoneCashGateway>();
         services.AddScoped<IPaymentGateway, SimulatedInstaPayGateway>();
         services.AddScoped<IPaymentGateway, SimulatedFawryGateway>();
-        // Factory resolves the right gateway from the collection above
+
         services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
 
+        // SignalR Notification
+        services.AddScoped<INotificationHub, NotificationHubHelper>();
 
         return services;
     }

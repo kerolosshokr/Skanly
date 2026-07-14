@@ -1,0 +1,342 @@
+﻿@* Skanly.Web/Views/Notifications/_NotificationDropdown.cshtml *@
+@* Include in _Layout.cshtml inside the nav:
+   @await Html.PartialAsync("~/Views/Notifications/_NotificationDropdown.cshtml")
+*@
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="nav-item dropdown" id="notifDropdownWrapper">
+        @* Bell Button *@
+        <button class="btn btn-link nav-link position-relative px-2 py-1"
+                id="notifBell"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-label="Notifications">
+            <i class="fas fa-bell fa-lg"></i>
+            <span class="position-absolute top-0 start-100 translate-middle
+            badge rounded-pill bg-danger notif-navbar-badge"
+                  id="notifBadge"
+                  style="font-size:10px;display:none;">0</span>
+        </button>
+
+        @* Dropdown Panel *@
+        <div class="dropdown-menu dropdown-menu-end shadow-lg p-0"
+             id="notifDropdownMenu"
+             style="width:380px;max-height:520px;overflow:hidden;
+            border-radius:12px;">
+
+            @* Header *@
+            <div class="d-flex justify-content-between align-items-center
+                px-4 py-3 border-bottom">
+                <h6 class="mb-0 fw-bold">Notifications</h6>
+                <div class="d-flex gap-2 align-items-center">
+                    <span id="dropdownUnreadBadge"
+                          class="badge bg-danger rounded-pill"
+                          style="display:none;"></span>
+                    <button class="btn btn-sm btn-link text-muted p-0"
+                            id="dropdownMarkAll"
+                            style="font-size:12px;">
+                        Mark all read
+                    </button>
+                </div>
+            </div>
+
+            @* Notifications List *@
+            <div id="notifDropdownList"
+                 style="max-height:380px;overflow-y:auto;">
+                <div class="text-center py-4 text-muted"
+                     id="notifLoadingState">
+                    <div class="spinner-border spinner-border-sm"
+                         role="status"></div>
+                </div>
+            </div>
+
+            @* Footer *@
+            <div class="border-top text-center py-2">
+                <a href="/Notifications"
+                   class="btn btn-sm btn-link text-primary">
+                    View All Notifications
+                    <i class="fas fa-arrow-right ms-1"
+                       style="font-size:10px;"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function() {
+            'use strict';
+
+            const TOKEN = document.querySelector(
+                'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+            const bell            = document.getElementById('notifBell');
+            const badge           = document.getElementById('notifBadge');
+            const dropdownBadge   = document.getElementById('dropdownUnreadBadge');
+            const list            = document.getElementById('notifDropdownList');
+            const loadingState    = document.getElementById('notifLoadingState');
+            const markAllBtn      = document.getElementById('dropdownMarkAll');
+
+            let loaded = false;
+
+            // ── Icon Map ───────────────────────────────────────────────────────────────
+            const iconMap = {
+                1: { icon: 'fa-calendar-check', color: 'text-primary',  bg: 'bg-primary'  },
+                2: { icon: 'fa-envelope',        color: 'text-info',     bg: 'bg-info'     },
+                3: { icon: 'fa-home',            color: 'text-success',  bg: 'bg-success'  },
+                4: { icon: 'fa-shield-check',    color: 'text-warning',  bg: 'bg-warning'  },
+                5: { icon: 'fa-credit-card',     color: 'text-success',  bg: 'bg-success'  },
+            };
+
+            function renderNotification(n) {
+                const meta = iconMap[n.type] || {
+                    icon: 'fa-bell', color: 'text-secondary', bg: 'bg-secondary'
+                };
+
+                const unreadClass = !n.isRead
+                    ? 'border-start border-primary border-3 bg-primary bg-opacity-5'
+                    : '';
+
+                const navUrl = n.navigationUrl ?? '#';
+
+                return `
+                    <div class="notif-drop-item px-3 py-2 border-bottom ${unreadClass}
+                                hover-bg"
+                         data-notif-id="${n.notificationId}"
+                         style="cursor:pointer;transition:background .15s;"
+                         onclick="handleDropdownNotifClick(${n.notificationId}, '${navUrl}')">
+                        <div class="d-flex gap-3 align-items-start">
+                            <span class="${meta.bg} bg-opacity-15 d-flex align-items-center
+                                         justify-content-center rounded-circle flex-shrink-0"
+                                  style="width:38px;height:38px;min-width:38px;">
+                                <i class="fas ${meta.icon} ${meta.color}"
+                                   style="font-size:14px;"></i>
+                            </span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-semibold small text-truncate
+                                            ${!n.isRead ? 'text-primary' : ''}">
+                                    ${escapeHtml(n.title)}
+                                </div>
+                                <div class="text-muted small text-truncate">
+                                    ${escapeHtml(n.message)}
+                                </div>
+                                <div class="text-muted" style="font-size:10px;">
+                                    ${n.timeAgo}
+                                </div>
+                            </div>
+                            ${!n.isRead
+                                ? `<span class="bg-primary rounded-circle flex-shrink-0 mt-1"
+                                         style="width:8px;height:8px;"></span>`
+                                : ''}
+                        </div>
+                    </div>`;
+            }
+
+            // ── Load Recent ────────────────────────────────────────────────────────────
+            async function loadRecent() {
+                if (loaded) return;
+                loaded = true;
+
+                try {
+                    const res = await fetch('/Notifications/Recent');
+                    if (!res.ok) throw new Error('Failed');
+
+                    const data = await res.json();
+
+                    if (data.notifications?.length > 0) {
+                        list.innerHTML = data.notifications
+                            .map(renderNotification).join('');
+                    } else {
+                        list.innerHTML = `
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-bell-slash fa-2x mb-2 opacity-25"></i>
+                                <p class="small mb-0">No notifications</p>
+                            </div>`;
+                    }
+
+                    updateBadge(data.unreadCount);
+                } catch {
+                    list.innerHTML = `
+                        <div class="text-center py-3 text-muted small">
+                            Could not load notifications.
+                        </div>`;
+                }
+            }
+
+            // ── Handle Click ───────────────────────────────────────────────────────────
+            window.handleDropdownNotifClick = async function(notifId, navUrl) {
+                await markDropdownRead(notifId);
+                if (navUrl && navUrl !== '#')
+                    window.location.href = navUrl;
+            };
+
+            async function markDropdownRead(notifId) {
+                try {
+                    const res = await fetch('/Notifications/MarkRead', {
+                        method : 'POST',
+                        headers: {
+                            'Content-Type'             : 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken' : TOKEN,
+                            'X-Requested-With'         : 'XMLHttpRequest'
+                        },
+                        body: `id=${notifId}`
+                    });
+
+                    if (!res.ok) return;
+                    const data = await res.json();
+
+                    // Update item appearance
+                    const item = document.querySelector(
+                        `.notif-drop-item[data-notif-id="${notifId}"]`);
+                    if (item) {
+                        item.classList.remove(
+                            'border-start', 'border-primary', 'border-3',
+                            'bg-primary', 'bg-opacity-5');
+                        item.querySelector('.bg-primary.rounded-circle')?.remove();
+                        const title = item.querySelector('.fw-semibold');
+                        if (title) title.classList.remove('text-primary');
+                    }
+
+                    updateBadge(data.unreadCount);
+                } catch { /* silent */ }
+            }
+
+            // ── Mark All Read ──────────────────────────────────────────────────────────
+            markAllBtn?.addEventListener('click', async function () {
+                try {
+                    const res = await fetch('/Notifications/MarkAllRead', {
+                        method : 'POST',
+                        headers: {
+                            'Content-Type'             : 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken' : TOKEN,
+                            'X-Requested-With'         : 'XMLHttpRequest'
+                        },
+                        body: ''
+                    });
+
+                    if (!res.ok) return;
+
+                    // Clear all unread styling
+                    document.querySelectorAll('.notif-drop-item').forEach(item => {
+                        item.classList.remove(
+                            'border-start', 'border-primary', 'border-3',
+                            'bg-primary', 'bg-opacity-5');
+                        item.querySelector('.bg-primary.rounded-circle')?.remove();
+                        const title = item.querySelector('.fw-semibold');
+                        if (title) title.classList.remove('text-primary');
+                    });
+
+                    updateBadge(0);
+                } catch { /* silent */ }
+            });
+
+            // ── Badge Update ───────────────────────────────────────────────────────────
+            function updateBadge(count) {
+                // Navbar bell badge
+                [badge].concat(Array.from(
+                    document.querySelectorAll('.notif-navbar-badge'))).forEach(el => {
+                    if (!el) return;
+                    el.textContent  = count > 0 ? count : '';
+                    el.style.display= count > 0 ? '' : 'none';
+                });
+
+                // Dropdown badge
+                if (dropdownBadge) {
+                    dropdownBadge.textContent  = count > 0 ? count : '';
+                    dropdownBadge.style.display= count > 0 ? '' : 'none';
+                }
+
+                // Page title unread count (if on notifications page)
+                const pageUnread = document.querySelector('.badge.bg-danger.fs-6');
+                if (pageUnread) {
+                    if (count > 0) {
+                        pageUnread.textContent  = `${count} new`;
+                        pageUnread.style.display= '';
+                    } else {
+                        pageUnread.style.display= 'none';
+                    }
+                }
+            }
+
+            // ── Load count on page load ────────────────────────────────────────────────
+            async function loadInitialCount() {
+                try {
+                    const res = await fetch('/Notifications/UnreadCount');
+                    if (!res.ok) return;
+                    const { count } = await res.json();
+                    updateBadge(count);
+                } catch { /* silent */ }
+            }
+
+            // ── Open dropdown: load first time ────────────────────────────────────────
+            document.getElementById('notifDropdownWrapper')
+                ?.addEventListener('show.bs.dropdown', function () {
+                    loaded = false; // reload each time
+                    list.innerHTML = loadingState.outerHTML;
+                    loadRecent();
+                });
+
+            function escapeHtml(str) {
+                return (str ?? '').toString()
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            // ── SignalR real-time updates ──────────────────────────────────────────────
+            // Connects to the NotificationHub built in Part 15.
+            // Hub pushes ReceiveNotification and UnreadCountUpdated events.
+            (async function connectNotifHub() {
+                try {
+                    const accessToken = document.cookie
+                        .split(';')
+                        .find(c => c.trim().startsWith('skanly_access_token='))
+                        ?.split('=')[1];
+
+                    if (!accessToken || typeof signalR === 'undefined') return;
+
+                    const connection = new signalR.HubConnectionBuilder()
+                        .withUrl('/hubs/notification', {
+                            accessTokenFactory: () => accessToken
+                        })
+                        .withAutomaticReconnect()
+                        .configureLogging(signalR.LogLevel.None)
+                        .build();
+
+                    // New notification pushed from server
+                    connection.on('ReceiveNotification', function (notif) {
+                        // Prepend to dropdown list
+                        if (list && !list.querySelector('#notifLoadingState')) {
+                            const noMsg = list.querySelector('.text-center.py-4');
+                            if (noMsg) noMsg.remove();
+                            list.insertAdjacentHTML('afterbegin',
+                                renderNotification(notif));
+                        }
+                        // Flash bell
+                        bell?.classList.add('text-warning');
+                        setTimeout(() =>
+                            bell?.classList.remove('text-warning'), 2000);
+                    });
+
+                    // Server pushes updated count
+                    connection.on('UnreadCountUpdated', function (count) {
+                        updateBadge(count);
+                    });
+
+                    await connection.start();
+                } catch { /* silent — notification hub is non-critical */ }
+            })();
+
+            // Initial badge load
+            loadInitialCount();
+
+            // Fallback polling every 60 seconds (in case SignalR is unavailable)
+            setInterval(loadInitialCount, 60_000);
+
+        })();
+    </script>
+}

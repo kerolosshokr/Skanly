@@ -45,6 +45,9 @@ public class SkanlyDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Report> Reports => Set<Report>();
+    public DbSet<StudentSearchHistory> StudentSearchHistories { get; set; }
+    public DbSet<ChatbotConversation> ChatbotConversations => Set<ChatbotConversation>();
+    public DbSet<ChatbotMessage> ChatbotMessages => Set<ChatbotMessage>();
 
     // System
     public DbSet<Notification> Notifications => Set<Notification>();

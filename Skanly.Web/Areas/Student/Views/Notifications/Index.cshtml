@@ -1,131 +1,313 @@
-﻿@using Skanly.Application.Common.Models
-@using Skanly.Application.Features.Notifications.DTOs
-
-@model PagedResult<NotificationDto>
+﻿@* Skanly.Web/Views/Notifications/Index.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Notifications.DTOs.NotificationDto>
 
 @{
     ViewData["Title"] = "Notifications";
-    Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int unreadCount = (int)(ViewBag.UnreadCount ?? 0);
+    var activeType = ViewBag.TypeFilter as Skanly.Domain.Enums.NotificationType?;
+    var unreadOnly = ViewBag.UnreadOnly as bool?;
 }
+@using Skanly.Domain.Enums
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title">
-        <i class="fas fa-bell me-2 text-warning"></i>Notifications
-        <span class="badge bg-danger fs-6 ms-1">
-            @Model.Items.Count(n => !n.IsRead)
-        </span>
-    </h1>
-    @if (Model.Items.Any(n => !n.IsRead))
+@* ── Page Header ─────────────────────────────────────────────────────────────── *@
+<div class="container py-4" style="max-width:780px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title mb-1">
+                <i class="fas fa-bell me-2 text-warning"></i>
+                Notifications
+                @if (unreadCount > 0)
+                {
+                    <span class="badge bg-danger fs-6 ms-2">
+                        @unreadCount new
+                    </span>
+                }
+            </h1>
+            <p class="text-muted mb-0">
+                @Model.TotalCount total notifications
+            </p>
+        </div>
+
+        @if (unreadCount > 0)
+        {
+            <form asp-action="MarkAllRead" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-check-double me-1"></i>
+                    Mark All Read
+                </button>
+            </form>
+        }
+    </div>
+
+    @if (TempData["Success"] is string ok)
     {
-        <form asp-action="MarkAllRead" method="post">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-check-double me-1"></i>Mark All Read
-            </button>
-        </form>
+        <div class="alert alert-success alert-dismissible fade show mb-4">
+            <i class="fas fa-check-circle me-2"></i>@ok
+            <button type="button" class="btn-close"
+                    data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @* ── Filter Pills ───────────────────────────────────────────────────────── *@
+    <div class="d-flex gap-2 flex-wrap mb-4">
+        @{
+            var filters = new[]
+            {
+                ("All",          (NotificationType?)null,       (bool?)null),
+                ("Unread",       (NotificationType?)null,       (bool?)true),
+                ("Bookings",     (NotificationType?)NotificationType.BookingUpdate,
+                                 (bool?)null),
+                ("Messages",     (NotificationType?)NotificationType.NewMessage,
+                                 (bool?)null),
+                ("Payments",     (NotificationType?)NotificationType.PaymentConfirmation,
+                                 (bool?)null),
+                ("Properties",   (NotificationType?)NotificationType.PropertyApproval,
+                                 (bool?)null),
+                ("Verification", (NotificationType?)NotificationType.VerificationApproval,
+                                 (bool?)null),
+            };
+        }
+        @foreach (var (label, fType, fUnread) in filters)
+        {
+            var isActive = fType == activeType && fUnread == unreadOnly;
+            <a asp-action="Index"
+               asp-route-type="@((int?)fType)"
+               asp-route-unreadOnly="@fUnread"
+               class="btn btn-sm @(isActive
+                                  ? "btn-primary"
+                                  : "btn-outline-secondary")">
+                @label
+            </a>
+        }
+    </div>
+
+    @* ── Notification List ──────────────────────────────────────────────────── *@
+    @if (!Model.Items.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <div class="mb-4">
+                <div class="d-inline-flex align-items-center
+                    justify-content-center rounded-circle
+                    bg-warning bg-opacity-15"
+                     style="width:90px;height:90px;">
+                    <i class="fas fa-bell-slash fa-3x text-warning opacity-50"></i>
+                </div>
+            </div>
+            <h5 class="fw-bold mb-2">All caught up!</h5>
+            <p class="mb-0">
+                @(unreadOnly == true
+                    ? "No unread notifications."
+                    : activeType.HasValue
+                        ? $"No {activeType} notifications yet."
+                        : "No notifications yet.")
+            </p>
+        </div>
+    }
+    else
+    {
+        @* Group notifications by date *@
+        var grouped = Model.Items
+            .GroupBy(n => n.DateGroup)
+            .OrderBy(g => g.Key == "Today" ? 0
+                : g.Key == "Yesterday" ? 1
+                : g.Key == "This Week" ? 2
+                : g.Key == "This Month" ? 3 : 4);
+
+        <div class="card border-0 shadow-sm">
+            @foreach (var group in grouped)
+            {
+                @* Date Group Header *@
+                <div class="px-4 py-2 bg-light border-bottom">
+                    <small class="text-muted fw-semibold text-uppercase"
+                           style="letter-spacing:.05em;font-size:11px;">
+                        @group.Key
+                    </small>
+                </div>
+
+                @foreach (var notification in group)
+                {
+                    <div class="notification-item border-bottom
+                        @(!notification.IsRead
+                             ? "bg-primary bg-opacity-5"
+                             : "")"
+                         id="notif-@notification.NotificationId">
+
+                        <div class="d-flex gap-3 px-4 py-3 align-items-start">
+
+                            @* Type Icon *@
+                            <div class="flex-shrink-0 mt-1">
+                                <span class="icon-circle @notification.IconBgClass
+                                    bg-opacity-15 d-flex align-items-center
+                                    justify-content-center rounded-circle"
+                                      style="width:42px;height:42px;">
+                                    <i class="fas @notification.IconClass
+                                    @notification.IconColorClass"
+                                       style="font-size:15px;"></i>
+                                </span>
+                            </div>
+
+                            @* Content *@
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex justify-content-between
+                                    align-items-start gap-2">
+                                    <div class="min-w-0">
+                                        <div class="fw-semibold small
+                                            @(!notification.IsRead
+                                                 ? "text-primary"
+                                                 : "")">
+                                            @notification.Title
+                                        </div>
+                                        <div class="text-muted small mt-1 lh-sm">
+                                            @notification.Message
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-shrink-0 text-end">
+                                        <div class="text-muted"
+                                             style="font-size:11px;">
+                                            @notification.TimeAgo
+                                        </div>
+                                        @if (!notification.IsRead)
+                                        {
+                                            <span class="d-inline-block
+                                                bg-primary rounded-circle mt-1"
+                                                  style="width:8px;height:8px;">
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+
+                                @* Action buttons *@
+                                <div class="d-flex gap-2 mt-2">
+                                    @if (notification.NavigationUrl is not null)
+                                    {
+                                        <a href="@notification.NavigationUrl"
+                                           class="btn btn-sm btn-outline-primary
+                                            mark-and-navigate"
+                                           data-notif-id="@notification.NotificationId"
+                                           style="font-size:11px;padding:2px 10px;">
+                                            View Details
+                                            <i class="fas fa-arrow-right ms-1"
+                                               style="font-size:9px;"></i>
+                                        </a>
+                                    }
+                                    @if (!notification.IsRead)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-link
+                                            text-muted p-0 mark-read-btn"
+                                                data-notif-id="@notification.NotificationId"
+                                                style="font-size:11px;">
+                                            Mark read
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        @* Pagination *@
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@(Model.PageNumber - 1)"
+                           asp-route-type="@((int?)activeType)"
+                           asp-route-unreadOnly="@unreadOnly">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int i = Math.Max(1, Model.PageNumber - 2);
+                          i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-type="@((int?)activeType)"
+                               asp-route-unreadOnly="@unreadOnly">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@(Model.PageNumber + 1)"
+                           asp-route-type="@((int?)activeType)"
+                           asp-route-unreadOnly="@unreadOnly">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
     }
 </div>
 
-@if (!Model.Items.Any())
-{
-    <div class="text-center py-5 text-muted">
-        <i class="fas fa-bell-slash fa-4x mb-3 opacity-25"></i>
-        <h5>All caught up!</h5>
-        <p>No notifications to show.</p>
-    </div>
-}
-else
-{
-    <div class="card shadow-sm">
-        <div class="list-group list-group-flush" id="notificationList">
-            @foreach (var n in Model.Items)
-            {
-                <div class="list-group-item px-4 py-3
-                    @(!n.IsRead ? "bg-primary bg-opacity-5 border-start border-primary border-3" : "")"
-                     id="notif-@n.NotificationId">
-                    <div class="d-flex gap-3 align-items-start">
-
-                        @* Icon *@
-                        <div class="notification-icon flex-shrink-0 mt-1">
-                            <span class="icon-circle d-inline-flex align-items-center
-                                justify-content-center rounded-circle"
-                                  style="width:42px;height:42px;
-                                background:rgba(108,99,255,.1);">
-                                <i class="fas @n.IconClass"></i>
-                            </span>
-                        </div>
-
-                        @* Content *@
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <span class="fw-semibold @(!n.IsRead ? "text-primary" : "")">
-                                    @n.Title
-                                </span>
-                                <span class="text-muted small flex-shrink-0 ms-3">
-                                    @n.TimeAgo
-                                </span>
-                            </div>
-                            <p class="mb-0 small text-muted">@n.Message</p>
-                        </div>
-
-                        @* Mark read button *@
-                        @if (!n.IsRead)
-                        {
-                            <button class="btn btn-sm btn-link text-primary p-0 flex-shrink-0
-                                mark-read-btn"
-                                    data-id="@n.NotificationId"
-                                    title="Mark as read">
-                                <i class="fas fa-circle" style="font-size:10px;"></i>
-                            </button>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-    </div>
-
-    @* Pagination *@
-    @if (Model.TotalPages > 1)
-    {
-        <nav class="mt-4">
-            <ul class="pagination justify-content-center">
-                @for (int i = 1; i <= Model.TotalPages; i++)
-                {
-                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
-                        <a class="page-link"
-                           asp-action="Index"
-                           asp-route-page="@i">@i</a>
-                    </li>
-                }
-            </ul>
-        </nav>
-    }
-}
-
 @section Scripts {
     <script>
-        document.querySelectorAll('.mark-read-btn').forEach(btn => {
-            btn.addEventListener('click', async function () {
-                const id = this.dataset.id;
-                const token = document.querySelector(
-                    'input[name="__RequestVerificationToken"]')?.value ?? '';
+        const token = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value ?? '';
 
-                await fetch('/Student/Notifications/MarkRead', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': token
-                    },
-                    body: `id=${id}`
-                });
-
-                // Remove unread styling
-                const item = document.getElementById(`notif-${id}`);
-                item.classList.remove(
-                    'bg-primary', 'bg-opacity-5',
-                    'border-start', 'border-primary', 'border-3');
-                this.remove();
+        // ── Mark Single Read ───────────────────────────────────────────────────────
+        async function markRead(notifId) {
+            const res = await fetch('/Notifications/MarkRead', {
+                method : 'POST',
+                headers: {
+                    'Content-Type'             : 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken' : token,
+                    'X-Requested-With'         : 'XMLHttpRequest'
+                },
+                body: `id=${notifId}`
             });
-        });
+
+            if (!res.ok) return;
+
+            const data   = await res.json();
+            const item   = document.getElementById(`notif-${notifId}`);
+
+            // Remove unread styling
+            item?.classList.remove('bg-primary', 'bg-opacity-5');
+
+            // Remove dot
+            item?.querySelector('.bg-primary.rounded-circle')?.remove();
+
+            // Remove "Mark read" button
+            item?.querySelector('.mark-read-btn')?.remove();
+
+            // Remove primary title colour
+            const title = item?.querySelector('.fw-semibold');
+            if (title) title.classList.remove('text-primary');
+
+            // Update navbar badge
+            updateNavbarBadge(data.unreadCount);
+        }
+
+        document.querySelectorAll('.mark-read-btn').forEach(btn =>
+            btn.addEventListener('click', function () {
+                markRead(this.dataset.notifId);
+            }));
+
+        document.querySelectorAll('.mark-and-navigate').forEach(link =>
+            link.addEventListener('click', function () {
+                markRead(this.dataset.notifId);
+                // Navigation happens naturally via href
+            }));
+
+        // ── Badge Update Helper ────────────────────────────────────────────────────
+        function updateNavbarBadge(count) {
+            document.querySelectorAll('.notif-navbar-badge').forEach(badge => {
+                badge.textContent  = count > 0 ? count : '';
+                badge.style.display= count > 0 ? '' : 'none';
+            });
+        }
     </script>
 }

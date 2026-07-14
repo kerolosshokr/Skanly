@@ -1,0 +1,271 @@
+﻿@* Skanly.Web/Views/Property/_PropertyMap.cshtml *@
+@* Usage in Details.cshtml:
+   @await Html.PartialAsync("_PropertyMap", new ViewDataDictionary(ViewData)
+   {
+       ["PropertyId"]       = Model.PropertyId,
+       ["PropertyTitle"]    = Model.Title,
+       ["PropertyAddress"]  = Model.Address,
+       ["PropertyLat"]      = Model.Latitude,
+       ["PropertyLng"]      = Model.Longitude,
+       ["UniversityNameEn"] = Model.UniversityNameEn,
+       ["UniversityLat"]    = Model.UniversityLat,
+       ["UniversityLng"]    = Model.UniversityLng,
+       ["BrowserApiKey"]    = apiKey
+   })
+*@
+@{
+    int     propertyId    = (int)(ViewData["PropertyId"]     ?? 0);
+    string  propTitle     = (string)(ViewData["PropertyTitle"]   ?? "");
+    string  propAddress   = (string)(ViewData["PropertyAddress"] ?? "");
+    decimal propLat       = (decimal)(ViewData["PropertyLat"]    ?? 0m);
+    decimal propLng       = (decimal)(ViewData["PropertyLng"]    ?? 0m);
+    string? uniName       = ViewData["UniversityNameEn"] as string;
+    decimal uniLat        = (decimal)(ViewData["UniversityLat"]  ?? 0m);
+    decimal uniLng        = (decimal)(ViewData["UniversityLng"]  ?? 0m);
+    string  apiKey        = (string)(ViewData["BrowserApiKey"]   ?? "");
+    bool    hasUniversity = uniLat != 0 && uniLng != 0;
+}
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent fw-semibold">
+        <i class="fas fa-map me-2 text-primary"></i>Location & Nearby
+    </div>
+    <div class="card-body p-0">
+        <div id="propertyDetailMap"
+             style="height:380px;border-radius:0;"></div>
+    </div>
+
+    @* Distance + travel mode tabs *@
+    @if (hasUniversity)
+    {
+        <div class="card-body border-top pt-3 pb-0">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="fas fa-graduation-cap text-primary"></i>
+                <span class="fw-semibold small">
+                    Distance to @uniName
+                </span>
+            </div>
+            <div id="distanceInfo"
+                 class="d-flex gap-3 flex-wrap pb-3">
+                <div class="text-center text-muted small">
+                    <div class="spinner-border spinner-border-sm mb-1"
+                         role="status"></div>
+                    <div>Calculating...</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Nearby tabs *@
+    <div class="card-body border-top">
+        <ul class="nav nav-pills nav-sm gap-2 mb-3" id="nearbyTabs">
+            <li class="nav-item">
+                <button class="nav-link active btn btn-sm px-3"
+                        data-tab="transport">
+                    🚌 Transport
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link btn btn-sm px-3"
+                        data-tab="services">
+                    🛒 Services
+                </button>
+            </li>
+        </ul>
+        <div id="nearbyPlacesContainer">
+            <div class="text-center text-muted small py-3">
+                <div class="spinner-border spinner-border-sm mb-1"
+                     role="status"></div>
+                Loading nearby places...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const PROP_LAT  = @propLat;
+    const PROP_LNG  = @propLng;
+    const UNI_LAT   = @uniLat;
+    const UNI_LNG   = @uniLng;
+    const HAS_UNI   = @hasUniversity.ToString().ToLower();
+    const PROP_TITLE= '@Html.Raw(propTitle.Replace("'","\\\'"))';
+    const UNI_NAME  = '@Html.Raw((uniName ?? "").Replace("'","\\\'"))';
+
+    let map;
+    let activeNearbyTab = 'transport';
+
+    function initDetailMap() {
+        map = new google.maps.Map(
+            document.getElementById('propertyDetailMap'), {
+            center    : { lat: PROP_LAT, lng: PROP_LNG },
+            zoom      : 15,
+            mapTypeId : 'roadmap',
+            mapTypeControl      : false,
+            streetViewControl   : false,
+            fullscreenControl   : false
+        });
+
+        // Property marker
+        const propMarker = new google.maps.Marker({
+            position  : { lat: PROP_LAT, lng: PROP_LNG },
+            map,
+            title     : PROP_TITLE,
+            icon      : {
+                url        : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                scaledSize : new google.maps.Size(44, 44)
+            }
+        });
+
+        new google.maps.InfoWindow({
+            content: `<strong>${PROP_TITLE}</strong>`
+        }).open(map, propMarker);
+
+        // University marker
+        if (HAS_UNI) {
+            new google.maps.Marker({
+                position  : { lat: UNI_LAT, lng: UNI_LNG },
+                map,
+                title     : UNI_NAME,
+                icon      : {
+                    url       : 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                    scaledSize: new google.maps.Size(36, 36)
+                }
+            });
+
+            // Draw a dashed line between property and university
+            new google.maps.Polyline({
+                path          : [
+                    { lat: PROP_LAT, lng: PROP_LNG },
+                    { lat: UNI_LAT,  lng: UNI_LNG  }
+                ],
+                strokeColor   : '#6C63FF',
+                strokeOpacity : 0.5,
+                strokeWeight  : 2,
+                icons         : [{
+                    icon  : { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4 },
+                    offset: '0',
+                    repeat: '20px'
+                }],
+                map
+            });
+
+            // Fit bounds to show both markers
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend({ lat: PROP_LAT, lng: PROP_LNG });
+            bounds.extend({ lat: UNI_LAT,  lng: UNI_LNG  });
+            map.fitBounds(bounds, { padding: 60 });
+
+            loadDistance();
+        }
+
+        loadNearbyPlaces('transport');
+    }
+
+    // ── Distance ───────────────────────────────────────────────────────────────
+    async function loadDistance() {
+        const res  = await fetch(
+            `/Maps/Distance?fromLat=${PROP_LAT}&fromLng=${PROP_LNG}` +
+            `&toLat=${UNI_LAT}&toLng=${UNI_LNG}`);
+        const data = await res.json();
+
+        if (data.error) return;
+
+        const container = document.getElementById('distanceInfo');
+        const modes = [
+            { icon: '🚶', label: 'Walking',
+              distance: data.walkingDistanceText,
+              duration: data.walkingDurationText },
+            { icon: '🚗', label: 'Driving',
+              distance: data.drivingDistanceText,
+              duration: data.drivingDurationText },
+            { icon: '🚌', label: 'Transit',
+              distance: data.transitDistanceText,
+              duration: data.transitDurationText },
+        ].filter(m => m.distance);
+
+        container.innerHTML = modes.map(m => `
+            <div class="text-center">
+                <div style="font-size:1.4rem;">${m.icon}</div>
+                <div class="fw-bold small">${m.distance}</div>
+                <div style="font-size:11px;color:#888;">${m.duration}</div>
+                <div style="font-size:10px;color:#999;">${m.label}</div>
+            </div>`).join('') +
+            `<div class="text-center">
+                <div style="font-size:1.4rem;">📍</div>
+                <div class="fw-bold small">
+                    ${data.straightLineDistanceKm?.toFixed(1)} km
+                </div>
+                <div style="font-size:10px;color:#999;">Straight line</div>
+            </div>`;
+    }
+
+    // ── Nearby Places ──────────────────────────────────────────────────────────
+    async function loadNearbyPlaces(tab) {
+        activeNearbyTab = tab;
+        const container = document.getElementById('nearbyPlacesContainer');
+        container.innerHTML =
+            `<div class="text-center text-muted small py-3">
+                <div class="spinner-border spinner-border-sm mb-1"
+                     role="status"></div> Loading...
+            </div>`;
+
+        const endpoint = tab === 'transport'
+            ? `/Maps/NearbyTransport?lat=${PROP_LAT}&lng=${PROP_LNG}`
+            : `/Maps/NearbyServices?lat=${PROP_LAT}&lng=${PROP_LNG}`;
+
+        const res    = await fetch(endpoint);
+        const places = await res.json();
+
+        if (!places.length) {
+            container.innerHTML =
+                `<p class="text-muted small text-center py-3">
+                    No nearby ${tab} found.</p>`;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="row g-2">
+                ${places.slice(0, 8).map(p => `
+                    <div class="col-6">
+                        <div class="border rounded-3 p-2 small h-100">
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="font-size:1.2rem;"
+                                      title="${p.placeType}">
+                                    ${p.mapIcon}
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="fw-semibold text-truncate"
+                                         style="font-size:12px;">
+                                        ${p.name}
+                                    </div>
+                                    <div style="font-size:10px;color:#888;">
+                                        ${p.distanceText} away
+                                        ${p.isOpen
+                                            ? '<span style="color:#16a34a;">· Open</span>'
+                                            : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`).join('')}
+            </div>`;
+    }
+
+    // ── Nearby Tab Switcher ───────────────────────────────────────────────────
+    document.querySelectorAll('#nearbyTabs .nav-link').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('#nearbyTabs .nav-link')
+                .forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            loadNearbyPlaces(this.dataset.tab);
+        });
+    });
+
+    // ── Boot ──────────────────────────────────────────────────────────────────
+    // Use a unique callback to avoid conflict with Explore page
+    window['initDetailMap_@propertyId'] = initDetailMap;
+})();
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=@apiKey&libraries=geometry&callback=initDetailMap_@propertyId"
+        async defer></script>

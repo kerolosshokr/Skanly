@@ -168,14 +168,19 @@
             }
 
             @* Map *@
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="fw-semibold mb-3">
-                        <i class="fas fa-map me-2 text-primary"></i>Location
-                    </h5>
-                    <div id="propertyMap" style="height:350px;border-radius:8px;"></div>
-                </div>
-            </div>
+            @await Html.PartialAsync("_PropertyMap", new ViewDataDictionary(ViewData)
+            {
+                ["PropertyId"] = Model.PropertyId,
+                ["PropertyTitle"] = Model.Title,
+                ["PropertyAddress"] = Model.Address,
+                ["PropertyLat"] = Model.Latitude,
+                ["PropertyLng"] = Model.Longitude,
+                ["UniversityNameEn"] = Model.UniversityNameEn,
+                ["UniversityLat"] = ViewData["UniversityLat"],
+                ["UniversityLng"] = ViewData["UniversityLng"],
+                ["BrowserApiKey"] = ViewData["BrowserApiKey"]
+            })
+           
 
             @* Reviews *@
             <div class="card border-0 shadow-sm mb-4">

@@ -1,0 +1,253 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Verifications/Index.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Verification.DTOs.VerificationDto>
+  
+@{
+    ViewData["Title"] = "Identity Verifications";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var summary = ViewBag.Summary as
+        Skanly.Application.Features.Verification.Interfaces
+        .VerificationSummaryDto;
+}
+@using Skanly.Domain.Enums
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-shield-check me-2 text-warning"></i>
+        Identity Verifications
+    </h1>
+</div>
+
+@* Summary Cards *@
+@if (summary is not null)
+{
+    <div class="row g-3 mb-4">
+        @{
+            var cards = new[]
+            {
+                new { Label = "Pending Review",
+                      Value = summary.TotalPending,
+                      Color = "warning",  Icon = "fa-clock",
+                      Urgent = summary.TotalPending > 0 },
+                new { Label = "Approved",
+                      Value = summary.TotalApproved,
+                      Color = "success",  Icon = "fa-check-circle",
+                      Urgent = false },
+                new { Label = "Rejected",
+                      Value = summary.TotalRejected,
+                      Color = "danger",   Icon = "fa-times-circle",
+                      Urgent = false },
+                new { Label = "Approval Rate",
+                      Value = (int)summary.ApprovalRate,
+                      Color = "primary",  Icon = "fa-percentage",
+                      Urgent = false },
+            };
+        }
+        @foreach (var card in cards)
+        {
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100
+                            @(card.Urgent
+                                ? "border-warning border-opacity-75"
+                                : "")">
+                    <div class="card-body py-3">
+                        <span class="icon-circle bg-@card.Color bg-opacity-15
+                                     text-@card.Color rounded-circle
+                                     d-inline-flex align-items-center
+                                     justify-content-center mb-2"
+                              style="width:48px;height:48px;">
+                            <i class="fas @card.Icon"></i>
+                        </span>
+                        <div class="fs-3 fw-bold">
+                            @card.Value@(card.Label == "Approval Rate" ? "%" : "")
+                        </div>
+                        <div class="text-muted small">@card.Label</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* Filters *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           value="@ViewBag.Search"
+                           class="form-control border-start-0"
+                           placeholder="Name or National ID..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    @foreach (var s in Enum.GetValues<VerificationStatus>())
+                    {
+                        <option value="@((int)s)"
+                                selected="@(ViewBag.StatusFilter?.ToString()
+                                    == ((int)s).ToString())">
+                            @s
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-redo me-1"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Queue Table *@
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="fas fa-shield-check fa-3x mb-3 opacity-25"></i>
+        <p>No verification requests found.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>OCR Extracted</th>
+                        <th class="text-center">ID Valid</th>
+                        <th class="text-center">Status</th>
+                        <th>Submitted</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var (v, idx) in Model.Items
+                        .Select((item, i) => (item, i)))
+                    {
+                        <tr class="@(v.Status == VerificationStatus.Pending
+                            ? "table-warning bg-opacity-25" : "")">
+                            <td class="text-muted small">#@v.VerificationId</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="@(v.UserImageUrl ?? "/images/default-avatar.png")"
+                                         class="rounded-circle object-fit-cover"
+                                         width="34" height="34" alt="" />
+                                    <div>
+                                        <div class="small fw-semibold">
+                                            @v.UserFullName
+                                        </div>
+                                        <div style="font-size:11px;color:#888;">
+                                            @v.UserEmail
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary small">
+                                    @v.UserRole
+                                </span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(v.ExtractedName))
+                                {
+                                    <div class="small fw-semibold">
+                                        @v.ExtractedName
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(v.ExtractedNationalId))
+                                {
+                                    <div class="font-monospace"
+                                         style="font-size:11px;color:#666;">
+                                        @v.ExtractedNationalId
+                                    </div>
+                                }
+                                @if (v.ExtractedName is null &&
+                                     v.ExtractedNationalId is null)
+                                {
+                                    <span class="text-muted small">
+                                        Manual review needed
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (v.NationalIdFormatValid)
+                                {
+                                    <i class="fas fa-check-circle text-success"
+                                       title="Valid Egyptian ID format"></i>
+                                }
+                                else if (!string.IsNullOrEmpty(v.ExtractedNationalId))
+                                {
+                                    <i class="fas fa-times-circle text-danger"
+                                       title="Invalid format"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-minus text-muted"
+                                       title="Not extracted"></i>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @v.StatusBadgeClass">
+                                    @v.StatusDisplay
+                                </span>
+                            </td>
+                            <td class="small text-muted">@v.TimeAgo</td>
+                            <td class="text-center">
+                                <a asp-action="Review"
+                                   asp-route-id="@v.VerificationId"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>
+                                    Review
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between
+                        align-items-center">
+                <small class="text-muted">
+                    @Model.TotalCount total verifications
+                </small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber
+                                ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@i"
+                                   asp-route-status="@ViewBag.StatusFilter"
+                                   asp-route-search="@ViewBag.Search">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+}

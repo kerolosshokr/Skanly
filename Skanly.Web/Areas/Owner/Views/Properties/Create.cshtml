@@ -388,6 +388,8 @@
             });
         }
 
+
+
         // ── Amenity toggle styles ──────────────────────────────────────────────────
         document.querySelectorAll('.amenity-check').forEach(card => {
             const input = card.querySelector('.amenity-input');
@@ -537,6 +539,49 @@
             });
         };
         document.head.appendChild(leafletJs);
+             
+
+        // Geocode from address string → fill lat/lng fields
+        document.getElementById('addressInput')
+            ?.addEventListener('blur', async function () {
+                const address = this.value.trim();
+                if (!address || address.length < 10) return;
+
+                try {
+                    const res  = await fetch(
+                        `/Maps/Geocode?address=${encodeURIComponent(address)}`);
+                    const data = await res.json();
+
+                    if (data.latitude && data.longitude) {
+                        document.getElementById('latInput').value =
+                            data.latitude.toFixed(6);
+                        document.getElementById('lngInput').value =
+                            data.longitude.toFixed(6);
+
+                        // Update Google Map if available, else Leaflet
+                        if (typeof google !== 'undefined' && window.ownerMap) {
+                            const loc = {
+                                lat: parseFloat(data.latitude),
+                                lng: parseFloat(data.longitude)
+                            };
+                            window.ownerMap.panTo(loc);
+                            window.ownerMap.setZoom(16);
+                        }
+                    }
+                } catch { /* silent — user can still enter coordinates manually */ }
+            });
+
+        // Reverse geocode on map pin drag
+        // (fires after marker drag in the existing map init script)
+        async function reverseGeocodePin(lat, lng) {
+            const res  = await fetch(`/Maps/ReverseGeocode?lat=${lat}&lng=${lng}`);
+            const data = await res.json();
+            if (data.address) {
+                const addressInput = document.getElementById('addressInput');
+                if (addressInput && !addressInput.value)
+                    addressInput.value = data.address;
+            }
+        }
 
         // ── Submit spinner ────────────────────────────────────────────────────────
         document.getElementById('propertyForm').addEventListener('submit', function () {

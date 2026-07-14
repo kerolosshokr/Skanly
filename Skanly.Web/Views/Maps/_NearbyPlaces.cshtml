@@ -1,0 +1,55 @@
+﻿@* Skanly.Web/Views/Maps/_NearbyPlaces.cshtml *@
+@model IReadOnlyList<Skanly.Application.Features.Maps.DTOs.NearbyPlaceDto>
+@{
+    string tabType = ViewData["TabType"] as string ?? "transport";
+}
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-3 small">
+        <i class="fas fa-map-marker-alt fa-2x mb-2 opacity-25"></i>
+        <p>No nearby @tabType found in this area.</p>
+    </div>
+}
+else
+{
+    <div class="row g-2">
+        @foreach (var place in Model.Take(8))
+        {
+            <div class="col-6">
+                <div class="border rounded-3 p-2 h-100
+                    hover-bg" style="transition:background .15s;">
+                    <div class="d-flex align-items-start gap-2">
+                        <span class="flex-shrink-0"
+                              style="font-size:1.3rem;">
+                            @place.MapIcon
+                        </span>
+                        <div class="min-w-0">
+                            <div class="fw-semibold text-truncate"
+                                 style="font-size:12px;"
+                                 title="@place.Name">
+                                @place.Name
+                            </div>
+                            <div style="font-size:10px;color:#888;">
+                                @place.DistanceText away
+                                @if (place.Rating.HasValue)
+                                {
+                                    <span class="ms-1">
+                                        ★ @place.Rating.Value.ToString("F1")
+                                    </span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(place.Vicinity))
+                            {
+                                <div style="font-size:10px;color:#aaa;"
+                                     class="text-truncate">
+                                    @place.Vicinity
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

@@ -151,6 +151,9 @@ public class PropertyRepository : GenericRepository<Property>, IPropertyReposito
         double radiusKm,
         CancellationToken ct = default)
     {
+
+
+
         // Haversine approximation using SQL arithmetic (no geometry extension needed)
         const double EarthRadiusKm = 6371.0;
         double lat = (double)latitude;
@@ -168,6 +171,22 @@ public class PropertyRepository : GenericRepository<Property>, IPropertyReposito
                 )) <= radiusKm)
             .Include(p => p.Area)
             .Include(p => p.Images.Where(i => i.IsPrimary))
+            .ToListAsync(ct);
+    }
+    public async Task<IReadOnlyList<Property>> GetAllApprovedAvailableAsync(
+    CancellationToken ct = default)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(p => p.IsApproved &&
+                        p.IsAvailable &&
+                        !p.IsDeleted)
+            .Include(p => p.Area)
+            .Include(p => p.University)
+            .Include(p => p.Images.Where(i => i.IsPrimary))
+            .Include(p => p.PropertyAmenities)
+                .ThenInclude(pa => pa.Amenity)
+            .Include(p => p.Reviews)
             .ToListAsync(ct);
     }
 }

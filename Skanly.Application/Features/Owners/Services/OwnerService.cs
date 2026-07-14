@@ -10,6 +10,7 @@ using Skanly.Application.Features.Owners.Interfaces;
 using Skanly.Domain.Entities;
 using Skanly.Domain.Enums;
 using Skanly.Application.Features.Students.DTOs;
+using Skanly.Application.Features.Notifications.Interfaces;
 
 // ❌ لا يوجد أي using يشير إلى Skanly.Infrastructure
 
@@ -23,6 +24,7 @@ public class OwnerService : IOwnerService
     private readonly IValidator<UpdateOwnerProfileDto> _updateValidator;
     private readonly IValidator<HandleBookingRequestDto> _bookingValidator;
     private readonly ILogger<OwnerService> _logger;
+    private readonly INotificationService _notificationService;
 
     public OwnerService(
         IUnitOfWork uow,
@@ -30,7 +32,8 @@ public class OwnerService : IOwnerService
         IIdentityService identityService,                   // ✅
         IValidator<UpdateOwnerProfileDto> updateValidator,
         IValidator<HandleBookingRequestDto> bookingValidator,
-        ILogger<OwnerService> logger)
+        ILogger<OwnerService> logger,
+        INotificationService notificationService)
     {
         _uow = uow;
         _fileStorage = fileStorage;
@@ -38,6 +41,7 @@ public class OwnerService : IOwnerService
         _updateValidator = updateValidator;
         _bookingValidator = bookingValidator;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     // ── GetProfileAsync ───────────────────────────────────────────────────────
@@ -488,21 +492,13 @@ public class OwnerService : IOwnerService
 
             // ✅ لا يحتاج UserManager هنا —
             //    الـ notification يمشي عبر IUnitOfWork
-            await _uow.Notifications.AddAsync(new Notification
-            {
-                UserId = booking.StudentId,
-                Title = dto.Accept
-                    ? "Booking Accepted! 🎉"
-                    : "Booking Request Declined",
-                Message = dto.Accept
-                    ? $"Your booking for {booking.Property.Title} " +
-                      "has been accepted. Proceed to payment."
-                    : $"Your booking for {booking.Property.Title} " +
-                      $"was declined. {dto.RejectionReason}",
-                Type = NotificationType.BookingUpdate,
-                RelatedEntityId = booking.Id,
-                RelatedEntityType = "Booking"
-            }, ct);
+            if (dto.Accept)
+                await _notificationService.SendBookingAcceptedAsync(
+                    booking.StudentId, dto.BookingId, booking.Property.Title, ct);
+            else
+                await _notificationService.SendBookingRejectedAsync(
+                    booking.StudentId, dto.BookingId,
+                    booking.Property.Title, dto.RejectionReason, ct);
 
             await _uow.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);

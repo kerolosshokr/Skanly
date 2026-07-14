@@ -1,0 +1,167 @@
+﻿@* Skanly.Web/Views/Recommendations/_RecommendationCard.cshtml *@
+@model Skanly.Application.Features.Recommendations.DTOs.RecommendationDto
+
+<div class="card border-0 shadow-sm h-100 hover-lift"
+     style="transition:transform .2s,box-shadow .2s;
+    border-radius:14px;overflow:hidden;">
+
+    @* ── Property Image + Rank Badge ──────────────────────────────────────── *@
+    <div class="position-relative">
+        <a href="/Property/@Model.PropertyId">
+            <img src="@(Model.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                 class="card-img-top object-fit-cover"
+                 height="200"
+                 alt="@Model.Title" />
+        </a>
+
+        @* Rank badge *@
+        <div class="position-absolute top-0 start-0 m-2">
+            <span class="badge text-white fw-bold px-2 py-1"
+                  style="background:rgba(0,0,0,.55);
+                backdrop-filter:blur(4px);
+                border-radius:8px;font-size:11px;">
+                #@Model.Rank
+            </span>
+        </div>
+
+        @* Match score badge *@
+        <div class="position-absolute top-0 end-0 m-2">
+            <div class="d-flex align-items-center gap-1 px-2 py-1 text-white fw-bold"
+                 style="background:@Model.MatchScoreColor;
+                border-radius:20px;font-size:11px;">
+                <i class="fas fa-star" style="font-size:9px;"></i>
+                @Model.MatchScoreDisplay
+            </div>
+        </div>
+
+        @if (Model.IsAiRefined)
+        {
+            <div class="position-absolute bottom-0 start-0 m-2">
+                <span class="badge bg-white text-primary border border-primary
+                    border-opacity-25 px-2 py-1"
+                      style="font-size:10px;border-radius:8px;">
+                    <i class="fas fa-robot me-1"></i>AI Pick
+                </span>
+            </div>
+        }
+    </div>
+
+    @* ── Card Body ─────────────────────────────────────────────────────────── *@
+    <div class="card-body p-3">
+
+        @* Title *@
+        <h6 class="fw-bold mb-1 text-truncate" title="@Model.Title">
+            <a href="/Property/@Model.PropertyId"
+               class="text-decoration-none text-dark">
+                @Model.Title
+            </a>
+        </h6>
+
+        @* Location *@
+        <p class="text-muted small mb-2">
+            <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+            @Model.AreaNameEn
+            @if (!string.IsNullOrEmpty(Model.DistanceToUniversity))
+            {
+                <span class="ms-2 text-primary">
+                    <i class="fas fa-graduation-cap me-1"></i>
+                    @Model.DistanceToUniversity
+                </span>
+            }
+        </p>
+
+        @* Rating + Type *@
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                @if (Model.AverageRating > 0)
+                {
+                    <span class="text-warning small">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <i class="fas fa-star"
+                               style="font-size:10px;color:@(i <= Model.AverageRating
+                                                                  ? "#FFC107" : "#dee2e6");"></i>
+                    }
+                </span>
+                <span class="small text-muted ms-1">
+                    @Model.AverageRating.ToString("F1")
+                    (@Model.TotalReviews)
+                </span>
+            }
+                else
+            {
+                <span class="small text-muted">No reviews yet</span>
+            }
+        </div>
+        <span class="badge bg-light text-dark border small">
+            @Model.PropertyTypeDisplay
+        </span>
+    </div>
+
+    @* Match Score Bar *@
+    <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="small fw-semibold" style="font-size:11px;">
+                Match
+            </span>
+            <span class="small fw-bold"
+                  style="color:@Model.MatchScoreColor;font-size:11px;">
+                @Model.MatchScorePercent%
+            </span>
+        </div>
+        <div class="progress" style="height:5px;border-radius:10px;">
+            <div class="progress-bar"
+                 style="width:@Model.MatchScorePercent%;
+                background:@Model.MatchScoreColor;
+                border-radius:10px;
+                transition:width .6s ease;">
+            </div>
+        </div>
+    </div>
+
+    @* AI Explanation *@
+    @if (!string.IsNullOrEmpty(Model.AiExplanation))
+    {
+        <div class="alert alert-light border py-2 mb-3"
+             style="font-size:12px;border-radius:8px;">
+            <i class="fas fa-robot text-primary me-1"></i>
+            @Model.AiExplanation
+        </div>
+    }
+    else if (Model.MatchReasons.Any())
+    {
+        <div class="mb-3">
+            @foreach (var reason in Model.MatchReasons.Take(2))
+            {
+                <div class="small text-muted mb-1" style="font-size:11px;">
+                    @reason
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@* ── Card Footer ───────────────────────────────────────────────────────── *@
+<div class="card-footer bg-transparent border-top-0 p-3 pt-0">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <span class="fw-bold text-primary fs-6">
+                EGP @Model.PricePerMonth.ToString("N0")
+            </span>
+            <span class="text-muted small">/mo</span>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-light border skanly-favorite-btn"
+                    data-property-id="@Model.PropertyId"
+                    title="Save to favorites">
+                <i class="far fa-heart"></i>
+            </button>
+            <a href="/Property/@Model.PropertyId"
+               class="btn btn-sm btn-primary">
+                View
+                <i class="fas fa-arrow-right ms-1" style="font-size:10px;"></i>
+            </a>
+        </div>
+    </div>
+</div>
+</div>

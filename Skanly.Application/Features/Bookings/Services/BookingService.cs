@@ -5,7 +5,7 @@ using Skanly.Application.Common.Interfaces;
 using Skanly.Application.Common.Models;
 using Skanly.Application.Features.Bookings.DTOs;
 using Skanly.Application.Features.Bookings.Interfaces;
-using Skanly.Application.Interfaces.Services;
+using Skanly.Application.Features.Notifications.Interfaces;
 using Skanly.Domain.Entities;
 using Skanly.Domain.Enums;
 using Skanly.Domain_1.Enums;

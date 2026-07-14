@@ -42,6 +42,8 @@ public interface IPropertyRepository : IRepository<Property>
         decimal longitude,
         double radiusKm,
         CancellationToken ct = default);
+    Task<IReadOnlyList<Property>> GetAllApprovedAvailableAsync(
+    CancellationToken ct = default);
 }
 
 /// <summary>Filter bag passed to SearchAsync. All fields are optional.</summary>

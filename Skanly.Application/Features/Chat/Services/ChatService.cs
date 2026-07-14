@@ -5,6 +5,7 @@ using Skanly.Application.Common.Interfaces;
 using Skanly.Application.Common.Models;
 using Skanly.Application.Features.Chat.DTOs;
 using Skanly.Application.Features.Chat.Interfaces;
+using Skanly.Application.Features.Notifications.Interfaces;
 using Skanly.Domain.Entities;
 using Skanly.Domain.Enums;
 
@@ -16,17 +17,20 @@ public class ChatService : IChatService
     private readonly IFileStorageService _fileStorage;
     private readonly IValidator<SendMessageDto> _validator;
     private readonly ILogger<ChatService> _logger;
+    private readonly INotificationService _notificationService;
 
     public ChatService(
         IUnitOfWork uow,
         IFileStorageService fileStorage,
         IValidator<SendMessageDto> validator,
-        ILogger<ChatService> logger)
+        ILogger<ChatService> logger,
+        INotificationService notificationService)
     {
         _uow = uow;
         _fileStorage = fileStorage;
         _validator = validator;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     // ── GetOrCreateConversationAsync ──────────────────────────────────────────
@@ -217,19 +221,15 @@ public class ChatService : IChatService
             : conversation.StudentId;
 
         // 7. Persist notification (for offline delivery — SignalR handles online)
-        await _uow.Notifications.AddAsync(new Notification
-        {
-            UserId = recipientId,
-            Title = "New Message",
-            Message = dto.Image != null
-                ? "📷 Sent you a photo."
-                : (dto.MessageText?.Length > 60
-                    ? dto.MessageText[..60] + "…"
-                    : dto.MessageText ?? ""),
-            Type = NotificationType.NewMessage,
-            RelatedEntityId = dto.ConversationId,
-            RelatedEntityType = "Conversation"
-        }, ct);
+        var (senderName, _) = await ResolveSenderDirectAsync(senderId, ct);
+        await _notificationService.SendNewMessageAsync(
+        recipientId,
+        dto.ConversationId,
+        senderName,
+        dto.Image != null
+            ? "📷 Sent you a photo."
+            : dto.MessageText ?? "",
+        ct);
 
         await _uow.SaveChangesAsync(ct);
 

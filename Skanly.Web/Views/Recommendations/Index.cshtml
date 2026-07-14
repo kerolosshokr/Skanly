@@ -1,0 +1,217 @@
+﻿@* Skanly.Web/Views/Recommendations/Index.cshtml *@
+@model IReadOnlyList<Skanly.Application.Features.Recommendations.DTOs.RecommendationDto>
+@{
+    ViewData["Title"] = "Recommended for You";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var profile = ViewBag.Profile as
+        Skanly.Application.Features.Recommendations.DTOs.StudentPreferenceProfileDto;
+    bool isAiRefined = Model.Any(r => r.IsAiRefined);
+}
+
+<div class="container py-4">
+
+    @* ── Page Header ──────────────────────────────────────────────────────── *@
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="page-title mb-1">
+                <i class="fas fa-magic me-2 text-primary"></i>
+                Recommended for You
+            </h1>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="text-muted small">
+                    @Model.Count propert@(Model.Count == 1 ? "y" : "ies") matched
+                </span>
+                @if (isAiRefined)
+                {
+                    <span class="badge bg-primary bg-opacity-15
+                        text-primary border border-primary
+                        border-opacity-25 small">
+                        <i class="fas fa-robot me-1"></i>
+                        AI Personalised
+                    </span>
+                }
+                @if (profile is not null)
+                {
+                    <span class="badge bg-success bg-opacity-15
+                        text-success border border-success
+                        border-opacity-25 small">
+                        <i class="fas fa-chart-line me-1"></i>
+                        @profile.ProfileConfidence.ToString("F0")% profile match
+                    </span>
+                }
+            </div>
+        </div>
+
+        @* Filter / Refresh Controls *@
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterPanel">
+                <i class="fas fa-sliders-h me-1"></i>Refine
+            </button>
+            <form id="refreshForm" method="post"
+                  asp-action="Refresh">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ForceRefresh" value="true" />
+                <button type="submit"
+                        class="btn btn-outline-secondary btn-sm"
+                        id="refreshBtn">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @* ── Preference Profile Summary ────────────────────────────────────────── *@
+    @if (profile is not null && profile.HasEnoughData)
+    {
+        <div class="alert alert-light border mb-4 py-3">
+            <div class="row align-items-center g-3">
+                <div class="col-auto">
+                    <div class="rounded-circle bg-primary bg-opacity-10
+                        d-flex align-items-center justify-content-center"
+                         style="width:48px;height:48px;">
+                        <i class="fas fa-brain text-primary"></i>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="fw-semibold small mb-1">
+                        Based on your activity on Skanly
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @if (profile.InferredMaxPrice.HasValue)
+                        {
+                            <span class="badge bg-light text-dark border small">
+                                💰 Up to EGP @profile.InferredMaxPrice.Value.ToString("N0")/mo
+                            </span>
+                        }
+                        @if (profile.PreferredAreaNames.Any())
+                        {
+                            <span class="badge bg-light text-dark border small">
+                                📍 @string.Join(", ", profile.PreferredAreaNames.Take(2))
+                            </span>
+                        }
+                        @if (profile.PreferredPropertyTypes.Any())
+                        {
+                            <span class="badge bg-light text-dark border small">
+                                🏠 @profile.PreferredPropertyTypes.First()
+                            </span>
+                        }
+                        @if (profile.UniversityNameEn is not null)
+                        {
+                            <span class="badge bg-light text-dark border small">
+                                🎓 Near @profile.UniversityNameEn
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <a href="#"
+                       class="btn btn-sm btn-link text-muted p-0"
+                       data-bs-toggle="tooltip"
+                       title="Your recommendations improve the more you use Skanly — browsing, saving favorites, and making bookings all help us learn your preferences.">
+                        <i class="fas fa-question-circle"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    else if (profile is not null && !profile.HasEnoughData)
+    {
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Personalised recommendations coming soon!</strong>
+            Browse properties, save favorites, or make a booking and we'll
+            tailor recommendations specifically for you.
+        </div>
+    }
+
+    @* ── Refinement Panel (collapse) ──────────────────────────────────────── *@
+    <div class="collapse mb-4" id="filterPanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">
+                            Max Price (EGP/month)
+                        </label>
+                        <input type="number"
+                               name="MaxPrice"
+                               class="form-control form-control-sm"
+                               placeholder="e.g. 3000" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Results</label>
+                        <select name="MaxResults" class="form-select form-select-sm">
+                            <option value="5">5 results</option>
+                            <option value="10" selected>10 results</option>
+                            <option value="20">20 results</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mt-3">
+                            <input type="checkbox" name="IncludeExplanations"
+                                   value="true" class="form-check-input"
+                                   id="includeAi" checked />
+                            <label for="includeAi"
+                                   class="form-check-label small">
+                                Include AI explanations
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit"
+                                class="btn btn-primary btn-sm w-100">
+                            Apply
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ── Recommendation Cards ──────────────────────────────────────────────── *@
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-search fa-4x mb-3 opacity-25"></i>
+            <h5>No recommendations yet</h5>
+            <p class="mb-0">
+                Browse properties and save your favorites to get personalised
+                recommendations.
+            </p>
+            <a href="/Property/Search" class="btn btn-primary mt-3">
+                <i class="fas fa-search me-2"></i>Explore Properties
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var rec in Model)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <partial name="_RecommendationCard" model="rec" />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Refresh button spinner
+        document.getElementById('refreshForm')
+            ?.addEventListener('submit', function () {
+                const btn = document.getElementById('refreshBtn');
+                btn.disabled = true;
+                btn.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-1"></span>' +
+                    'Refreshing...';
+            });
+
+        // Tooltips
+        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            .forEach(el => new bootstrap.Tooltip(el));
+    </script>
+}
