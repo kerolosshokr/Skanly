@@ -61,5 +61,8 @@ public class StudentConfiguration : IEntityTypeConfiguration<Student>
                .OnDelete(DeleteBehavior.Restrict);
 
         builder.Ignore(s => s.FullName);
+
+        builder.Property(s => s.PhoneNumber)
+       .HasMaxLength(20);
     }
 }

@@ -24,6 +24,9 @@ using Skanly.Infrastructure.Persistence;
 using Skanly.Infrastructure.Persistence.Repositories;
 using Skanly.Infrastructure.RealTime;
 
+using Skanly.Application.Features.Contracts.Interfaces;
+using Skanly.Infrastructure.Pdf;
+
 namespace Skanly.Infrastructure;
 
 public static class DependencyInjection
@@ -162,6 +165,11 @@ public static class DependencyInjection
 
         // SignalR Notification
         services.AddScoped<INotificationHub, NotificationHubHelper>();
+
+        services.Configure<ContractSettings>(
+    configuration.GetSection(ContractSettings.SectionName));
+
+        services.AddScoped<IPdfContractService, QuestPdfContractService>();
 
         return services;
     }

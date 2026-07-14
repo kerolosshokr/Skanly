@@ -39,5 +39,8 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Ignore(o => o.FullName);
+
+        builder.Property(s => s.PhoneNumber)
+     .HasMaxLength(20);
     }
 }

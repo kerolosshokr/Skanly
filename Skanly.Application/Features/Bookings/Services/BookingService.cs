@@ -6,6 +6,7 @@ using Skanly.Application.Common.Models;
 using Skanly.Application.Features.Bookings.DTOs;
 using Skanly.Application.Features.Bookings.Interfaces;
 using Skanly.Application.Features.Notifications.Interfaces;
+using Skanly.Application.Features.Contracts.Interfaces;
 using Skanly.Domain.Entities;
 using Skanly.Domain.Enums;
 using Skanly.Domain_1.Enums;
@@ -19,6 +20,8 @@ public class BookingService : IBookingService
     private readonly IValidator<CreateBookingDto> _createValidator;
     private readonly IValidator<CancelBookingDto> _cancelValidator;
     private readonly ILogger<BookingService> _logger;
+    private readonly IPdfContractService _contractService;
+
 
     // Deposit percentage (e.g. 20% of monthly rent as deposit)
     private const decimal DepositPercentage = 0.20m;
@@ -26,6 +29,7 @@ public class BookingService : IBookingService
     public BookingService(
         IUnitOfWork uow,
         INotificationService notificationService,
+         IPdfContractService contractService,
         IValidator<CreateBookingDto> createValidator,
         IValidator<CancelBookingDto> cancelValidator,
         ILogger<BookingService> logger)
@@ -33,6 +37,7 @@ public class BookingService : IBookingService
         _uow = uow;
         _notificationService = notificationService;
         _createValidator = createValidator;
+        _contractService = contractService;
         _cancelValidator = cancelValidator;
         _logger = logger;
     }
@@ -546,6 +551,28 @@ public class BookingService : IBookingService
                 ct: ct);
 
             await tx.CommitAsync(ct);
+            await tx.CommitAsync(ct);
+
+            // Generate contract asynchronously after commit
+            // (non-blocking — failure is logged but doesn't affect booking status)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var contractResult = await _contractService
+                        .GenerateForBookingAsync(bookingId);
+
+                    if (!contractResult.IsSuccess)
+                        _logger.LogWarning(
+                            "Contract generation failed for Booking {BookingId}: {Error}",
+                            bookingId, contractResult.ErrorMessage);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Exception generating contract for Booking {BookingId}", bookingId);
+                }
+            }, CancellationToken.None);
 
             _logger.LogInformation(
                 "Booking {BookingId} confirmed. TxRef={TxRef} " +

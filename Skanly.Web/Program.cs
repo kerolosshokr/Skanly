@@ -9,6 +9,8 @@ using Skanly.Infrastructure.RealTime;
 using Skanly.Infrastructure.RealTime.Hubs;
 using Skanly.Web.Extensions;
 using Skanly.Web.Middlewares;
+using QuestPDF.Infrastructure;
+using Skanly.Infrastructure.Pdf;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -95,6 +97,10 @@ builder.Services.AddAntiforgery(options =>
 });
 
 var app = builder.Build();
+
+// Register QuestPDF Community license
+QuestPDF.Settings.License = LicenseType.Community;
+ContractFonts.Register();
 
 // ── Seed Database ─────────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())

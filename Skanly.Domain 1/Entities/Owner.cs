@@ -16,6 +16,9 @@ public class Owner : IAggregateRoot
     public string LastName { get; set; } = string.Empty;
 
     [MaxLength(20)]
+    public string? PhoneNumber { get; set; }
+
+    [MaxLength(20)]
     public string? NationalId { get; set; }
 
     [MaxLength(150)]

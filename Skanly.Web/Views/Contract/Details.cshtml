@@ -1,0 +1,212 @@
+﻿@* Skanly.Web/Views/Contract/Details.cshtml *@
+@model Skanly.Application.Features.Contracts.DTOs.ContractDto
+@{
+    ViewData["Title"] = $"Contract — {Model.ContractNumber}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4" style="max-width:780px;">
+
+    @* Page Header *@
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="page-title mb-1">
+                <i class="fas fa-file-contract me-2 text-primary"></i>
+                Rental Contract
+            </h1>
+            <div class="d-flex align-items-center gap-2">
+                <code class="fs-6">@Model.ContractNumber</code>
+                <span class="badge bg-success">
+                    <i class="fas fa-check-circle me-1"></i>Active
+                </span>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            @* View in browser *@
+            <a href="/Contract/View/@Model.BookingId"
+               target="_blank"
+               class="btn btn-outline-primary">
+                <i class="fas fa-eye me-2"></i>Open PDF
+            </a>
+
+            @* Download *@
+            <a href="/Contract/Download/@Model.BookingId"
+               class="btn btn-primary">
+                <i class="fas fa-download me-2"></i>Download
+            </a>
+
+            @* Admin regenerate *@
+            @if (User.IsInRole("Admin"))
+            {
+                <form asp-action="Regenerate"
+                      asp-route-bookingId="@Model.BookingId"
+                      method="post"
+                      id="regenerateForm">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="btn btn-outline-warning"
+                            onclick="return confirm('Regenerate this contract PDF?')">
+                        <i class="fas fa-sync-alt me-1"></i>Regenerate
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (TempData["Error"] is string err)
+    {
+        <div class="alert alert-danger mb-4">
+            <i class="fas fa-exclamation-circle me-2"></i>@err
+        </div>
+    }
+
+    @* Contract Summary Card *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex
+            align-items-center gap-3">
+            <i class="fas fa-file-contract fa-lg"></i>
+            <div>
+                <div class="fw-bold">Skanly Rental Agreement</div>
+                <div class="small opacity-75">
+                    Generated @Model.TimeAgo ·
+                    @Model.GeneratedAt.ToString("MMM dd, yyyy HH:mm")
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            @* Property *@
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <div class="alert alert-light border mb-0 py-3">
+                        <div class="small text-muted mb-1 fw-semibold">
+                            <i class="fas fa-home me-2 text-primary"></i>
+                            PROPERTY / العقار
+                        </div>
+                        <h5 class="fw-bold mb-1">@Model.PropertyTitle</h5>
+                        <div class="text-muted small">
+                            @Model.PropertyAddress ·
+                            @Model.PropertyTypeDisplay
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* Parties *@
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="small fw-semibold text-primary mb-2">
+                            <i class="fas fa-user me-1"></i>
+                            TENANT / المستأجر
+                        </div>
+                        <div class="fw-bold">@Model.StudentFullName</div>
+                        <div class="text-muted small">
+                            ID: @Model.StudentNationalId
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.StudentPhone))
+                        {
+                            <div class="text-muted small">
+                                📞 @Model.StudentPhone
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="small fw-semibold text-success mb-2">
+                            <i class="fas fa-key me-1"></i>
+                            OWNER / المالك
+                        </div>
+                        <div class="fw-bold">@Model.OwnerFullName</div>
+                        <div class="text-muted small">
+                            ID: @Model.OwnerNationalId
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.OwnerPhone))
+                        {
+                            <div class="text-muted small">
+                                📞 @Model.OwnerPhone
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* Financial + Dates Grid *@
+            <div class="row g-3">
+                @{
+                    var summaryItems = new[]
+                    {
+                        ("Monthly Rent", $"EGP {Model.MonthlyRent:N0}",
+                         "fa-coins",   "primary"),
+                        ("Deposit Paid", $"EGP {Model.DepositAmount:N0}",
+                         "fa-check-circle", "success"),
+                        ("Commission",  $"{Model.CommissionRate}%",
+                         "fa-percentage", "warning"),
+                        ("Check-in",
+                         Model.CheckInDate.ToString("MMM dd, yyyy"),
+                         "fa-calendar-day", "info"),
+                        ("Check-out",
+                         Model.CheckOutDate?.ToString("MMM dd, yyyy") ?? "Open-ended",
+                         "fa-calendar-check", "secondary"),
+                        ("Contract No.", Model.ContractNumber,
+                         "fa-barcode", "dark"),
+                    };
+                }
+                @foreach (var (label, value, icon, color) in summaryItems)
+                {
+                    <div class="col-6 col-md-4">
+                        <div class="border rounded-3 p-3 text-center">
+                            <i class="fas @icon text-@color mb-2 d-block"></i>
+                            <div class="fw-bold small">@value</div>
+                            <div class="text-muted" style="font-size:11px;">
+                                @label
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Download CTA Footer *@
+        <div class="card-footer bg-transparent border-top-0
+            d-flex justify-content-center gap-3 py-4">
+            <a href="/Contract/View/@Model.BookingId"
+               target="_blank"
+               class="btn btn-outline-primary px-4">
+                <i class="fas fa-eye me-2"></i>View in Browser
+            </a>
+            <a href="/Contract/Download/@Model.BookingId"
+               class="btn btn-primary px-4">
+                <i class="fas fa-file-pdf me-2"></i>
+                Download PDF
+            </a>
+        </div>
+    </div>
+
+    @* PDF preview embed *@
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold">
+            <i class="fas fa-eye me-2 text-primary"></i>
+            PDF Preview
+        </div>
+        <div class="card-body p-0">
+            <iframe src="/Contract/View/@Model.BookingId"
+                    class="w-100"
+                    style="height:700px; border:0;"
+                    title="Contract PDF">
+            </iframe>
+                <noscript>
+                <p>
+                    Your browser does not support embedded PDFs.
+                    <a href="/Contract/Download/@Model.BookingId">
+                        Download the contract here.
+                    </a>
+                </p>
+                </noscript>
+           
+        </div>
+    </div>
+</div>

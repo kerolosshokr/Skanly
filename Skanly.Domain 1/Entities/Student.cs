@@ -29,6 +29,8 @@ public class Student : IAggregateRoot
 
     [MaxLength(300)]
     public string? ProfileImageUrl { get; set; }
+    [MaxLength(20)]
+    public string? PhoneNumber { get; set; }
 
     public bool IsIdentityVerified { get; set; }
 
