@@ -1,4 +1,5 @@
 ﻿// Skanly.Application/Common/Interfaces/IIdentityService.cs
+using Skanly.Application.Common.DTOs;
 namespace Skanly.Application.Common.Interfaces;
 
 /// <summary>
@@ -62,4 +63,7 @@ public interface IIdentityService
     Task<bool> ActivateUserAsync(
         string userId,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<IdentityUserDto>> GetAllUsersAsync(
+    CancellationToken ct = default);
 }

@@ -69,6 +69,7 @@ public static class DependencyInjection
         services.AddMemoryCache();  // if not already registered
         services.AddScoped<IChatbotService, ChatbotService>();
         services.AddScoped<ChatbotIntentRouter>();
+        services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 
 

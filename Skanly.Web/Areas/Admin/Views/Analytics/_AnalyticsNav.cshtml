@@ -1,0 +1,25 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Analytics/_AnalyticsNav.cshtml *@
+@{
+    string active = ViewData["active"] as string ?? "Index";
+    string preset = ViewData["preset"] as string ?? "30d";
+}
+
+<ul class="nav nav-pills mb-4 gap-2">
+    @foreach (var (action, icon, label) in new[]
+    {
+        ("Index",      "fa-tachometer-alt", "Overview"),
+        ("Users",      "fa-users",          "Users"),
+        ("Bookings",   "fa-calendar-check", "Bookings"),
+        ("Revenue",    "fa-coins",          "Revenue"),
+        ("Properties", "fa-home",           "Properties"),
+    })
+    {
+        <li class="nav-item">
+            <a class="nav-link @(active == action || (active == "Index" && action == "Index") ? "active" : "")"
+               asp-action="@action"
+               asp-route-preset="@preset">
+                <i class="fas @icon me-1"></i>@label
+            </a>
+        </li>
+    }
+</ul>

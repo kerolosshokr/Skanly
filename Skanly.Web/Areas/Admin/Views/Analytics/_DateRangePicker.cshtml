@@ -1,0 +1,42 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Analytics/_DateRangePicker.cshtml *@
+@{
+    string preset = ViewData["preset"] as string ?? "30d";
+}
+
+<div class="d-flex align-items-center gap-2 flex-wrap">
+    @* Preset buttons *@
+    <div class="btn-group btn-group-sm" role="group">
+        @foreach (var (p, label) in new[]
+        {
+            ("7d",        "7D"),
+            ("30d",       "30D"),
+            ("90d",       "90D"),
+            ("thisMonth", "Month"),
+            ("thisYear",  "Year"),
+        })
+        {
+            <a asp-action="@ViewContext.RouteData.Values["action"]"
+               asp-route-preset="@p"
+               class="btn @(preset == p ? "btn-primary" : "btn-outline-secondary")">
+                @label
+            </a>
+        }
+    </div>
+
+    @* Custom date range *@
+    <form method="get" class="d-flex gap-2 align-items-center">
+        <input type="date" name="from"
+               class="form-control form-control-sm"
+               style="width:140px;"
+               placeholder="From" />
+        <span class="text-muted small">–</span>
+        <input type="date" name="to"
+               class="form-control form-control-sm"
+               style="width:140px;"
+               placeholder="To" />
+        <button type="submit"
+                class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-filter"></i>
+        </button>
+    </form>
+</div>

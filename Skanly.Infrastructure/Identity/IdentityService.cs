@@ -1,6 +1,8 @@
 ﻿// Skanly.Infrastructure/Identity/IdentityService.cs
 using Microsoft.AspNetCore.Identity;
 using Skanly.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Skanly.Application.Common.DTOs;
 
 namespace Skanly.Infrastructure.Identity;
 
@@ -97,5 +99,19 @@ public class IdentityService : IIdentityService
         user.IsActive = true;
         var result = await _userManager.UpdateAsync(user);
         return result.Succeeded;
+    }
+    public async Task<IReadOnlyList<IdentityUserDto>> GetAllUsersAsync(
+    CancellationToken ct = default)
+    {
+        return await _userManager.Users
+            .Select(u => new IdentityUserDto
+            {
+                Id = u.Id,
+                UserName = u.UserName,
+                Email = u.Email,
+                CreatedAt = u.CreatedAt,
+                IsActive = u.IsActive
+            })
+            .ToListAsync(ct);
     }
 }

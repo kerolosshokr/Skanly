@@ -1,0 +1,396 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Analytics/Index.cshtml *@
+@model Skanly.Application.Features.Analytics.DTOs.AnalyticsSummaryDto
+@{
+    ViewData["Title"] = "Analytics Dashboard";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    string preset = ViewBag.Preset as string ?? "30d";
+}
+
+@* ── Page Header ──────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title mb-1">
+            <i class="fas fa-chart-line me-2 text-primary"></i>Analytics Dashboard
+        </h1>
+        <p class="text-muted mb-0">
+            @Model.DateRange.Label ·
+            @Model.DateRange.From.ToString("MMM dd") –
+            @Model.DateRange.To.ToString("MMM dd, yyyy")
+        </p>
+    </div>
+    @await Html.PartialAsync("_DateRangePicker",
+        new ViewDataDictionary(ViewData) { ["preset"] = preset })
+</div>
+
+@* ── Navigation Tabs ──────────────────────────────────────────────────────── *@
+<ul class="nav nav-pills mb-4 gap-2">
+    @{
+        var navItems = new[]
+        {
+            ("Index",      "fa-tachometer-alt", "Overview"),
+            ("Users",      "fa-users",          "Users"),
+            ("Bookings",   "fa-calendar-check", "Bookings"),
+            ("Revenue",    "fa-coins",          "Revenue"),
+            ("Properties", "fa-home",           "Properties"),
+        };
+    }
+    @foreach (var (action, icon, label) in navItems)
+    {
+        var isActive = ViewContext.RouteData.Values["action"]
+            ?.ToString() == action;
+        <li class="nav-item">
+            <a class="nav-link @(isActive ? "active" : "")"
+               asp-action="@action"
+               asp-route-preset="@preset">
+                <i class="fas @icon me-1"></i>@label
+            </a>
+        </li>
+    }
+</ul>
+
+@* ── KPI Cards ────────────────────────────────────────────────────────────── *@
+<div class="row g-3 mb-4">
+    @{
+        var kpis = new[]
+        {
+            new {
+                Title    = "Total Users",
+                Value    = Model.TotalUsers.ToString("N0"),
+                Sub      = $"+{Model.NewUsersInRange} in period",
+                Trend    = Model.UserGrowthPct,
+                Icon     = "fa-users",
+                Color    = "primary"
+            },
+            new {
+                Title    = "Bookings",
+                Value    = Model.TotalBookings.ToString("N0"),
+                Sub      = $"{Model.BookingConversionRate}% conversion",
+                Trend    = Model.BookingGrowthPct,
+                Icon     = "fa-calendar-check",
+                Color    = "success"
+            },
+            new {
+                Title    = "Revenue",
+                Value    = $"EGP {Model.TotalRevenue:N0}",
+                Sub      = $"Commission: EGP {Model.TotalCommission:N0}",
+                Trend    = Model.RevenueGrowthPct,
+                Icon     = "fa-coins",
+                Color    = "warning"
+            },
+            new {
+                Title    = "Properties",
+                Value    = Model.TotalProperties.ToString("N0"),
+                Sub      = $"{Model.PendingProperties} pending",
+                Trend    = 0.0,
+                Icon     = "fa-home",
+                Color    = "info"
+            },
+            new {
+                Title    = "Platform Rating",
+                Value    = Model.AveragePlatformRating.ToString("F1") + " ★",
+                Sub      = $"{Model.TotalReviews} reviews",
+                Trend    = 0.0,
+                Icon     = "fa-star",
+                Color    = "danger"
+            },
+            new {
+                Title    = "Open Reports",
+                Value    = Model.OpenReports.ToString(),
+                Sub      = $"{Model.TotalReports} total",
+                Trend    = 0.0,
+                Icon     = "fa-flag",
+                Color    = "secondary"
+            },
+        };
+    }
+    @foreach (var kpi in kpis)
+    {
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body py-3 px-3">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <span class="icon-circle bg-@kpi.Color bg-opacity-15
+                            text-@kpi.Color rounded-circle
+                            d-flex align-items-center
+                            justify-content-center"
+                              style="width:42px;height:42px;min-width:42px;">
+                            <i class="fas @kpi.Icon" style="font-size:14px;"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="text-muted small fw-semibold
+                                text-uppercase text-truncate"
+                                 style="font-size:10px;letter-spacing:.05em;">
+                                @kpi.Title
+                            </div>
+                            <div class="fw-bold fs-5 lh-1">
+                                @kpi.Value
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted" style="font-size:11px;">
+                            @kpi.Sub
+                        </span>
+                        @if (kpi.Trend != 0)
+                        {
+                            <span class="badge @(kpi.Trend > 0 ? "bg-success" : "bg-danger")
+                                bg-opacity-15
+                                @(kpi.Trend > 0 ? "text-success" : "text-danger")"
+                                  style="font-size:10px;">
+                                <i class="fas fa-arrow-@(kpi.Trend > 0 ? "up" : "down")
+                                me-1" style="font-size:8px;"></i>
+                                @Math.Abs(kpi.Trend)%
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* ── Main Charts Row ───────────────────────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+    @* Activity Trend — full width *@
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent fw-semibold d-flex
+                justify-content-between align-items-center">
+                <span>
+                    <i class="fas fa-chart-area me-2 text-primary"></i>
+                    Platform Activity Trend
+                </span>
+                <span class="text-muted small">@Model.DateRange.Label</span>
+            </div>
+            <div class="card-body">
+                <canvas id="activityChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Secondary Charts Row ──────────────────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+    @* Booking Status Doughnut *@
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-chart-pie me-2 text-success"></i>
+                Booking Status
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="bookingStatusChart"
+                        width="220" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+
+    @* User Role Doughnut *@
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-users me-2 text-primary"></i>
+                User Distribution
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <canvas id="userRoleChart"
+                        width="220" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+
+    @* Summary Stats Card *@
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent fw-semibold">
+                <i class="fas fa-list me-2 text-warning"></i>
+                Quick Stats
+            </div>
+            <div class="card-body p-0">
+                @{
+                    var quickStats = new[]
+                    {
+                        ("Verified Students",
+                         $"{Model.VerifiedStudents} / {Model.TotalStudents}",
+                         $"{Model.VerificationRate}%", "success"),
+                        ("Approved Properties",
+                         $"{Model.ApprovedProperties} / {Model.TotalProperties}",
+                         "", "primary"),
+                        ("Confirmed Bookings",
+                         $"{Model.ConfirmedBookings} / {Model.TotalBookings}",
+                         $"{Model.BookingConversionRate}% rate", "success"),
+                        ("Avg Booking Value",
+                         $"EGP {Model.AverageBookingValue:N0}",
+                         "", "warning"),
+                        ("Open Reports",
+                         Model.OpenReports.ToString(),
+                         Model.OpenReports > 0 ? "Action needed" : "All clear",
+                         Model.OpenReports > 0 ? "danger" : "success"),
+                    };
+                }
+                @foreach (var (label, val, sub, color) in quickStats)
+                {
+                    <div class="px-3 py-3 border-bottom d-flex
+                        justify-content-between align-items-center">
+                        <div>
+                            <div class="small fw-semibold">@label</div>
+                            @if (!string.IsNullOrEmpty(sub))
+                            {
+                                <div class="text-muted"
+                                     style="font-size:11px;">
+                                    @sub
+                                </div>
+                            }
+                        </div>
+                        <div class="fw-bold text-@color">@val</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Quick Links to Sub-Pages ─────────────────────────────────────────────── *@
+<div class="row g-3">
+    @foreach (var (action, icon, label, desc, color) in new[]
+    {
+        ("Users",      "fa-users",          "User Analytics",
+         "Registrations, verifications, growth", "primary"),
+        ("Bookings",   "fa-calendar-check", "Booking Analytics",
+         "Status, trends, top properties", "success"),
+        ("Revenue",    "fa-coins",          "Revenue Analytics",
+         "Income, commission, payment methods", "warning"),
+        ("Properties", "fa-home",           "Property Analytics",
+         "Listings, ratings, occupancy", "info"),
+    })
+    {
+        <div class="col-md-3">
+            <a asp-action="@action"
+               asp-route-preset="@preset"
+               class="card border-0 shadow-sm text-decoration-none
+                hover-lift h-100"
+               style="transition:transform .2s;">
+                <div class="card-body text-center py-4">
+                    <div class="icon-circle bg-@color bg-opacity-15
+                        text-@color rounded-circle
+                        d-inline-flex align-items-center
+                        justify-content-center mb-3"
+                         style="width:56px;height:56px;">
+                        <i class="fas @icon fa-lg"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">@label</h6>
+                    <p class="text-muted small mb-0">@desc</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0
+                    text-center pb-3">
+                    <span class="text-@color small fw-semibold">
+                        View Details →
+                    </span>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+        'use strict';
+
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.plugins.legend.position = 'bottom';
+
+        const activityData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DailyActivityChart))
+
+        const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BookingStatusChart));
+
+        const roleData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UserRoleChart));
+        // ── Activity Trend (multi-line) ────────────────────────────────────────────
+        new Chart(document.getElementById('activityChart'), {
+        type: 'line',
+        data: {
+        labels  : activityData.labels,
+        datasets: activityData.datasets.map(ds => ({
+        label          : ds.label,
+        data           : ds.data,
+        backgroundColor: ds.backgroundColor,
+        borderColor    : ds.borderColor,
+        borderWidth    : 2,
+        fill           : ds.fill,
+        tension        : 0.4,
+        pointRadius    : 3,
+        pointHoverRadius: 5
+        }))
+        },
+        options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+        legend : { position: 'top' },
+        tooltip: { usePointStyle: true }
+        },
+        scales: {
+        y: {
+        beginAtZero: true,
+        grid: { color: '#f3f4f6' },
+        ticks: { color: '#6b7280' }
+        },
+        x: {
+        grid : { display: false },
+        ticks: { color: '#6b7280', maxTicksLimit: 12 }
+        }
+        }
+        }
+        });
+
+        // ── Booking Status Doughnut ────────────────────────────────────────────────
+        new Chart(document.getElementById('bookingStatusChart'), {
+        type: 'doughnut',
+        data: {
+        labels          : statusData.labels,
+        datasets        : [{
+        data           : statusData.data,
+        backgroundColor: statusData.backgroundColors,
+        borderWidth    : 2,
+        borderColor    : '#ffffff'
+        }]
+        },
+        options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+        legend: {
+        position: 'bottom',
+        labels  : { boxWidth: 12, font: { size: 11 } }
+        }
+        }
+        }
+        });
+
+        // ── User Role Doughnut ─────────────────────────────────────────────────────
+        new Chart(document.getElementById('userRoleChart'), {
+        type: 'doughnut',
+        data: {
+        labels          : roleData.labels,
+        datasets        : [{
+        data           : roleData.data,
+        backgroundColor: roleData.backgroundColors,
+        borderWidth    : 2,
+        borderColor    : '#ffffff'
+        }]
+        },
+        options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+        legend: {
+        position: 'bottom',
+        labels  : { boxWidth: 12, font: { size: 11 } }
+        }
+        }
+        }
+        });
+        })();
+    </script>
+}
