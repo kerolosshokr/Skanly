@@ -1,0 +1,50 @@
+﻿<!-- Skanly.Web/Resources/Areas/Student/Dashboard.ar.resx -->
+
+<root>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>2.0</value>
+	</resheader>
+
+	<data name="WelcomeMessage" xml:space="preserve">
+    <value>أهلاً، {0} 👋</value>
+  </data>
+	<data name="TodayDate" xml:space="preserve">
+    <value>اليوم {0}</value>
+  </data>
+	<data name="CompleteProfileTitle" xml:space="preserve">
+    <value>أكمل ملفك الشخصي لفتح جميع المميزات</value>
+  </data>
+	<data name="CompleteProfileSubtitle" xml:space="preserve">
+    <value>٣ خطوات سريعة للبدء</value>
+  </data>
+	<data name="SetUniversity" xml:space="preserve">
+    <value>حدد جامعتك</value>
+  </data>
+	<data name="SetUniversityDesc" xml:space="preserve">
+    <value>سنجد لك سكناً قريباً من حرم جامعتك</value>
+  </data>
+	<data name="CompleteProfile" xml:space="preserve">
+    <value>أكمل ملفك الشخصي</value>
+  </data>
+	<data name="CompleteProfileDesc" xml:space="preserve">
+    <value>أضف رقم هاتفك وبياناتك الشخصية</value>
+  </data>
+	<data name="VerifyNow" xml:space="preserve">
+    <value>وثّق الآن</value>
+  </data>
+	<data name="RecommendedForYou" xml:space="preserve">
+    <value>مقترح لك</value>
+  </data>
+	<data name="QuickActions" xml:space="preserve">
+    <value>إجراءات سريعة</value>
+  </data>
+	<data name="NoBookingsYet" xml:space="preserve">
+    <value>لا توجد حجوزات بعد.</value>
+  </data>
+	<data name="ExploreProperties" xml:space="preserve">
+    <value>استكشف العقارات</value>
+  </data>
+</root>

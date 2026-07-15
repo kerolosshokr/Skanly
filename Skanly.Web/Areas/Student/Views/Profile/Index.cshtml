@@ -5,109 +5,252 @@
     Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
 }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">
+        <i class="fas fa-user-circle me-2"
+           style="color:var(--student-primary);"></i>
+        My Profile
+    </h1>
+</div>
 
 <div class="row g-4">
 
-    @* Profile Card *@
+    @* Left: Profile Card *@
     <div class="col-lg-4">
-        <div class="card shadow-sm text-center">
-            <div class="card-body py-4">
+        <div class="s-card text-center pb-4">
+            <div class="card-body">
 
-                @* Avatar with upload overlay *@
+                @* Avatar with upload *@
                 <div class="position-relative d-inline-block mb-3">
-                    <img id="avatarPreview"
-                         src="@(Model.ProfileImageUrl ?? "/images/default-avatar.png")"
-                         class="rounded-circle object-fit-cover border border-3 border-primary"
-                         width="110" height="110" alt="Avatar" />
-                    <label for="imageUpload"
-                           class="position-absolute bottom-0 end-0
-                        btn btn-sm btn-primary rounded-circle
+                    <img src="@(Model.ProfileImageUrl ?? "/images/default-avatar.png")"
+                         class="rounded-circle object-fit-cover"
+                         width="100" height="100"
+                         style="border:4px solid var(--student-primary);
+                    box-shadow:0 4px 16px rgba(108,99,255,.25);" />
+                    <label class="btn btn-sm position-absolute bottom-0
+                        end-0 rounded-circle border-0 p-0
                         d-flex align-items-center justify-content-center"
-                           style="width:34px;height:34px;cursor:pointer;"
-                           title="Change photo">
-                        <i class="fas fa-camera" style="font-size:12px;"></i>
+                           for="photoInput"
+                           style="width:30px;height:30px;
+                        background:var(--student-primary);
+                        cursor:pointer;">
+                        <i class="fas fa-camera text-white"
+                           style="font-size:11px;"></i>
                     </label>
-                    <input type="file" id="imageUpload" class="d-none"
-                           accept="image/*" />
                 </div>
 
-                <h5 class="fw-bold mb-0">@Model.FullName</h5>
-                <p class="text-muted small mb-3">@Model.Email</p>
+                @* Photo Upload Form *@
+                <form asp-action="UploadPhoto"
+                      method="post"
+                      enctype="multipart/form-data"
+                      id="photoForm">
+                    @Html.AntiForgeryToken()
+                    <input type="file"
+                           name="image"
+                           id="photoInput"
+                           accept="image/*"
+                           class="d-none"
+                           onchange="document.getElementById('photoForm').submit()" />
+                </form>
+
+                <h5 class="fw-bold mb-1">@Model.FullName</h5>
+                <div class="text-muted small mb-3">@Model.Email</div>
 
                 @* Verification Badge *@
                 @if (Model.IsIdentityVerified)
                 {
-                    <span class="badge bg-success px-3 py-2">
-                        <i class="fas fa-shield-check me-1"></i>Identity Verified
+                    <span class="verified-badge">
+                        <i class="fas fa-check-circle me-1"
+                           style="font-size:11px;"></i>
+                        Identity Verified
                     </span>
                 }
                 else
                 {
-                    <a asp-action="VerifyIdentity"
-                       class="badge bg-warning text-dark px-3 py-2 text-decoration-none">
-                        <i class="fas fa-shield-alt me-1"></i>@Model.VerificationStatus
+                    <a asp-area="Student"
+                       asp-controller="Verification"
+                       asp-action="Submit"
+                       class="btn btn-sm btn-warning fw-semibold">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Verify Identity
                     </a>
                 }
 
-                @* Stats row *@
-                <div class="row g-0 border-top mt-3 pt-3 text-center">
-                    <div class="col">
-                        <div class="fw-bold">@Model.TotalBookings</div>
-                        <div class="small text-muted">Bookings</div>
-                    </div>
-                    <div class="col border-start border-end">
-                        <div class="fw-bold">@Model.TotalFavorites</div>
-                        <div class="small text-muted">Saved</div>
-                    </div>
-                    <div class="col">
-                        <div class="fw-bold">@Model.TotalReviews</div>
-                        <div class="small text-muted">Reviews</div>
-                    </div>
+                @* Stats *@
+                <div class="row g-0 border rounded-3 mt-4 overflow-hidden">
+                    @{
+                        var profileStats = new[]
+                        {
+                            ("Bookings", Model.TotalBookings.ToString()),
+                            ("Favorites", Model.TotalFavorites.ToString()),
+                            ("Reviews", Model.TotalReviews.ToString()),
+                        };
+                    }
+                    @foreach (var (label, val) in profileStats)
+                    {
+                        <div class="col-4 py-3 border-end">
+                            <div class="fw-bold"
+                                 style="color:var(--student-primary);">
+                                @val
+                            </div>
+                            <div class="text-muted"
+                                 style="font-size:11px;">
+                                @label
+                            </div>
+                        </div>
+                    }
                 </div>
-            </div>
 
-            <div class="card-footer bg-transparent">
-                <a asp-action="Edit" class="btn btn-outline-primary w-100">
-                    <i class="fas fa-edit me-2"></i>Edit Profile
-                </a>
+                @* University *@
+                @if (!string.IsNullOrEmpty(Model.UniversityNameEn))
+                {
+                    <div class="mt-3 p-3 rounded-3"
+                         style="background:rgba(108,99,255,.06);
+                        border:1px solid rgba(108,99,255,.15);">
+                        <i class="fas fa-graduation-cap text-primary me-2"
+                           style="font-size:13px;"></i>
+                        <span class="small fw-semibold">
+                            @Model.UniversityNameEn
+                        </span>
+                    </div>
+                }
             </div>
         </div>
     </div>
 
-    @* Info Column *@
+    @* Right: Edit Form *@
     <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-transparent fw-semibold">
-                <i class="fas fa-user me-2 text-primary"></i>Personal Information
+        <div class="s-card">
+            <div class="card-header">
+                <i class="fas fa-edit me-2"
+                   style="color:var(--student-primary);"></i>
+                Personal Information
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Update"
+                      method="post"
+                      id="profileForm">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger mb-4"
+                         style="display:none;border-radius:8px;"></div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                First Name
+                            </label>
+                            <input type="text"
+                                   name="FirstName"
+                                   value="@Model.FirstName"
+                                   class="form-control"
+                                   placeholder="First name" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                Last Name
+                            </label>
+                            <input type="text"
+                                   name="LastName"
+                                   value="@Model.LastName"
+                                   class="form-control"
+                                   placeholder="Last name" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                Email
+                            </label>
+                            <input type="email"
+                                   value="@Model.Email"
+                                   class="form-control"
+                                   readonly
+                                   style="background:var(--bs-body-bg);
+                            opacity:.7;" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                Phone Number
+                            </label>
+                            <input type="tel"
+                                   name="PhoneNumber"
+                                   value="@Model.PhoneNumber"
+                                   class="form-control"
+                                   placeholder="+20 1xx xxx xxxx" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                Date of Birth
+                            </label>
+                            <input type="date"
+                                   name="BirthDate"
+                                   value="@Model.BirthDate?.ToString("yyyy-MM-dd")"
+                                   class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">
+                                University
+                            </label>
+                            <select name="UniversityId"
+                                    class="form-select"
+                                    id="universitySelect">
+                                <option value="">Select your university</option>
+                                @* Universities populated from ViewBag or AJAX *@
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit"
+                                class="btn fw-semibold px-4"
+                                id="saveProfileBtn"
+                                style="background:var(--student-primary);
+                            color:white;border-radius:10px;">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @* Verification Status Card *@
+        <div class="s-card mt-4">
+            <div class="card-header">
+                <i class="fas fa-shield-alt me-2 text-warning"></i>
+                Identity Verification
             </div>
             <div class="card-body">
-                <div class="row g-3">
-                    @{
-                        var fields = new[]
-                        {
-                            new { Label = "First Name",   Value = Model.FirstName },
-                            new { Label = "Last Name",    Value = Model.LastName },
-                            new { Label = "Email",        Value = Model.Email },
-                            new { Label = "Phone",        Value = Model.PhoneNumber ?? "—" },
-                            new { Label = "Gender",       Value = Model.GenderDisplay },
-                            new { Label = "Date of Birth",Value = Model.BirthDate?.ToString("MMMM dd, yyyy") ?? "—" },
-                            new { Label = "University",   Value = Model.UniversityNameEn ?? "Not selected" },
-                            new { Label = "Member Since", Value = Model.CreatedAt.ToString("MMMM yyyy") }
-                        };
-                    }
-                    @foreach (var field in fields)
-                    {
-                        <div class="col-sm-6">
-                            <label class="text-muted small">@field.Label</label>
-                            <div class="fw-semibold">@field.Value</div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon-circle"
+                         style="width:52px;height:52px;font-size:22px;
+                        background:@(Model.IsIdentityVerified ? "rgba(16,185,129,.1)" : "rgba(245,158,11,.1)");
+                        color:@(Model.IsIdentityVerified ? "#10b981" : "#f59e0b");">
+                        <i class="fas fa-@(Model.IsIdentityVerified ? "shield-check" : "shield-alt")"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold small mb-1">
+                            @Model.VerificationStatus
                         </div>
+                        <div class="text-muted" style="font-size:12px;">
+                            @(Model.IsIdentityVerified
+                                ? "Your identity is verified. You can make booking requests."
+                                : "Verify your National ID to unlock booking features.")
+                        </div>
+                    </div>
+                    @if (!Model.IsIdentityVerified)
+                    {
+                        <a asp-area="Student"
+                           asp-controller="Verification"
+                           asp-action="Submit"
+                           class="btn btn-warning btn-sm fw-semibold flex-shrink-0">
+                            Verify Now
+                        </a>
                     }
                 </div>
             </div>
@@ -117,37 +260,12 @@
 
 @section Scripts {
     <script>
-        // ── Profile Image Upload ───────────────────────────────────────────────────
-        document.getElementById('imageUpload').addEventListener('change', async function () {
-            const file = this.files[0];
-            if (!file) return;
-
-            // Local preview immediately
-            const reader = new FileReader();
-            reader.onload = e =>
-                document.getElementById('avatarPreview').src = e.target.result;
-            reader.readAsDataURL(file);
-
-            // Upload to server
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('__RequestVerificationToken',
-                document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '');
-
-            try {
-                const res = await fetch('/Student/Profile/UploadImage', {
-                    method: 'POST', body: formData
-                });
-                const data = await res.json();
-
-                if (!data.success) {
-                    alert('Upload failed: ' + data.message);
-                    document.getElementById('avatarPreview').src =
-                        '@(Model.ProfileImageUrl ?? "/images/default-avatar.png")';
-                }
-            } catch {
-                alert('Upload failed. Please try again.');
-            }
-        });
+        document.getElementById('profileForm')
+            ?.addEventListener('submit', function () {
+                const btn = document.getElementById('saveProfileBtn');
+                btn.disabled = true;
+                btn.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+            });
     </script>
 }

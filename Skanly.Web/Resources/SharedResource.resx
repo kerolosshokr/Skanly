@@ -1,0 +1,339 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>2.0</value>
+	</resheader>
+
+	<!-- ── Common Actions ───────────────────────────────────────────────── -->
+	<data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+	<data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+	<data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+	<data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+	<data name="Submit" xml:space="preserve">
+    <value>Submit</value>
+  </data>
+	<data name="Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+	<data name="Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+	<data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+	<data name="Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+	<data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+	<data name="ViewAll" xml:space="preserve">
+    <value>View All</value>
+  </data>
+	<data name="ViewDetails" xml:space="preserve">
+    <value>View Details</value>
+  </data>
+	<data name="LoadMore" xml:space="preserve">
+    <value>Load More</value>
+  </data>
+	<data name="NoResultsFound" xml:space="preserve">
+    <value>No results found.</value>
+  </data>
+
+	<!-- ── Status & Feedback ────────────────────────────────────────────── -->
+	<data name="Success" xml:space="preserve">
+    <value>Success</value>
+  </data>
+	<data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+	<data name="Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+	<data name="Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+	<data name="Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+	<data name="Optional" xml:space="preserve">
+    <value>Optional</value>
+  </data>
+	<data name="Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+	<data name="No" xml:space="preserve">
+    <value>No</value>
+  </data>
+	<data name="Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+	<data name="Inactive" xml:space="preserve">
+    <value>Inactive</value>
+  </data>
+
+	<!-- ── Navigation ───────────────────────────────────────────────────── -->
+	<data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+	<data name="Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+	<data name="Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+	<data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+	<data name="Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+	<data name="Messages" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+	<data name="SignOut" xml:space="preserve">
+    <value>Sign Out</value>
+  </data>
+	<data name="SignIn" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+	<data name="Register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+
+	<!-- ── Auth ─────────────────────────────────────────────────────────── -->
+	<data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+	<data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+	<data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirm Password</value>
+  </data>
+	<data name="ForgotPassword" xml:space="preserve">
+    <value>Forgot Password?</value>
+  </data>
+	<data name="RememberMe" xml:space="preserve">
+    <value>Remember me</value>
+  </data>
+	<data name="LoginTitle" xml:space="preserve">
+    <value>Sign in to Skanly</value>
+  </data>
+	<data name="LoginSubtitle" xml:space="preserve">
+    <value>Find your perfect student housing</value>
+  </data>
+	<data name="DontHaveAccount" xml:space="preserve">
+    <value>Don't have an account?</value>
+  </data>
+	<data name="AlreadyHaveAccount" xml:space="preserve">
+    <value>Already have an account?</value>
+  </data>
+
+	<!-- ── Property ─────────────────────────────────────────────────────── -->
+	<data name="FindHousing" xml:space="preserve">
+    <value>Find Housing</value>
+  </data>
+	<data name="SearchProperties" xml:space="preserve">
+    <value>Search Properties</value>
+  </data>
+	<data name="PricePerMonth" xml:space="preserve">
+    <value>/ month</value>
+  </data>
+	<data name="Rooms" xml:space="preserve">
+    <value>Rooms</value>
+  </data>
+	<data name="Beds" xml:space="preserve">
+    <value>Beds</value>
+  </data>
+	<data name="Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+	<data name="Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+	<data name="BookNow" xml:space="preserve">
+    <value>Book Now</value>
+  </data>
+	<data name="RequestBooking" xml:space="preserve">
+    <value>Request Booking</value>
+  </data>
+	<data name="ChatWithOwner" xml:space="preserve">
+    <value>Chat with Owner</value>
+  </data>
+	<data name="PropertyDetails" xml:space="preserve">
+    <value>Property Details</value>
+  </data>
+	<data name="Amenities" xml:space="preserve">
+    <value>Amenities</value>
+  </data>
+	<data name="Location" xml:space="preserve">
+    <value>Location</value>
+  </data>
+	<data name="NearbyTransport" xml:space="preserve">
+    <value>Nearby Transport</value>
+  </data>
+	<data name="NearbyServices" xml:space="preserve">
+    <value>Nearby Services</value>
+  </data>
+	<data name="AddToFavorites" xml:space="preserve">
+    <value>Add to Favorites</value>
+  </data>
+	<data name="RemoveFromFavorites" xml:space="preserve">
+    <value>Remove from Favorites</value>
+  </data>
+	<data name="Reviews" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+	<data name="WriteReview" xml:space="preserve">
+    <value>Write a Review</value>
+  </data>
+	<data name="MinPrice" xml:space="preserve">
+    <value>Min Price</value>
+  </data>
+	<data name="MaxPrice" xml:space="preserve">
+    <value>Max Price</value>
+  </data>
+	<data name="PropertyType" xml:space="preserve">
+    <value>Property Type</value>
+  </data>
+	<data name="GenderPolicy" xml:space="preserve">
+    <value>Gender Policy</value>
+  </data>
+	<data name="AllTypes" xml:space="preserve">
+    <value>All Types</value>
+  </data>
+	<data name="Males" xml:space="preserve">
+    <value>Males</value>
+  </data>
+	<data name="Females" xml:space="preserve">
+    <value>Females</value>
+  </data>
+	<data name="Mixed" xml:space="preserve">
+    <value>Mixed</value>
+  </data>
+	<data name="Private" xml:space="preserve">
+    <value>Private</value>
+  </data>
+	<data name="Shared" xml:space="preserve">
+    <value>Shared</value>
+  </data>
+	<data name="Apartment" xml:space="preserve">
+    <value>Apartment</value>
+  </data>
+	<data name="Room" xml:space="preserve">
+    <value>Room</value>
+  </data>
+	<data name="Dormitory" xml:space="preserve">
+    <value>Dormitory</value>
+  </data>
+
+	<!-- ── Booking ──────────────────────────────────────────────────────── -->
+	<data name="MyBookings" xml:space="preserve">
+    <value>My Bookings</value>
+  </data>
+	<data name="CheckIn" xml:space="preserve">
+    <value>Check-in</value>
+  </data>
+	<data name="CheckOut" xml:space="preserve">
+    <value>Check-out</value>
+  </data>
+	<data name="TotalAmount" xml:space="preserve">
+    <value>Total Amount</value>
+  </data>
+	<data name="DepositAmount" xml:space="preserve">
+    <value>Security Deposit</value>
+  </data>
+	<data name="Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+	<data name="Accepted" xml:space="preserve">
+    <value>Accepted</value>
+  </data>
+	<data name="Confirmed" xml:space="preserve">
+    <value>Confirmed</value>
+  </data>
+	<data name="Rejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+	<data name="Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+	<data name="PaymentPending" xml:space="preserve">
+    <value>Payment Pending</value>
+  </data>
+	<data name="CancelBooking" xml:space="preserve">
+    <value>Cancel Booking</value>
+  </data>
+	<data name="PayNow" xml:space="preserve">
+    <value>Pay Now</value>
+  </data>
+	<data name="DownloadContract" xml:space="preserve">
+    <value>Download Contract</value>
+  </data>
+
+	<!-- ── Verification ─────────────────────────────────────────────────── -->
+	<data name="VerifyIdentity" xml:space="preserve">
+    <value>Verify Identity</value>
+  </data>
+	<data name="IdentityVerified" xml:space="preserve">
+    <value>Identity Verified</value>
+  </data>
+	<data name="NationalId" xml:space="preserve">
+    <value>National ID</value>
+  </data>
+	<data name="VerificationPending" xml:space="preserve">
+    <value>Verification Pending</value>
+  </data>
+	<data name="VerificationRequired" xml:space="preserve">
+    <value>Identity verification is required before making a booking.</value>
+  </data>
+	<data name="UploadNationalId" xml:space="preserve">
+    <value>Upload your National ID to verify your identity.</value>
+  </data>
+
+	<!-- ── Errors ────────────────────────────────────────────────────────── -->
+	<data name="PageNotFound" xml:space="preserve">
+    <value>Page Not Found</value>
+  </data>
+	<data name="AccessDenied" xml:space="preserve">
+    <value>Access Denied</value>
+  </data>
+	<data name="SomethingWentWrong" xml:space="preserve">
+    <value>Something went wrong. Please try again.</value>
+  </data>
+	<data name="SessionExpired" xml:space="preserve">
+    <value>Your session has expired. Please sign in again.</value>
+  </data>
+
+	<!-- ── Platform ─────────────────────────────────────────────────────── -->
+	<data name="PlatformName" xml:space="preserve">
+    <value>Skanly</value>
+  </data>
+	<data name="PlatformTagline" xml:space="preserve">
+    <value>Smart Student Housing in Egypt</value>
+  </data>
+	<data name="ForStudents" xml:space="preserve">
+    <value>For Students</value>
+  </data>
+	<data name="ForOwners" xml:space="preserve">
+    <value>For Property Owners</value>
+  </data>
+	<data name="DistanceToUniversity" xml:space="preserve">
+    <value>from university</value>
+  </data>
+	<data name="PerMonth" xml:space="preserve">
+    <value>per month</value>
+  </data>
+</root>

@@ -1,0 +1,62 @@
+﻿@* Skanly.Web/Views/Shared/_ThemeSelector.cshtml *@
+@* For a settings/preferences page where users pick light, dark, or system *@
+
+<div class="theme-selector">
+    <h6 class="fw-semibold mb-3 small">
+        <i class="fas fa-palette me-2"
+           style="color:var(--skanly-primary);"></i>
+        Appearance
+    </h6>
+    <div class="d-flex gap-3 flex-wrap">
+
+        @foreach (var (value, icon, label, desc) in new[]
+        {
+            ("light",  "fa-sun",           "Light",  "Always use light theme"),
+            ("dark",   "fa-moon",          "Dark",   "Always use dark theme"),
+            ("system", "fa-desktop",       "System", "Follow your OS setting"),
+        })
+        {
+            <label class="theme-option-card flex-grow-1"
+                   style="cursor:pointer;">
+                <input type="radio"
+                       name="themePreference"
+                       value="@value"
+                       data-theme-option
+                       class="visually-hidden" />
+                <div class="p-3 rounded-3 text-center border
+                    theme-option-box"
+                     style="border-radius:var(--radius-lg) !important;
+                    border:2px solid var(--border-subtle);
+                    background:var(--surface-raised);
+                    transition:all var(--transition-fast);">
+                    <div class="icon-circle mx-auto mb-2"
+                         style="width:44px;height:44px;font-size:18px;
+                        background:var(--skanly-primary-lt);
+                        color:var(--skanly-primary);">
+                        <i class="fas @icon"></i>
+                    </div>
+                    <div class="fw-semibold small mb-1">@label</div>
+                    <div class="text-muted" style="font-size:10px;">@desc</div>
+                </div>
+            </label>
+        }
+    </div>
+</div>
+
+<style>
+    input[data-theme-option]:checked + .theme-option-box {
+        border-color: var(--skanly-primary) !important;
+        background: var(--skanly-primary-lt) !important;
+        box-shadow: 0 0 0 3px rgba(var(--skanly-primary-rgb), .15);
+    }
+</style>
+
+<script>
+    // Highlight the current selection on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        var pref = window.SkanlyTheme?.getPreference() || 'system';
+        var radio = document.querySelector(
+            `input[data-theme-option][value="${pref}"]`);
+        if (radio) radio.checked = true;
+    });
+</script>

@@ -1,124 +1,211 @@
 ﻿@* Skanly.Web/Areas/Owner/Views/Properties/Index.cshtml *@
 @model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Owners.DTOs.OwnerPropertySummaryDto>
+
 @{
     ViewData["Title"] = "My Properties";
     Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+    var statusFilter = ViewBag.StatusFilter as string;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title">
-        <i class="fas fa-building me-2 text-primary"></i>My Properties
-    </h1>
-    <a asp-area="Owner"
-       asp-controller="Properties"
-       asp-action="Create"
-       class="btn btn-primary">
+@* Header *@
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title mb-1">
+            <i class="fas fa-home me-2"
+               style="color:var(--owner-primary);"></i>
+            My Properties
+        </h1>
+        <p class="text-muted mb-0 small">
+            @Model.TotalCount listing@(Model.TotalCount == 1 ? "" : "s")
+        </p>
+    </div>
+    <a asp-action="Create"
+       class="btn fw-semibold"
+       style="background:var(--owner-primary);color:white;">
         <i class="fas fa-plus me-1"></i>Add Property
     </a>
 </div>
 
 @* Status Filter Tabs *@
-<ul class="nav nav-pills mb-4 gap-1">
-    @foreach (var (label, value) in new[]
-    {
-        ("All Active", ""),
-        ("Approved", "Approved"),
-        ("Pending Approval", "Pending"),
-        ("Unavailable", "Unavailable"),
-        ("Deleted", "Deleted")
-    })
-    {
-        <li class="nav-item">
-            <a class="nav-link @(ViewBag.StatusFilter == value ? "active" : "")"
-               asp-action="Index"
-               asp-route-status="@value">@label</a>
-        </li>
+<div class="d-flex gap-2 flex-wrap mb-4">
+    @{
+        var tabs = new[]
+        {
+            ("All",         (string?)null),
+            ("Approved",    "Approved"),
+            ("Pending",     "Pending"),
+            ("Unavailable", "Unavailable"),
+        };
     }
-</ul>
+    @foreach (var (label, value) in tabs)
+    {
+        <a asp-action="Index"
+           asp-route-status="@value"
+           class="btn btn-sm @(statusFilter == value ? "btn-dark" : "btn-outline-secondary")">
+            @label
+        </a>
+    }
+</div>
 
 @if (!Model.Items.Any())
 {
-    <div class="text-center py-5 text-muted">
-        <i class="fas fa-building fa-4x mb-3 opacity-25"></i>
-        <h5>No properties found</h5>
-        <a asp-action="Create" class="btn btn-primary mt-2">
-            <i class="fas fa-plus me-2"></i>Add Your First Property
-        </a>
+    <div class="card owner-card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-home fa-4x mb-4 text-muted opacity-25"></i>
+            <h5 class="fw-bold">No properties found</h5>
+            <p class="text-muted mb-4 small">
+                @(statusFilter is not null
+                    ? $"No {statusFilter.ToLower()} properties."
+                    : "Start by adding your first property listing.")
+            </p>
+            <a asp-action="Create"
+               class="btn"
+               style="background:var(--owner-primary);color:white;">
+                <i class="fas fa-plus me-2"></i>Add Your First Property
+            </a>
+        </div>
     </div>
 }
 else
 {
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-        @foreach (var prop in Model.Items)
+    <div class="row g-4">
+        @foreach (var property in Model.Items)
         {
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0 hover-lift">
+            <div class="col-md-6 col-xl-4" id="prop-@property.PropertyId">
+                <div class="property-card card h-100">
+
+                    @* Image + Badges *@
                     <div class="position-relative">
-                        <img src="@(prop.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                        <img src="@(property.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
                              class="card-img-top object-fit-cover"
-                             height="190" alt="@prop.Title" />
+                             height="190"
+                             alt="@property.Title" />
 
-                        @* Status Badge *@
-                        <span class="badge @prop.StatusBadgeClass
-                            position-absolute top-0 start-0 m-2">
-                            @prop.StatusDisplay
-                        </span>
+                        @* Status badge *@
+                        <div class="position-absolute top-0 start-0 m-2">
+                            @if (property.IsDeleted)
+                            {
+                                <span class="badge bg-secondary">Deleted</span>
+                            }
+                            else if (property.IsApproved)
+                            {
+                                <span class="badge bg-success">Live</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    Pending Review
+                                </span>
+                            }
+                        </div>
 
-                        @* Type Badge *@
-                        <span class="badge bg-dark bg-opacity-60
-                            position-absolute bottom-0 end-0 m-2">
-                            @prop.PropertyTypeDisplay
-                        </span>
+                        @* Availability toggle *@
+                        @if (property.IsApproved && !property.IsDeleted)
+                        {
+                            <div class="position-absolute top-0 end-0 m-2">
+                                <div class="form-check form-switch availability-toggle
+                                    mb-0 d-flex align-items-center gap-1">
+                                    <input class="form-check-input avail-toggle"
+                                           type="checkbox"
+                                           role="switch"
+                                           data-property-id="@property.PropertyId"
+                                    @(property.IsAvailable ? "checked" : "")
+                                           style="cursor:pointer;" />
+                                    <label class="form-check-label small text-white fw-semibold"
+                                           style="text-shadow:0 1px 2px rgba(0,0,0,.5);
+                                        font-size:11px;">
+                                        @(property.IsAvailable ? "Available" : "Unavailable")
+                                    </label>
+                                </div>
+                            </div>
+                        }
+
+                        @* Rating overlay *@
+                        @if (property.AverageRating > 0)
+                        {
+                            <div class="position-absolute bottom-0 end-0 m-2">
+                                <span class="badge"
+                                      style="background:rgba(0,0,0,.5);
+                                    backdrop-filter:blur(4px);">
+                                    ★ @property.AverageRating.ToString("F1")
+                                </span>
+                            </div>
+                        }
                     </div>
 
-                    <div class="card-body">
-                        <h6 class="fw-semibold mb-1 text-truncate">@prop.Title</h6>
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold mb-1 text-truncate"
+                            title="@property.Title">
+                            @property.Title
+                        </h6>
                         <p class="text-muted small mb-2">
-                            <i class="fas fa-map-marker-alt me-1 text-danger"></i>
-                            @prop.AreaNameEn
+                            <i class="fas fa-map-marker-alt me-1 text-danger"
+                               style="font-size:10px;"></i>
+                            @property.AreaNameEn ·
+                            @property.PropertyTypeDisplay
                         </p>
 
                         @* Stats row *@
-                        <div class="d-flex gap-3 small text-muted mb-2">
-                            <span>
-                                <i class="fas fa-calendar-check me-1"></i>
-                                @prop.TotalBookings bookings
-                            </span>
-                            <span>
-                                <i class="fas fa-star text-warning me-1"></i>
-                                @prop.AverageRating.ToString("F1")
-                            </span>
+                        <div class="row g-2 mb-3">
+                            @{
+                                var propStats = new[]
+                                {
+                                    ($"EGP {property.PricePerMonth:N0}/mo",
+                                     "fa-coins", "success"),
+                                    ($"{property.TotalBookings} bookings",
+                                     "fa-calendar-check", "primary"),
+                                    ($"{property.ActiveBookings} active",
+                                     "fa-user", "warning"),
+                                };
+                            }
+                            @foreach (var (val, icon, color) in propStats)
+                            {
+                                <div class="col-4">
+                                    <div class="text-center p-2 rounded-2 bg-light">
+                                        <i class="fas @icon text-@color d-block mb-1"
+                                           style="font-size:12px;"></i>
+                                        <div style="font-size:10px;
+                                            font-weight:600;
+                                            line-height:1.2;">
+                                            @val
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
 
-                    <div class="card-footer bg-transparent d-flex
-                        justify-content-between align-items-center">
-                        <span class="fw-bold text-primary">
-                            EGP @prop.PricePerMonth.ToString("N0")
-                            <span class="fw-normal text-muted small">/mo</span>
-                        </span>
-                        <div class="btn-group btn-group-sm">
-                            <a asp-area="Owner"
-                               asp-controller="Properties"
-                               asp-action="Edit"
-                               asp-route-id="@prop.PropertyId"
-                               class="btn btn-outline-primary">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a asp-area=""
-                               asp-controller="Property"
-                               asp-action="Details"
-                               asp-route-id="@prop.PropertyId"
-                               class="btn btn-outline-secondary">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </div>
+                    @* Actions *@
+                    <div class="card-footer bg-transparent border-top-0
+                        d-flex gap-2 px-3 pb-3">
+                        <a href="/Property/@property.PropertyId"
+                           target="_blank"
+                           class="btn btn-sm btn-outline-secondary"
+                           title="Preview listing">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a asp-action="Edit"
+                           asp-route-id="@property.PropertyId"
+                           class="btn btn-sm btn-outline-primary flex-grow-1">
+                            <i class="fas fa-edit me-1"></i>Edit
+                        </a>
+                        @if (!property.IsDeleted)
+                        {
+                            <button class="btn btn-sm btn-outline-danger
+                                delete-prop-btn"
+                                    data-property-id="@property.PropertyId"
+                                    data-property-title="@property.Title"
+                                    title="Delete listing">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
         }
     </div>
 
+    @* Pagination *@
     @if (Model.TotalPages > 1)
     {
         <nav class="mt-4">
@@ -129,10 +216,119 @@ else
                         <a class="page-link"
                            asp-action="Index"
                            asp-route-page="@i"
-                           asp-route-status="@ViewBag.StatusFilter">@i</a>
+                           asp-route-status="@statusFilter">@i</a>
                     </li>
                 }
             </ul>
         </nav>
     }
+}
+
+@* Delete Confirm Modal *@
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:14px;">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-danger">
+                    Delete Listing
+                </h6>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="text-muted small mb-0" id="deleteModalBody">
+                    Are you sure?
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button class="btn btn-secondary btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button class="btn btn-danger btn-sm fw-semibold"
+                        id="confirmDeleteBtn">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const TOKEN = document.querySelector(
+                'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+            // ── Availability Toggle ────────────────────────────────────────────────────
+            document.querySelectorAll('.avail-toggle').forEach(toggle => {
+                toggle.addEventListener('change', async function () {
+                    const id    = this.dataset.propertyId;
+                    const label = this.parentElement?.querySelector('label');
+
+                    const res = await fetch('/Owner/Properties/ToggleAvailability', {
+                        method : 'POST',
+                        headers: {
+                            'Content-Type'             : 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken' : TOKEN
+                        },
+                        body: `propertyId=${id}`
+                    });
+
+                    const data = await res.json();
+
+                    if (data.success) {
+                        if (label) {
+                            label.textContent =
+                                data.isAvailable ? 'Available' : 'Unavailable';
+                        }
+                    } else {
+                        // Revert the toggle
+                        this.checked = !this.checked;
+                        alert(data.message ?? 'Could not update availability.');
+                    }
+                });
+            });
+
+            // ── Delete Property ────────────────────────────────────────────────────────
+            let deleteId = null;
+
+            document.querySelectorAll('.delete-prop-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    deleteId = this.dataset.propertyId;
+                    document.getElementById('deleteModalBody').textContent =
+                        `Delete "${this.dataset.propertyTitle}"? ` +
+                        'Active bookings will prevent this.';
+                    new bootstrap.Modal(
+                        document.getElementById('deleteModal')).show();
+                });
+            });
+
+            document.getElementById('confirmDeleteBtn').addEventListener(
+                'click', async function () {
+                    bootstrap.Modal.getInstance(
+                        document.getElementById('deleteModal')).hide();
+
+                    const res = await fetch('/Owner/Properties/Delete', {
+                        method : 'POST',
+                        headers: {
+                            'Content-Type'             : 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken' : TOKEN
+                        },
+                        body: `propertyId=${deleteId}`
+                    });
+
+                    const data = await res.json();
+                    const card = document.getElementById(`prop-${deleteId}`);
+
+                    if (data.success) {
+                        card.style.transition = 'opacity .4s';
+                        card.style.opacity    = '0';
+                        setTimeout(() => card.remove(), 400);
+                    } else {
+                        alert(data.message ?? 'Cannot delete this property.');
+                    }
+                });
+        })();
+    </script>
 }

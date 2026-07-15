@@ -1,0 +1,29 @@
+﻿@* Skanly.Web/Views/Shared/_ThemeToggle.cshtml *@
+@* Drop-in button for any topbar. Wired automatically by theme-manager.js *@
+@{
+    // Read current theme server-side for initial render
+    // (the JS will update it immediately on client anyway)
+    var cookie = Context.Request.Cookies["skanly-theme"];
+    var initDark = cookie == "dark";
+}
+
+<button type="button"
+        class="btn btn-sm d-flex align-items-center gap-2"
+        data-skanly-theme-toggle
+        aria-label="@(initDark ? "Switch to light mode" : "Switch to dark mode")"
+        style="padding:5px 10px;
+    border-radius:var(--radius-md);
+    border:1px solid var(--border-subtle);
+    background:var(--surface-hover);
+    color:var(--text-secondary);
+    transition:all var(--transition-fast);"
+        title="Toggle dark/light mode">
+    <i class="@(initDark ? "fas fa-sun" : "fas fa-moon")"
+       data-theme-icon
+       style="font-size:13px;"></i>
+    <span class="d-none d-md-inline"
+          data-theme-label
+          style="font-size:12px;">
+        @(initDark ? "Light Mode" : "Dark Mode")
+    </span>
+</button>

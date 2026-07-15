@@ -21,6 +21,9 @@ public class PropertyService : IPropertyService
     private readonly IValidator<UpdatePropertyDto> _updateValidator;
     private readonly ILogger<PropertyService> _logger;
     private readonly INotificationService _notificationService;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+    private readonly ILocalizationService _loc;
 
     public PropertyService(
         IUnitOfWork uow,
@@ -28,7 +31,9 @@ public class PropertyService : IPropertyService
         IValidator<CreatePropertyDto> createValidator,
         IValidator<UpdatePropertyDto> updateValidator,
         ILogger<PropertyService> logger,
-        INotificationService notificationService)
+        INotificationService notificationService,
+         IMapper mapper,
+        ILocalizationService localizationService)
     {
         _uow = uow;
         _fileStorage = fileStorage;
@@ -36,6 +41,9 @@ public class PropertyService : IPropertyService
         _updateValidator = updateValidator;
         _logger = logger;
         _notificationService = notificationService;
+        _unitOfWork = uow;
+        _mapper = mapper;
+        _loc = localizationService;
     }
 
     // ── SearchAsync ───────────────────────────────────────────────────────────

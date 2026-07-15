@@ -1,0 +1,649 @@
+﻿@* Skanly.Web/Areas/Owner/Views/Shared/_OwnerLayout.cshtml *@
+@{
+    var _culture = System.Globalization.CultureInfo
+        .CurrentUICulture.TwoLetterISOLanguageName;
+
+    var _isAr = _culture == "ar";
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+
+    <title>@ViewData["Title"] — Skanly</title>
+
+    @* ① FLASH GUARD *@
+    @await Html.PartialAsync("_ThemeFlashGuard")
+
+    @* ② RTL Bootstrap *@
+    @await Html.PartialAsync("_RtlHead")
+
+    @* ③ Theme *@
+    <link rel="stylesheet"
+          href="~/css/theme.css"
+          asp-append-version="true" />
+
+    @* ④ Font Awesome *@
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+          rel="stylesheet" />
+
+    @* ⑤ Fonts *@
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cairo:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet" />
+
+    <style>
+            /* ── Variables ────────────────────────────────────────────────────── */
+            :root {
+                --owner-primary: #10b981;
+                --owner-primary-dk: #059669;
+                --owner-accent: #6C63FF;
+                --sidebar-width: 250px;
+                --sidebar-bg: #064e3b;
+                --sidebar-text: rgba(255,255,255,.78);
+                --sidebar-hover: rgba(255,255,255,.1);
+                --sidebar-active: rgba(16,185,129,.3);
+                --topbar-height: 60px;
+            }
+
+            [data-bs-theme="dark"] {
+                --bs-body-bg: #0a1628;
+                --sidebar-bg: #022c22;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Inter', sans-serif;
+                font-size: 14px;
+            }
+
+            /* ── Sidebar ──────────────────────────────────────────────────────── */
+            #ownerSidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: var(--sidebar-width);
+                height: 100vh;
+                background: var(--sidebar-bg);
+                z-index: 1030;
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                transition: transform .3s ease;
+            }
+
+                #ownerSidebar::-webkit-scrollbar {
+                    width: 4px;
+                }
+
+                #ownerSidebar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,.15);
+                    border-radius: 2px;
+                }
+
+            .owner-logo {
+                padding: 18px 20px 14px;
+                border-bottom: 1px solid rgba(255,255,255,.1);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+                .owner-logo .logo-mark {
+                    width: 36px;
+                    height: 36px;
+                    background: var(--owner-primary);
+                    border-radius: 9px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .owner-logo .logo-title {
+                    color: #fff;
+                    font-size: 16px;
+                    font-weight: 700;
+                }
+
+                .owner-logo .logo-role {
+                    color: rgba(255,255,255,.45);
+                    font-size: 10px;
+                }
+
+            /* Owner profile card in sidebar */
+            .owner-profile-card {
+                padding: 14px 20px;
+                border-bottom: 1px solid rgba(255,255,255,.08);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+                .owner-profile-card img {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    object-fit: cover;
+                    border: 2px solid rgba(255,255,255,.2);
+                }
+
+                .owner-profile-card .owner-name {
+                    color: #fff;
+                    font-size: 13px;
+                    font-weight: 600;
+                    line-height: 1.2;
+                }
+
+                .owner-profile-card .owner-status {
+                    font-size: 10px;
+                    color: var(--owner-primary);
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
+                    .owner-profile-card .owner-status::before {
+                        content: '';
+                        width: 6px;
+                        height: 6px;
+                        background: var(--owner-primary);
+                        border-radius: 50%;
+                    }
+
+            /* Nav */
+            .owner-nav {
+                padding: 10px 0;
+                flex: 1;
+            }
+
+            .nav-group-label {
+                color: rgba(255,255,255,.3);
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .1em;
+                padding: 10px 20px 4px;
+            }
+
+            .owner-nav-link {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 20px;
+                color: var(--sidebar-text);
+                text-decoration: none;
+                transition: all .15s;
+                position: relative;
+            }
+
+                .owner-nav-link:hover {
+                    background: var(--sidebar-hover);
+                    color: #fff;
+                }
+
+                .owner-nav-link.active {
+                    background: var(--sidebar-active);
+                    color: #fff;
+                }
+
+                    .owner-nav-link.active::before {
+                        content: '';
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        bottom: 0;
+                        width: 3px;
+                        background: var(--owner-primary);
+                        border-radius: 0 3px 3px 0;
+                    }
+
+                .owner-nav-link .nav-icon {
+                    width: 18px;
+                    text-align: center;
+                    font-size: 13px;
+                    flex-shrink: 0;
+                }
+
+                .owner-nav-link .nav-badge {
+                    margin-left: auto;
+                }
+
+            /* ── Topbar ───────────────────────────────────────────────────────── */
+            #ownerTopbar {
+                position: fixed;
+                top: 0;
+                left: var(--sidebar-width);
+                right: 0;
+                height: var(--topbar-height);
+                background: var(--bs-body-bg);
+                border-bottom: 1px solid var(--bs-border-color);
+                z-index: 1020;
+                display: flex;
+                align-items: center;
+                padding: 0 24px;
+                gap: 12px;
+            }
+
+            /* ── Content ──────────────────────────────────────────────────────── */
+            #ownerContent {
+                margin-left: var(--sidebar-width);
+                margin-top: var(--topbar-height);
+                padding: 24px;
+                min-height: calc(100vh - var(--topbar-height));
+            }
+
+            /* ── Cards ────────────────────────────────────────────────────────── */
+            .owner-card {
+                border: 1px solid var(--bs-border-color);
+                border-radius: 12px;
+                box-shadow: 0 1px 3px rgba(0,0,0,.04);
+            }
+
+                .owner-card .card-header {
+                    background: transparent;
+                    border-bottom: 1px solid var(--bs-border-color);
+                    padding: 14px 20px;
+                    font-weight: 600;
+                    font-size: 13px;
+                }
+
+            /* ── KPI ──────────────────────────────────────────────────────────── */
+            .stat-card {
+                border: 1px solid var(--bs-border-color);
+                border-radius: 12px;
+                transition: transform .2s, box-shadow .2s;
+                cursor: default;
+            }
+
+                .stat-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+                }
+
+            /* ── Property card ────────────────────────────────────────────────── */
+            .property-card {
+                border: 1px solid var(--bs-border-color);
+                border-radius: 12px;
+                overflow: hidden;
+                transition: transform .2s, box-shadow .2s;
+            }
+
+                .property-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0,0,0,.1);
+                }
+
+            /* ── Tables ───────────────────────────────────────────────────────── */
+            .owner-table th {
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                color: var(--bs-secondary-color);
+                border-bottom-width: 1px;
+                padding: 10px 16px;
+            }
+
+            .owner-table td {
+                padding: 12px 16px;
+            }
+
+            /* ── Mobile ───────────────────────────────────────────────────────── */
+            @@media (max-width: 992px) {
+                #ownerSidebar {
+                    transform: translateX(-100%);
+                }
+
+                    #ownerSidebar.open {
+                        transform: translateX(0);
+                    }
+
+                #ownerTopbar {
+                    left: 0;
+                }
+
+                #ownerContent {
+                    margin-left: 0;
+                }
+            }
+
+            /* ── Page title ───────────────────────────────────────────────────── */
+            .page-title {
+                font-size: 20px;
+                font-weight: 700;
+                margin: 0;
+            }
+
+            /* ── Toggle switch ────────────────────────────────────────────────── */
+            .availability-toggle .form-check-input {
+                width: 40px;
+                height: 22px;
+                cursor: pointer;
+            }
+
+            /* ── Icon circle ──────────────────────────────────────────────────── */
+            .icon-circle {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+    </style>
+</head>
+<body>
+
+    @* ── SIDEBAR ──────────────────────────────────────────────────────────────── *@
+    <aside id="ownerSidebar">
+
+        @* Logo *@
+        <div class="owner-logo">
+            <div class="logo-mark">
+                <i class="fas fa-home text-white" style="font-size:15px;"></i>
+            </div>
+            <div>
+                <div class="logo-title">Skanly</div>
+                <div class="logo-role">Owner Portal</div>
+            </div>
+        </div>
+
+        @* Owner profile chip *@
+        @{
+            var ownerName = ViewBag.OwnerFullName as string ?? User.Identity?.Name ?? "Owner";
+            var ownerImage = ViewBag.OwnerImageUrl as string ?? "/images/default-avatar.png";
+            var isVerified = ViewBag.OwnerIsVerified as bool? ?? false;
+        }
+        <div class="owner-profile-card">
+            <img src="@ownerImage" alt="@ownerName" />
+            <div class="min-w-0">
+                <div class="owner-name text-truncate">@ownerName</div>
+                <div class="owner-status">
+                    @(isVerified ? "Verified Owner" : "Unverified")
+                </div>
+            </div>
+            <a asp-area="Owner" asp-controller="Profile" asp-action="Index"
+               class="ms-auto"
+               style="color:rgba(255,255,255,.4);"
+               title="Edit profile">
+                <i class="fas fa-edit" style="font-size:12px;"></i>
+            </a>
+        </div>
+
+        @* Navigation *@
+        <nav class="owner-nav">
+
+            <div class="nav-group-label">Overview</div>
+
+            <a asp-area="Owner" asp-controller="Dashboard" asp-action="Index"
+               class="owner-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+                <span class="nav-icon"><i class="fas fa-tachometer-alt"></i></span>
+                Dashboard
+            </a>
+
+            <div class="nav-group-label">Properties</div>
+
+            <a asp-area="Owner" asp-controller="Properties" asp-action="Index"
+               class="owner-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Properties" ? "active" : "")">
+                <span class="nav-icon"><i class="fas fa-home"></i></span>
+                My Properties
+                @{
+                    var propCount = ViewBag.PropertyCount as int?;
+                }
+                @if (propCount > 0)
+                {
+                    <span class="nav-badge badge bg-white bg-opacity-20
+                        text-white" style="font-size:10px;">
+                        @propCount
+                    </span>
+                }
+            </a>
+
+            <a asp-area="Owner" asp-controller="Properties" asp-action="Create"
+               class="owner-nav-link">
+                <span class="nav-icon"><i class="fas fa-plus-circle"></i></span>
+                Add Property
+            </a>
+
+            <div class="nav-group-label">Bookings</div>
+
+            <a asp-area="Owner" asp-controller="BookingRequests" asp-action="Index"
+               class="owner-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "BookingRequests" ? "active" : "")">
+                <span class="nav-icon"><i class="fas fa-inbox"></i></span>
+                Booking Requests
+                @{
+                    var pendingCount = ViewBag.PendingRequestsCount as int?;
+                }
+                @if (pendingCount > 0)
+                {
+                    <span class="nav-badge badge bg-warning text-dark"
+                          style="font-size:10px;">
+                        @pendingCount
+                    </span>
+                }
+            </a>
+
+            <div class="nav-group-label">Finance</div>
+
+            <a asp-area="Owner" asp-controller="Earnings" asp-action="Index"
+               class="owner-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Earnings" ? "active" : "")">
+                <span class="nav-icon"><i class="fas fa-coins"></i></span>
+                Earnings
+            </a>
+
+            <div class="nav-group-label">Communication</div>
+
+            <a asp-area="Owner" asp-controller="Chat" asp-action="OwnerIndex"
+               class="owner-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Chat" ? "active" : "")">
+                <span class="nav-icon"><i class="fas fa-comments"></i></span>
+                Messages
+                @{
+                    var unreadMsgs = ViewBag.UnreadMessages as int?;
+                }
+                @if (unreadMsgs > 0)
+                {
+                    <span class="nav-badge badge"
+                          style="background:var(--owner-primary);
+                        font-size:10px;">
+                        @unreadMsgs
+                    </span>
+                }
+            </a>
+
+            <a asp-controller="Notifications" asp-action="Index"
+               asp-area=""
+               class="owner-nav-link">
+                <span class="nav-icon"><i class="fas fa-bell"></i></span>
+                Notifications
+                @{
+                    var unreadNotifs = ViewBag.UnreadNotifications as int?;
+                }
+                @if (unreadNotifs > 0)
+                {
+                    <span class="nav-badge badge bg-danger"
+                          style="font-size:10px;">
+                        @unreadNotifs
+                    </span>
+                }
+            </a>
+
+            <div class="nav-group-label">Account</div>
+
+            <a asp-area="Owner" asp-controller="Profile" asp-action="Index"
+               class="owner-nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Profile" ? "active" : "")">
+                <span class="nav-icon"><i class="fas fa-user-circle"></i></span>
+                My Profile
+            </a>
+
+            <a asp-area="Owner" asp-controller="Profile" asp-action="VerifyIdentity"
+               class="owner-nav-link">
+                <span class="nav-icon"><i class="fas fa-shield-alt"></i></span>
+                Verification
+                @if (!isVerified)
+                {
+                    <span class="nav-badge badge bg-danger"
+                          style="font-size:10px;">!</span>
+                }
+            </a>
+
+        </nav>
+
+        @* Sign out *@
+        <div class="px-4 py-3 border-top"
+             style="border-color:rgba(255,255,255,.08)!important;">
+            <a asp-area="" asp-controller="Account" asp-action="Logout"
+               class="d-flex align-items-center gap-2 text-decoration-none"
+               style="color:rgba(255,255,255,.5);font-size:13px;">
+                <i class="fas fa-sign-out-alt"></i>
+                Sign Out
+            </a>
+        </div>
+    </aside>
+
+    @* ── TOPBAR ────────────────────────────────────────────────────────────────── *@
+    <header id="ownerTopbar">
+
+        @* Mobile toggle *@
+        <button class="btn btn-sm d-lg-none me-2"
+                id="ownerSidebarToggle"
+                style="padding:5px 10px;">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        @* Page title breadcrumb *@
+        <div class="me-auto">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0" style="font-size:12px;">
+                    <li class="breadcrumb-item">
+                        <a asp-area="Owner"
+                           asp-controller="Dashboard"
+                           asp-action="Index"
+                           class="text-muted">
+                            Owner
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active text-truncate"
+                        style="max-width:200px;">
+                        @(ViewData["Title"] as string ?? "Dashboard")
+                    </li>
+                </ol>
+            </nav>
+        </div>
+
+        @* Pending requests quick badge *@
+        @if (ViewBag.PendingRequestsCount is int pending && pending > 0)
+        {
+            <a asp-area="Owner"
+               asp-controller="BookingRequests"
+               asp-action="Index"
+               class="btn btn-sm btn-warning d-none d-md-flex
+                align-items-center gap-2"
+               style="font-size:12px;">
+                <i class="fas fa-inbox"></i>
+                @pending pending request@(pending == 1 ? "" : "s")
+            </a>
+        }
+        @* Language Switcher *@
+        @await Html.PartialAsync("_LanguageSwitcher")
+
+        @* Theme Toggle *@
+        @await Html.PartialAsync("_ThemeToggle")
+
+        @* Notification bell *@
+        @await Html.PartialAsync(
+            "~/Views/Notifications/_NotificationDropdown.cshtml")
+
+        @* Avatar *@
+        <div class="dropdown">
+            <button class="btn btn-sm p-0 border-0"
+                    data-bs-toggle="dropdown">
+                <img src="@ownerImage"
+                     class="rounded-circle"
+                     width="32" height="32"
+                     style="object-fit:cover;" />
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li class="px-3 py-2">
+                    <div class="fw-semibold small">@ownerName</div>
+                    <div class="text-muted" style="font-size:11px;">Property Owner</div>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                    <a class="dropdown-item small"
+                       asp-area="Owner"
+                       asp-controller="Profile"
+                       asp-action="Index">
+                        <i class="fas fa-user me-2 text-muted"></i>My Profile
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item small text-danger"
+                       asp-area=""
+                       asp-controller="Account"
+                       asp-action="Logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    @* ── CONTENT ───────────────────────────────────────────────────────────────── *@
+    <main id="ownerContent">
+
+        @* Flash messages *@
+        @if (TempData["Success"] is string ok)
+        {
+            <div class="alert alert-success alert-dismissible fade show mb-4
+                d-flex align-items-center gap-2"
+                 style="border-radius:10px;font-size:13px;">
+                <i class="fas fa-check-circle text-success"></i>
+                @ok
+                <button type="button" class="btn-close ms-auto"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] is string err)
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-4
+                d-flex align-items-center gap-2"
+                 style="border-radius:10px;font-size:13px;">
+                <i class="fas fa-exclamation-circle text-danger"></i>
+                @err
+                <button type="button" class="btn-close ms-auto"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+
+    <script>
+        // Mobile sidebar
+        document.getElementById('ownerSidebarToggle')
+        ?.addEventListener('click', () => {
+        document.getElementById('ownerSidebar')
+        .classList.toggle('open');
+        });
+
+        // Chart.js globals
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.font.size   = 12;
+        Chart.defaults.color       = '#6b7280';
+    </script>
+
+    @Html.AntiForgeryToken()
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

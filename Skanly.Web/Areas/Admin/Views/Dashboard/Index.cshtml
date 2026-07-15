@@ -1,0 +1,438 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Dashboard/Index.cshtml *@
+@model Skanly.Application.Features.Analytics.DTOs.AnalyticsSummaryDto
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+@* ── Page Header ──────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title">
+            <i class="fas fa-tachometer-alt me-2 text-primary"
+               style="font-size:20px;"></i>
+            Admin Dashboard
+        </h1>
+        <p class="text-muted mb-0 mt-1 small">
+            Welcome back, @User.Identity?.Name ·
+            Last 30 days overview
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Analytics" asp-action="Index"
+           class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-chart-line me-1"></i>Full Analytics
+        </a>
+        <button class="btn btn-sm btn-primary"
+                id="refreshDashboard">
+            <i class="fas fa-sync-alt me-1"></i>Refresh
+        </button>
+    </div>
+</div>
+
+@* ── Urgent Alerts ─────────────────────────────────────────────────────────── *@
+@if (Model.OpenReports > 0 || Model.PendingProperties > 0 ||
+     Model.PendingBookings > 0)
+{
+    <div class="row g-3 mb-4">
+        @if (Model.OpenReports > 0)
+        {
+            <div class="col-auto">
+                <div class="alert alert-danger d-flex align-items-center
+                    gap-3 py-2 px-3 mb-0"
+                     style="border-radius:10px;font-size:13px;">
+                    <i class="fas fa-flag fa-fw"></i>
+                    <strong>@Model.OpenReports open report(s)</strong>
+                    require immediate attention.
+                    <a asp-controller="Reports" asp-action="Index"
+                       class="ms-3 btn btn-sm btn-danger">Review</a>
+                </div>
+            </div>
+        }
+        @if (Model.PendingProperties > 0)
+        {
+            <div class="col-auto">
+                <div class="alert alert-warning d-flex align-items-center
+                    gap-3 py-2 px-3 mb-0"
+                     style="border-radius:10px;font-size:13px;">
+                    <i class="fas fa-home fa-fw"></i>
+                    <strong>@Model.PendingProperties property listing(s)</strong>
+                    awaiting approval.
+                    <a asp-controller="Properties" asp-action="Pending"
+                       class="ms-3 btn btn-sm btn-warning">Review</a>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* ── KPI Cards ─────────────────────────────────────────────────────────────── *@
+<div class="row g-3 mb-4">
+    @{
+        var kpis = new[]
+        {
+            new
+            {
+                Label    = "Total Users",
+                Value    = Model.TotalUsers.ToString("N0"),
+                Sub      = $"+{Model.NewUsersInRange} new",
+                Icon     = "fa-users",
+                Color    = "primary",
+                Trend    = Model.UserGrowthPct,
+                Link     = "/Admin/Users"
+            },
+            new
+            {
+                Label    = "Bookings",
+                Value    = Model.TotalBookings.ToString("N0"),
+                Sub      = $"{Model.BookingConversionRate}% confirmed",
+                Icon     = "fa-calendar-check",
+                Color    = "success",
+                Trend    = Model.BookingGrowthPct,
+                Link     = "/Admin/Bookings"
+            },
+            new
+            {
+                Label    = "Revenue",
+                Value    = $"EGP {Model.TotalRevenue:N0}",
+                Sub      = $"Commission: EGP {Model.TotalCommission:N0}",
+                Icon     = "fa-coins",
+                Color    = "warning",
+                Trend    = Model.RevenueGrowthPct,
+                Link     = "/Admin/Analytics/Revenue"
+            },
+            new
+            {
+                Label    = "Properties",
+                Value    = Model.TotalProperties.ToString("N0"),
+                Sub      = $"{Model.PendingProperties} pending",
+                Icon     = "fa-home",
+                Color    = "info",
+                Trend    = 0.0,
+                Link     = "/Admin/Properties"
+            },
+            new
+            {
+                Label    = "Reviews",
+                Value    = Model.TotalReviews.ToString("N0"),
+                Sub      = $"Avg {Model.AveragePlatformRating:F1} ★",
+                Icon     = "fa-star",
+                Color    = "danger",
+                Trend    = 0.0,
+                Link     = "/Admin/Reviews"
+            },
+            new
+            {
+                Label    = "Verified Students",
+                Value    = Model.VerifiedStudents.ToString("N0"),
+                Sub      = $"{Model.VerificationRate}% rate",
+                Icon     = "fa-shield-check",
+                Color    = "success",
+                Trend    = 0.0,
+                Link     = "/Admin/Verifications"
+            },
+        };
+    }
+
+    @foreach (var kpi in kpis)
+    {
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="@kpi.Link"
+               class="text-decoration-none">
+                <div class="card kpi-card">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <div class="kpi-icon bg-@kpi.Color bg-opacity-15
+                                text-@kpi.Color">
+                                <i class="fas @kpi.Icon"></i>
+                            </div>
+                            @if (kpi.Trend != 0)
+                            {
+                                <span class="ms-auto badge
+                                    @(kpi.Trend > 0 ? "bg-success" : "bg-danger")
+                                    bg-opacity-15
+                                    @(kpi.Trend > 0 ? "text-success" : "text-danger")
+                                    badge-pill"
+                                      style="font-size:10px;">
+                                    @(kpi.Trend > 0 ? "↑" : "↓")
+                                    @Math.Abs(kpi.Trend)%
+                                </span>
+                            }
+                        </div>
+                        <div class="fw-bold mb-0"
+                             style="font-size:18px;color:var(--bs-body-color);">
+                            @kpi.Value
+                        </div>
+                        <div class="text-muted small mt-1">@kpi.Label</div>
+                        <div class="text-muted" style="font-size:11px;">
+                            @kpi.Sub
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+@* ── Charts Row ─────────────────────────────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+
+    @* Activity Chart — large *@
+    <div class="col-lg-8">
+        <div class="card admin-card h-100">
+            <div class="card-header d-flex justify-content-between
+                align-items-center">
+                <span>
+                    <i class="fas fa-chart-area me-2 text-primary"></i>
+                    Platform Activity — Last 30 Days
+                </span>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary active"
+                            data-period="30">
+                        30D
+                    </button>
+                    <button class="btn btn-outline-secondary"
+                            data-period="7">
+                        7D
+                    </button>
+                </div>
+            </div>
+            <div class="card-body pt-3 pb-4 px-4">
+                <canvas id="activityChart" height="90"></canvas>
+            </div>
+        </div>
+    </div>
+
+    @* Booking Status Doughnut *@
+    <div class="col-lg-4">
+        <div class="card admin-card h-100">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2 text-success"></i>
+                Booking Status
+            </div>
+            <div class="card-body d-flex flex-column
+                align-items-center justify-content-center py-3">
+                <div style="max-width:200px;width:100%;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+                @* Legend *@
+                <div class="mt-3 w-100">
+                    @{
+                        var statuses = new[]
+                        {
+                            ("Confirmed",      "#10b981"),
+                            ("Pending",        "#f59e0b"),
+                            ("Accepted",       "#3b82f6"),
+                            ("Cancelled",      "#6b7280"),
+                            ("Rejected",       "#ef4444"),
+                        };
+                    }
+                    @foreach (var (label, color) in statuses)
+                    {
+                        <div class="d-flex justify-content-between
+                            align-items-center mb-1"
+                             style="font-size:12px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="rounded-circle d-inline-block"
+                                      style="width:8px;height:8px;
+                                background:@color;"></span>
+                                @label
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Pending Queues Row ─────────────────────────────────────────────────────── *@
+<div class="row g-4 mb-4">
+
+    @* Pending Properties *@
+    <div class="col-lg-6">
+        <div class="card admin-card">
+            <div class="card-header d-flex justify-content-between
+                align-items-center">
+                <span>
+                    <i class="fas fa-clock me-2 text-warning"></i>
+                    Pending Property Approvals
+                </span>
+                <a asp-controller="Properties" asp-action="Pending"
+                   class="btn btn-sm btn-outline-warning">
+                    View All
+                </a>
+            </div>
+            <div id="pendingPropertiesWidget" class="p-3">
+                <div class="text-center text-muted py-3">
+                    <div class="spinner-border spinner-border-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Recent Activity *@
+    <div class="col-lg-6">
+        <div class="card admin-card">
+            <div class="card-header d-flex justify-content-between
+                align-items-center">
+                <span>
+                    <i class="fas fa-bell me-2 text-primary"></i>
+                    Recent Platform Activity
+                </span>
+            </div>
+            <div id="recentActivityWidget" class="p-3">
+                <div class="text-center text-muted py-3">
+                    <div class="spinner-border spinner-border-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Quick Action Cards ─────────────────────────────────────────────────────── *@
+<div class="row g-3">
+    @{
+        var quickActions = new[]
+        {
+            ("Approve Properties", "fa-home", "warning",
+             "/Admin/Properties/Pending",
+             "Review pending property listings"),
+            ("Process Verifications", "fa-shield-check", "info",
+             "/Admin/Verifications",
+             "Review identity verification documents"),
+            ("Handle Reports", "fa-flag", "danger",
+             "/Admin/Reports",
+             "Investigate open user reports"),
+            ("View Analytics", "fa-chart-line", "primary",
+             "/Admin/Analytics",
+             "Full platform analytics and reports"),
+            ("Manage Universities", "fa-graduation-cap", "success",
+             "/Admin/Universities",
+             "Add or edit university records"),
+            ("Revenue Report", "fa-coins", "warning",
+             "/Admin/Analytics/Revenue",
+             "Commission and payment breakdown"),
+        };
+    }
+    @foreach (var (title, icon, color, link, desc) in quickActions)
+    {
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="@link"
+               class="card admin-card text-decoration-none hover-lift">
+                <div class="card-body text-center py-4 px-3">
+                    <div class="icon-circle bg-@color bg-opacity-15
+                        text-@color mx-auto mb-3"
+                         style="width:48px;height:48px;font-size:18px;">
+                        <i class="fas @icon"></i>
+                    </div>
+                    <div class="fw-semibold text-body small mb-1">
+                        @title
+                    </div>
+                    <div class="text-muted" style="font-size:11px;">
+                        @desc
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            'use strict';
+
+            // ── Chart data from server ─────────────────────────────────────────────────
+            const actData    = @Html.Raw(
+                            System.Text.Json.JsonSerializer.Serialize(Model.DailyActivityChart))
+            const statusData = @Html.Raw(
+                            System.Text.Json.JsonSerializer.Serialize(Model.BookingStatusChart));
+
+            // ── Activity Trend ─────────────────────────────────────────────────────────
+            const actCtx = document.getElementById('activityChart').getContext('2d');
+            const actChart = new Chart(actCtx, {
+                type: 'line',
+                data: {
+                    labels  : actData.labels,
+                    datasets: actData.datasets.map(ds => ({
+                        label          : ds.label,
+                        data           : ds.data,
+                        borderColor    : ds.borderColor,
+                        backgroundColor: ds.backgroundColor,
+                        borderWidth    : 2,
+                        fill           : ds.fill,
+                        tension        : 0.4,
+                        pointRadius    : 2,
+                        pointHoverRadius: 5
+                    }))
+                },
+                options: {
+                    responsive : true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins    : {
+                        legend : { position: 'top', labels: { boxWidth: 10 } },
+                        tooltip: { usePointStyle: true }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,.05)' },
+                            ticks: { maxTicksLimit: 6 }
+                        },
+                        x: {
+                            grid : { display: false },
+                            ticks: { maxTicksLimit: 10 }
+                        }
+                    }
+                }
+            });
+
+            // ── Status Doughnut ────────────────────────────────────────────────────────
+            new Chart(document.getElementById('statusChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels  : statusData.labels,
+                    datasets: [{
+                        data           : statusData.data,
+                        backgroundColor: statusData.backgroundColors,
+                        borderWidth    : 2,
+                        borderColor    : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '68%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // ── Lazy-load pending properties widget ────────────────────────────────────
+            fetch('/Admin/Properties/PendingWidget')
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('pendingPropertiesWidget').innerHTML = html;
+                })
+                .catch(() => {
+                    document.getElementById('pendingPropertiesWidget').innerHTML =
+                        '<p class="text-muted text-center small py-2">Could not load.</p>';
+                });
+
+            // ── Lazy-load recent activity ──────────────────────────────────────────────
+            fetch('/Admin/Dashboard/RecentActivity')
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById('recentActivityWidget').innerHTML = html;
+                })
+                .catch(() => {
+                    document.getElementById('recentActivityWidget').innerHTML =
+                        '<p class="text-muted text-center small py-2">Could not load.</p>';
+                });
+
+            // ── Refresh button ─────────────────────────────────────────────────────────
+            document.getElementById('refreshDashboard').addEventListener('click', () => {
+                window.location.reload();
+            });
+        })();
+    </script>
+}

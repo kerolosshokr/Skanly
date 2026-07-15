@@ -1,0 +1,243 @@
+﻿/* Skanly.Web/wwwroot/css/utilities.css
+   ─────────────────────────────────────────────────────────────────────────
+   Responsive & utility classes consumed across all portals.
+   Import AFTER theme.css.
+   ─────────────────────────────────────────────────────────────────────── */
+
+/* ── Object fit helpers ───────────────────────────────────────────────── */
+.object-fit-cover {
+    object-fit: cover;
+}
+
+.object-fit-contain {
+    object-fit: contain;
+}
+
+/* ── Min-width 0 (flex truncation fix) ────────────────────────────────── */
+.min-w-0 {
+    min-width: 0;
+}
+
+/* ── Hover lift ───────────────────────────────────────────────────────── */
+.hover-lift {
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+    .hover-lift:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-card-hover) !important;
+    }
+
+/* ── Hover background ─────────────────────────────────────────────────── */
+.hover-bg {
+    transition: background-color var(--transition-fast);
+}
+
+    .hover-bg:hover {
+        background-color: var(--surface-hover) !important;
+    }
+
+/* ── Icon circles ─────────────────────────────────────────────────────── */
+.icon-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ── Gradient text ────────────────────────────────────────────────────── */
+.gradient-text {
+    background: linear-gradient(135deg, var(--skanly-primary), #9c55ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Skeleton loading ─────────────────────────────────────────────────── */
+.skeleton {
+    animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+.skeleton-text {
+    height: 1em;
+    border-radius: var(--radius-sm);
+}
+
+.skeleton-circle {
+    border-radius: 50%;
+}
+
+/* ── Glass morphism card (hero sections, banners) ─────────────────────── */
+.glass-card {
+    background: rgba(255, 255, 255, .75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, .5);
+}
+
+[data-bs-theme="dark"] .glass-card {
+    background: rgba(26, 26, 46, .75);
+    border-color: rgba(255, 255, 255, .08);
+}
+
+/* ── Responsive grid gaps ─────────────────────────────────────────────── */
+@media (max-width: 576px) {
+    .g-xs-2 {
+        gap: .5rem !important;
+    }
+
+    .gap-xs-2 {
+        gap: .5rem !important;
+    }
+}
+
+/* ── Truncation helpers ───────────────────────────────────────────────── */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Soft shadow card (used across all portals) ───────────────────────── */
+.soft-card {
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+    .soft-card:hover {
+        box-shadow: var(--shadow-card-hover);
+        transform: translateY(-2px);
+    }
+
+/* ── Stat value ───────────────────────────────────────────────────────── */
+.stat-value {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+}
+
+/* ── Section label (sidebar/form group headers) ───────────────────────── */
+.section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-disabled);
+    padding: 10px 0 4px;
+}
+
+/* ── Focus visible (accessibility) ───────────────────────────────────── */
+:focus-visible {
+    outline: 2px solid var(--skanly-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* ── Print styles ─────────────────────────────────────────────────────── */
+@media print {
+    #adminSidebar,
+    #ownerSidebar,
+    #studentSidebar,
+    #adminTopbar,
+    #ownerTopbar,
+    #studentTopbar,
+    #mobileBottomNav,
+    .no-print {
+        display: none !important;
+    }
+
+    #adminContent,
+    #ownerContent,
+    #studentContent {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .card {
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ── Mobile-specific ──────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+    .hide-xs {
+        display: none !important;
+    }
+
+    .card-body {
+        padding: 1rem !important;
+    }
+
+    .page-title {
+        font-size: 18px;
+    }
+
+    /* Tables scroll horizontally on mobile */
+    .table-responsive-xs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ── Tablet-specific ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .hide-sm {
+        display: none !important;
+    }
+}
+
+/* ── Property card responsive height ─────────────────────────────────── */
+@media (max-width: 576px) {
+    .s-property-card .card-img-top,
+    .property-card .card-img-top {
+        height: 160px !important;
+    }
+}
+
+/* ── Sidebar overlay on mobile ────────────────────────────────────────── */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg);
+    z-index: 1029;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+    .sidebar-backdrop.active {
+        display: block;
+        opacity: 1;
+    }
+
+/* ── Smooth page transitions ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+    .page-enter {
+        animation: page-fade-in var(--transition-slow) ease forwards;
+    }
+}
+
+@keyframes page-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

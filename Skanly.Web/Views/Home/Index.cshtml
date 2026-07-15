@@ -1,184 +1,111 @@
-﻿@{
-    ViewData["Title"] = "Home";
+﻿@* Skanly.Web/Views/Home/Index.cshtml — localized hero section *@
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<Skanly.Web.Resources.SharedResource> L
+@{
+    var isAr = System.Globalization.CultureInfo
+        .CurrentUICulture.TwoLetterISOLanguageName == "ar";
 }
 
-<!-- ================= HERO SECTION ================= -->
-<section class="hero-section position-relative">
+@* Hero Section *@
+<section class="hero-section py-5"
+         style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);
+    min-height:80vh;
+    display:flex;align-items:center;">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
 
-    <img src="~/images/home/hero.jpg"
-         class="hero-image"
-         alt="Skanly Hero" />
+                @* Language switcher top-right *@
+                <div class="d-flex @(isAr ? "justify-content-start" : "justify-content-start") mb-4">
+                    @await Html.PartialAsync("_LanguageSwitcher")
+                </div>
 
-    <div class="hero-overlay"></div>
+                @* Tagline badge *@
+                <div class="badge px-3 py-2 mb-3"
+                     style="background:rgba(108,99,255,.12);
+                    color:#6C63FF;font-size:13px;
+                    border-radius:20px;">
+                    🎓 @L["ForStudents"]
+                </div>
 
-    <div class="container hero-content">
-
-        <div class="row justify-content-center">
-
-            <div class="col-lg-8 text-center text-white">
-
-                <span class="badge bg-primary px-3 py-2 mb-3">
-                    #1 Student Housing Platform
-                </span>
-
-                <h1 class="display-3 fw-bold mb-4">
-                    Find Your Perfect
-                    <span class="text-warning">
-                        Student Home
-                    </span>
+                @* Headline *@
+                <h1 class="display-4 fw-bold mb-3"
+                    style="line-height:1.2;">
+                    @if (isAr)
+                    {
+                        <text>
+                            اعثر على سكنك الطلابي<br />
+                            <span style="color:#6C63FF;">المثالي في مصر</span>
+                        </text>
+                    }
+                    else
+                    {
+                        <text>
+                            Find Your Perfect<br />
+                            <span style="color:#6C63FF;">Student Housing</span>
+                        </text>
+                    }
                 </h1>
 
-                <p class="lead mb-5">
-                    Discover verified apartments, studios and shared rooms
-                    near your university with secure booking and trusted reviews.
+                <p class="lead text-muted mb-4">
+                    @L["PlatformTagline"]
                 </p>
 
-            </div>
-
-        </div>
-
-        <!-- SEARCH CARD -->
-
-        <div class="search-card shadow-lg">
-
-            <div class="row g-3">
-
-                <div class="col-lg-4">
-
-                    <label class="form-label fw-semibold">
-                        University
-                    </label>
-
-                    <select class="form-select form-select-lg">
-
-                        <option>Choose University</option>
-
-                        <option>Cairo University</option>
-
-                        <option>Ain Shams University</option>
-
-                        <option>Alexandria University</option>
-
-                        <option>Helwan University</option>
-
-                    </select>
-
-                </div>
-
-                <div class="col-lg-3">
-
-                    <label class="form-label fw-semibold">
-                        Budget
-                    </label>
-
-                    <select class="form-select form-select-lg">
-
-                        <option>Any Price</option>
-
-                        <option>1000 - 3000 EGP</option>
-
-                        <option>3000 - 5000 EGP</option>
-
-                        <option>5000+ EGP</option>
-
-                    </select>
-
-                </div>
-
-                <div class="col-lg-3">
-
-                    <label class="form-label fw-semibold">
-                        Property Type
-                    </label>
-
-                    <select class="form-select form-select-lg">
-
-                        <option>Any Type</option>
-
-                        <option>Apartment</option>
-
-                        <option>Studio</option>
-
-                        <option>Shared Room</option>
-
-                    </select>
-
-                </div>
-
-                <div class="col-lg-2 d-grid">
-
-                    <label class="form-label text-white d-none d-lg-block">
-                        Search
-                    </label>
-
-                    <button class="btn btn-primary btn-lg">
-
+                @* CTA Buttons *@
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="/Property/Search"
+                       class="btn btn-lg fw-semibold px-4"
+                       style="background:#6C63FF;color:white;
+                        border-radius:12px;">
                         <i class="fas fa-search me-2"></i>
-
-                        Search
-
-                    </button>
-
+                        @L["FindHousing"]
+                    </a>
+                    <a asp-controller="Account"
+                       asp-action="RegisterOwner"
+                       class="btn btn-lg btn-outline-primary fw-semibold px-4"
+                       style="border-radius:12px;border-color:#6C63FF;
+                        color:#6C63FF;">
+                        @L["ForOwners"]
+                    </a>
                 </div>
 
+                @* Stats row *@
+                <div class="d-flex gap-4 mt-5 flex-wrap">
+                    @{
+                        var heroStats = isAr
+                            ? new[]
+                            {
+                                ("١٠٠٠+", "عقار متاح"),
+                                ("٥٠+",   "جامعة"),
+                                ("٥٠٠٠+", "طالب موثوق"),
+                            }
+                            : new[]
+                            {
+                                ("1,000+", "Properties"),
+                                ("50+",    "Universities"),
+                                ("5,000+", "Verified Students"),
+                            };
+                    }
+                    @foreach (var (num, label) in heroStats)
+                    {
+                        <div>
+                            <div class="fw-bold fs-4"
+                                 style="color:#6C63FF;">
+                                @num
+                            </div>
+                            <div class="text-muted small">@label</div>
+                        </div>
+                    }
+                </div>
             </div>
 
+            @* Hero image *@
+            <div class="col-lg-6 d-none d-lg-block text-center">
+                <img src="/images/hero-student-housing.svg"
+                     class="img-fluid"
+                     alt="@L["PlatformTagline"]"
+                     style="max-height:500px;" />
+            </div>
         </div>
-
     </div>
-
-</section>
-
-<!-- ================= STATS ================= -->
-
-<section class="py-5 bg-white">
-
-    <div class="container">
-
-        <div class="row text-center">
-
-            <div class="col-md-3">
-
-                <h2 class="fw-bold text-primary">2,500+</h2>
-
-                <p class="text-muted">
-                    Properties
-                </p>
-
-            </div>
-
-            <div class="col-md-3">
-
-                <h2 class="fw-bold text-success">15+</h2>
-
-                <p class="text-muted">
-                    Universities
-                </p>
-
-            </div>
-
-            <div class="col-md-3">
-
-                <h2 class="fw-bold text-warning">10K+</h2>
-
-                <p class="text-muted">
-                    Students
-                </p>
-
-            </div>
-
-            <div class="col-md-3">
-
-                <h2 class="fw-bold text-danger">4.9★</h2>
-
-                <p class="text-muted">
-                    Rating
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
 </section>

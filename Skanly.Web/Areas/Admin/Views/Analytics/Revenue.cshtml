@@ -1,94 +1,79 @@
-﻿@* Skanly.Web/Areas/Admin/Views/Analytics/Revenue.cshtml *@
+﻿@* Skanly.Web/Areas/Admin/Views/Analytics/Revenue.cshtml
+   (Enhanced version of the Part 24 view, with commission settings widget) *@
 @model Skanly.Application.Features.Analytics.DTOs.RevenueAnalyticsDto
 @{
-    ViewData["Title"] = "Revenue Analytics";
+    ViewData["Title"] = "Revenue & Commission";
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
     string preset = ViewBag.Preset as string ?? "30d";
 }
 
-@* Header *@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
         <h1 class="page-title mb-1">
-            <i class="fas fa-coins me-2 text-warning"></i>Revenue Analytics
+            <i class="fas fa-coins me-2 text-warning"></i>Revenue Tracking
         </h1>
-        <p class="text-muted mb-0">@Model.DateRange.Label</p>
+        <p class="text-muted mb-0 small">@Model.DateRange.Label</p>
     </div>
     @await Html.PartialAsync("_DateRangePicker",
         new ViewDataDictionary(ViewData) { ["preset"] = preset })
 </div>
 
-@* Nav *@
-<partial name="_AnalyticsNav" view-data='@(new ViewDataDictionary(ViewData)
-         { ["preset"] = preset, ["active"] = "Revenue" })' />
+@await Html.PartialAsync("_AnalyticsNav",
+    new ViewDataDictionary(ViewData) { ["preset"] = preset, ["active"] = "Revenue" })
 
 @* KPI Cards *@
 <div class="row g-3 mb-4">
     @{
-        var revKpis = new[]
+        var revStats = new[]
         {
-            ("Total Revenue",    $"EGP {Model.TotalRevenue:N0}",
-             Model.RevenueGrowthPct > 0, $"{Math.Abs(Model.RevenueGrowthPct)}%",
-             "fa-coins", "success"),
+            ("Total Revenue", $"EGP {Model.TotalRevenue:N0}",
+             "fa-coins", "success",
+             $"{(Model.RevenueGrowthPct > 0 ? "↑" : "↓")} {Math.Abs(Model.RevenueGrowthPct)}% vs prev period",
+             Model.RevenueGrowthPct > 0),
             ("Platform Commission", $"EGP {Model.TotalCommission:N0}",
-             true, "",
-             "fa-percentage", "primary"),
-            ("Net Owner Payouts",  $"EGP {Model.NetOwnerPayouts:N0}",
-             true, "",
-             "fa-wallet", "info"),
-            ("Avg Transaction",   $"EGP {Model.AverageBookingValue:N0}",
-             true, "",
-             "fa-receipt", "warning"),
+             "fa-percentage", "primary", "Collected from owners", true),
+            ("Net Owner Payouts", $"EGP {Model.NetOwnerPayouts:N0}",
+             "fa-wallet", "info", "After commission deduction", true),
+            ("Avg Transaction", $"EGP {Model.AverageBookingValue:N0}",
+             "fa-receipt", "warning", "Per confirmed booking", true),
         };
     }
-    @foreach (var (title, val, trendUp, trend, icon, color) in revKpis)
+    @foreach (var (title, val, icon, color, sub, trendPositive) in revStats)
     {
         <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm">
+            <div class="card admin-card">
                 <div class="card-body py-3">
                     <div class="d-flex align-items-center gap-3 mb-2">
-                        <span class="icon-circle bg-@color bg-opacity-15
-                            text-@color rounded-circle
-                            d-flex align-items-center
-                            justify-content-center"
-                              style="width:44px;height:44px;min-width:44px;">
+                        <div class="kpi-icon bg-@color bg-opacity-15 text-@color">
                             <i class="fas @icon"></i>
-                        </span>
-                        <div>
-                            <div class="text-muted"
-                                 style="font-size:10px;
-                                text-transform:uppercase;
-                                letter-spacing:.05em;">
-                                @title
-                            </div>
-                            <div class="fw-bold fs-5">@val</div>
+                        </div>
+                        <div class="text-muted small fw-semibold
+                            text-uppercase"
+                             style="font-size:10px;letter-spacing:.05em;">
+                            @title
                         </div>
                     </div>
-                    @if (!string.IsNullOrEmpty(trend))
-                    {
-                        <span class="badge @(trendUp ? "bg-success" : "bg-danger")
-                            bg-opacity-15
-                            @(trendUp ? "text-success" : "text-danger")"
-                              style="font-size:10px;">
-                            <i class="fas fa-arrow-@(trendUp ? "up" : "down")
-                            me-1" style="font-size:8px;"></i>
-                            @trend vs prev period
-                        </span>
-                    }
+                    <div class="fw-bold mb-0"
+                         style="font-size:20px;">
+                        @val
+                    </div>
+                    <div class="@(trendPositive ? "text-success" : "text-danger")
+                        mt-1" style="font-size:11px;">
+                        @sub
+                    </div>
                 </div>
             </div>
         </div>
     }
 </div>
 
-@* Charts *@
 <div class="row g-4 mb-4">
-    @* Revenue Trend *@
+
+    @* Revenue Trend Chart *@
     <div class="col-lg-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent fw-semibold">
-                <i class="fas fa-chart-bar me-2 text-success"></i>
-                Revenue Trend
+        <div class="card admin-card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2 text-success"></i>Revenue Trend
             </div>
             <div class="card-body">
                 <canvas id="revenueTrendChart" height="100"></canvas>
@@ -96,106 +81,166 @@
         </div>
     </div>
 
-    @* Payment Methods *@
+    @* Commission Summary *@
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent fw-semibold">
-                <i class="fas fa-credit-card me-2 text-primary"></i>
-                Payment Methods
+        <div class="card admin-card h-100">
+            <div class="card-header">
+                <i class="fas fa-percentage me-2 text-primary"></i>
+                Commission Summary
             </div>
             <div class="card-body">
-                <canvas id="paymentMethodChart" height="180"></canvas>
+                @* Current Rate *@
+                <div class="text-center py-3 border-bottom mb-3">
+                    <div class="display-5 fw-bold text-primary">
+                        @ViewBag.CommissionRate<span style="font-size:1.5rem;">%</span>
+                    </div>
+                    <div class="text-muted small">Current Platform Rate</div>
+                    <a href="/Admin/Settings/Commission"
+                       class="btn btn-sm btn-outline-primary mt-2">
+                        <i class="fas fa-edit me-1"></i>Change Rate
+                    </a>
+                </div>
+
+                @* Breakdown *@
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="small text-muted">Gross Revenue</span>
+                    <span class="small fw-bold">
+                        EGP @Model.TotalRevenue.ToString("N0")
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="small text-muted">Commission Earned</span>
+                    <span class="small fw-bold text-primary">
+                        EGP @Model.TotalCommission.ToString("N0")
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                    <span class="small text-muted">Net to Owners</span>
+                    <span class="small fw-bold text-success">
+                        EGP @Model.NetOwnerPayouts.ToString("N0")
+                    </span>
+                </div>
+
+                @* Visual bar *@
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between
+                        mb-1 small text-muted">
+                        <span>Commission share</span>
+                        <span>
+                            @(Model.TotalRevenue == 0 ? 0
+                              : Math.Round(Model.TotalCommission /
+                                           Model.TotalRevenue * 100, 1))%
+                        </span>
+                    </div>
+                    <div class="progress" style="height:8px;border-radius:10px;">
+                        <div class="progress-bar bg-primary"
+                             style="width:@(Model.TotalRevenue == 0 ? 0
+                                                                        : Math.Round(Model.TotalCommission /
+                                                                          Model.TotalRevenue * 100, 1))%;"></div>
+                        <div class="progress-bar bg-success"
+                             style="width:@(Model.TotalRevenue == 0 ? 0
+                                                                        : Math.Round(Model.NetOwnerPayouts /
+                                                                          Model.TotalRevenue * 100, 1))%;"></div>
+                    </div>
+                    <div class="d-flex gap-3 mt-1 small">
+                        <span><span class="text-primary">●</span> Commission</span>
+                        <span><span class="text-success">●</span> Owner Payout</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 @* Revenue vs Commission Chart *@
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent fw-semibold">
-                <i class="fas fa-chart-bar me-2 text-primary"></i>
-                Revenue vs Commission — Last 12 Months
-            </div>
-            <div class="card-body">
-                <canvas id="revenueVsCommissionChart" height="70"></canvas>
-            </div>
-        </div>
+<div class="card admin-card mb-4">
+    <div class="card-header">
+        <i class="fas fa-chart-bar me-2 text-primary"></i>
+        Monthly Revenue vs Commission — Last 12 Months
+    </div>
+    <div class="card-body">
+        <canvas id="revenueVsCommChart" height="70"></canvas>
     </div>
 </div>
 
-@* Payment Methods Table *@
 <div class="row g-4 mb-4">
+
+    @* Payment Method Breakdown *@
     <div class="col-md-5">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent fw-semibold">
-                Payment Method Breakdown
+        <div class="card admin-card">
+            <div class="card-header">
+                <i class="fas fa-credit-card me-2 text-primary"></i>
+                Payment Methods
             </div>
-            <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Method</th>
-                            <th class="text-center">Count</th>
-                            <th class="text-end">Amount</th>
-                            <th class="text-end">Share</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var m in Model.ByPaymentMethod)
-                        {
-                            <tr>
-                                <td class="fw-semibold small">@m.Method</td>
-                                <td class="text-center">@m.Count</td>
-                                <td class="text-end">
-                                    EGP @m.TotalAmount.ToString("N0")
-                                </td>
-                                <td class="text-end">
-                                    <span class="badge bg-primary bg-opacity-15
-                                        text-primary">
-                                        @m.Percentage%
-                                    </span>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="card-body p-0">
+                @foreach (var m in Model.ByPaymentMethod)
+                {
+                    <div class="px-4 py-3 border-bottom d-flex
+                        align-items-center gap-3">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold small">@m.Method</div>
+                            <div class="text-muted"
+                                 style="font-size:11px;">
+                                @m.Count transactions
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold small">
+                                EGP @m.TotalAmount.ToString("N0")
+                            </div>
+                            <span class="badge bg-primary bg-opacity-15
+                                text-primary"
+                                  style="font-size:10px;">
+                                @m.Percentage%
+                            </span>
+                        </div>
+                        <div style="width:60px;">
+                            <div class="progress" style="height:5px;">
+                                <div class="progress-bar bg-primary"
+                                     style="width:@m.Percentage%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
 
     @* Top Owners *@
     <div class="col-md-7">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent fw-semibold">
-                Top Owners by Revenue
+        <div class="card admin-card">
+            <div class="card-header">
+                <i class="fas fa-trophy me-2 text-warning"></i>
+                Top Revenue Owners
             </div>
             <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead class="table-light">
+                <table class="table admin-table align-middle mb-0">
+                    <thead>
                         <tr>
+                            <th>#</th>
                             <th>Owner</th>
                             <th class="text-center">Bookings</th>
                             <th class="text-end">Gross</th>
-                            <th class="text-end">Commission</th>
                             <th class="text-end">Net Payout</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var o in Model.TopOwnersByRevenue)
+                        @foreach (var (owner, idx) in Model.TopOwnersByRevenue
+                            .Select((o, i) => (o, i)))
                         {
                             <tr>
-                                <td class="fw-semibold small">@o.OwnerName</td>
-                                <td class="text-center">@o.ConfirmedBookings</td>
-                                <td class="text-end">
-                                    EGP @o.GrossRevenue.ToString("N0")
+                                <td class="text-muted small">@(idx + 1)</td>
+                                <td class="fw-semibold small">
+                                    @owner.OwnerName
                                 </td>
-                                <td class="text-end text-muted">
-                                    EGP @o.CommissionPaid.ToString("N0")
+                                <td class="text-center">
+                                    @owner.ConfirmedBookings
+                                </td>
+                                <td class="text-end small">
+                                    EGP @owner.GrossRevenue.ToString("N0")
                                 </td>
                                 <td class="text-end fw-bold text-success">
-                                    EGP @o.NetPayout.ToString("N0")
+                                    EGP @owner.NetPayout.ToString("N0")
                                 </td>
                             </tr>
                         }
@@ -206,22 +251,21 @@
     </div>
 </div>
 
-@* Monthly Breakdown Table *@
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-transparent fw-semibold d-flex
-        justify-content-between align-items-center">
+@* Monthly Breakdown *@
+<div class="card admin-card">
+    <div class="card-header d-flex justify-content-between
+        align-items-center">
         <span>
-            <i class="fas fa-table me-2 text-primary"></i>
-            Monthly Revenue Breakdown
+            <i class="fas fa-table me-2"></i>Monthly Breakdown
         </span>
     </div>
     <div class="table-responsive">
-        <table class="table align-middle mb-0">
-            <thead class="table-light">
+        <table class="table admin-table align-middle mb-0">
+            <thead>
                 <tr>
                     <th>Month</th>
                     <th class="text-center">Bookings</th>
-                    <th class="text-end">Gross Revenue</th>
+                    <th class="text-end">Gross</th>
                     <th class="text-end">Commission</th>
                     <th class="text-end">Net Payouts</th>
                     <th class="text-center">Growth</th>
@@ -233,7 +277,9 @@
                     <tr>
                         <td class="fw-semibold">@row.MonthLabel</td>
                         <td class="text-center">@row.BookingCount</td>
-                        <td class="text-end">EGP @row.GrossRevenue.ToString("N0")</td>
+                        <td class="text-end">
+                            EGP @row.GrossRevenue.ToString("N0")
+                        </td>
                         <td class="text-end text-muted">
                             EGP @row.Commission.ToString("N0")
                         </td>
@@ -244,14 +290,16 @@
                             @if (row.GrowthPct > 0)
                             {
                                 <span class="badge bg-success bg-opacity-15
-                                    text-success">
+                                    text-success"
+                                      style="font-size:10px;">
                                     ↑ @row.GrowthPct%
                                 </span>
                             }
                             else if (row.GrowthPct < 0)
                             {
                                 <span class="badge bg-danger bg-opacity-15
-                                    text-danger">
+                                    text-danger"
+                                      style="font-size:10px;">
                                     ↓ @Math.Abs(row.GrowthPct)%
                                 </span>
                             }
@@ -267,157 +315,86 @@
     </div>
 </div>
 
-@* Recent Transactions *@
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-transparent fw-semibold">
-        <i class="fas fa-receipt me-2 text-success"></i>
-        Recent Successful Transactions
-    </div>
-    <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>#</th>
-                    <th>Student</th>
-                    <th>Property</th>
-                    <th>Method</th>
-                    <th class="text-end">Amount</th>
-                    <th>Reference</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var tx in Model.RecentTransactions)
-                {
-                    <tr>
-                        <td class="text-muted small">#@tx.BookingId</td>
-                        <td class="small fw-semibold">@tx.StudentName</td>
-                        <td class="small text-truncate"
-                            style="max-width:140px;"
-                            title="@tx.PropertyTitle">
-                            @tx.PropertyTitle
-                        </td>
-                        <td class="small">@tx.Method</td>
-                        <td class="text-end fw-bold">
-                            EGP @tx.Amount.ToString("N0")
-                        </td>
-                        <td>
-                            <code class="small">@(tx.TransactionRef ?? "—")</code>
-                        </td>
-                        <td class="small text-muted">
-                            @tx.PaidAt.ToString("MMM dd, HH:mm")
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         (function () {
-        'use strict';
+            'use strict';
 
-        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
-        const trend = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueTrendChart))
+            const trend   = @Html.Raw(
+                            System.Text.Json.JsonSerializer.Serialize(Model.RevenueTrendChart));
+            const revComm = @Html.Raw(
+                            System.Text.Json.JsonSerializer.Serialize(Model.RevenueVsCommissionChart));
 
-        const revVsComm = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueVsCommissionChart));
+            // Revenue trend
+            new Chart(document.getElementById('revenueTrendChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels  : trend.labels,
+                    datasets: trend.datasets.map(ds => ({
+                        label          : ds.label,
+                        data           : ds.data,
+                        backgroundColor: ds.backgroundColor,
+                        borderColor    : ds.borderColor,
+                        borderWidth    : 1,
+                        borderRadius   : 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    plugins   : { legend: { display: false } },
+                    scales    : {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: v => 'EGP ' + Number(v).toLocaleString(),
+                                color: '#6b7280'
+                            },
+                            grid: { color: 'rgba(0,0,0,.04)' }
+                        },
+                        x: {
+                            grid : { display: false },
+                            ticks: { color: '#6b7280', maxTicksLimit: 12 }
+                        }
+                    }
+                }
+            });
 
-        const methods = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PaymentMethodChart))
-
-        // Revenue Trend bar chart
-        new Chart(document.getElementById('revenueTrendChart'), {
-        type: 'bar',
-        data: {
-        labels  : trend.labels,
-        datasets: trend.datasets.map(ds => ({
-        label          : ds.label,
-        data           : ds.data,
-        backgroundColor: ds.backgroundColor,
-        borderColor    : ds.borderColor,
-        borderWidth    : 1,
-        borderRadius   : 4
-        }))
-        },
-        options: {
-        responsive : true,
-        plugins    : { legend: { display: false } },
-        scales     : {
-        y: {
-        beginAtZero: true,
-        ticks: {
-        callback: v => 'EGP ' + v.toLocaleString(),
-        color: '#6b7280'
-        },
-        grid: { color: '#f3f4f6' }
-        },
-        x: {
-        grid : { display: false },
-        ticks: { color: '#6b7280', maxTicksLimit: 12 }
-        }
-        }
-        }
-        });
-
-        // Revenue vs Commission grouped bar
-        new Chart(document.getElementById('revenueVsCommissionChart'), {
-        type: 'bar',
-        data: {
-        labels  : revVsComm.labels,
-        datasets: revVsComm.datasets.map(ds => ({
-        label          : ds.label,
-        data           : ds.data,
-        backgroundColor: ds.backgroundColor,
-        borderColor    : ds.borderColor,
-        borderWidth    : 1,
-        borderRadius   : 4
-        }))
-        },
-        options: {
-        responsive: true,
-        plugins   : { legend: { position: 'top' } },
-        scales    : {
-        y: {
-        beginAtZero: true,
-        ticks: {
-        callback: v => 'EGP ' + v.toLocaleString(),
-        color: '#6b7280'
-        },
-        grid: { color: '#f3f4f6' }
-        },
-        x: {
-        grid : { display: false },
-        ticks: { color: '#6b7280' }
-        }
-        }
-        }
-        });
-
-        // Payment method doughnut
-        new Chart(document.getElementById('paymentMethodChart'), {
-        type: 'doughnut',
-        data: {
-        labels  : methods.labels,
-        datasets: [{
-        data           : methods.data,
-        backgroundColor: methods.backgroundColors,
-        borderWidth    : 2,
-        borderColor    : '#ffffff'
-        }]
-        },
-        options: {
-        responsive: true,
-        cutout    : '60%',
-        plugins   : {
-        legend: {
-        position: 'bottom',
-        labels  : { boxWidth: 12, font: { size: 11 } }
-        }
-        }
-        }
-        });
+            // Revenue vs Commission
+            new Chart(document.getElementById('revenueVsCommChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels  : revComm.labels,
+                    datasets: revComm.datasets.map(ds => ({
+                        label          : ds.label,
+                        data           : ds.data,
+                        backgroundColor: ds.backgroundColor,
+                        borderColor    : ds.borderColor,
+                        borderWidth    : 1,
+                        borderRadius   : 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    plugins   : {
+                        legend: { position: 'top',
+                                  labels: { boxWidth: 10, font: { size: 12 } } }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: v => 'EGP ' + Number(v).toLocaleString(),
+                                color: '#6b7280'
+                            },
+                            grid: { color: 'rgba(0,0,0,.04)' }
+                        },
+                        x: {
+                            grid : { display: false },
+                            ticks: { color: '#6b7280' }
+                        }
+                    }
+                }
+            });
         })();
     </script>
 }

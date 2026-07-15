@@ -1,0 +1,479 @@
+﻿@* Skanly.Web/Areas/Owner/Views/Chat/Index.cshtml *@
+@model IReadOnlyList<Skanly.Application.Features.Chat.DTOs.ConversationDto>
+@{
+    ViewData["Title"] = "Messages";
+    Layout = "~/Areas/Owner/Views/Shared/_OwnerLayout.cshtml";
+    string currentUserId = ViewBag.CurrentUserId ?? "";
+    int? activeConvId = ViewBag.ConversationId as int?;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-1">
+            <i class="fas fa-comments me-2"
+               style="color:var(--owner-primary);"></i>
+            Messages
+        </h1>
+        <p class="text-muted mb-0 small">
+            @Model.Count conversation@(Model.Count == 1 ? "" : "s")
+        </p>
+    </div>
+</div>
+
+@* Chat Layout *@
+<div class="card owner-card overflow-hidden"
+     style="height:calc(100vh - 180px);
+    min-height:500px;
+    display:flex;flex-direction:row;">
+
+    @* ── Conversation Sidebar ──────────────────────────────────────────────── *@
+    <div class="border-end flex-shrink-0 d-flex flex-column"
+         style="width:290px;overflow-y:auto;">
+
+        @* Search *@
+        <div class="p-3 border-bottom">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-transparent border-end-0">
+                    <i class="fas fa-search text-muted"
+                       style="font-size:11px;"></i>
+                </span>
+                <input type="text"
+                       class="form-control border-start-0"
+                       placeholder="Search conversations..."
+                       id="convSearch" />
+            </div>
+        </div>
+
+        @* Conversation List *@
+        <div id="convList" style="flex:1;overflow-y:auto;">
+            @if (!Model.Any())
+            {
+                <div class="text-center text-muted py-5 px-3">
+                    <i class="fas fa-comment-slash fa-3x mb-3 opacity-25"></i>
+                    <p class="small">No conversations yet.</p>
+                </div>
+            }
+
+            @foreach (var conv in Model)
+            {
+                var isActive = activeConvId.HasValue &&
+                               activeConvId == conv.ConversationId;
+                <div class="conv-item d-flex align-items-center gap-3
+                    px-3 py-3 border-bottom
+                    @(isActive ? "bg-success bg-opacity-10" : "")"
+                     data-conv-id="@conv.ConversationId"
+                     data-recip-id="@conv.OtherPartyId"
+                     onclick="openConversation(@conv.ConversationId,
+                    '@conv.OtherPartyId')"
+                     style="cursor:pointer;transition:background .15s;">
+
+                    @* Avatar + online dot *@
+                    <div class="position-relative flex-shrink-0">
+                        <img src="@(conv.OtherPartyImageUrl ?? "/images/default-avatar.png")"
+                             class="rounded-circle object-fit-cover"
+                             width="42" height="42" />
+                        <span class="position-absolute bottom-0 end-0
+                        rounded-circle border border-white"
+                              data-user-id="@conv.OtherPartyId"
+                              style="width:11px;height:11px;
+                        background:@(conv.IsOnline ? "#10b981" : "#9ca3af");"></span>
+                    </div>
+
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex justify-content-between
+                            align-items-baseline">
+                            <span class="fw-semibold small text-truncate">
+                                @conv.OtherPartyFullName
+                            </span>
+                            <span class="text-muted flex-shrink-0 ms-1"
+                                  style="font-size:10px;">
+                                @conv.LastMessageTimeAgo
+                            </span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(conv.PropertyTitle))
+                        {
+                            <div class="text-truncate"
+                                 style="font-size:10px;color:var(--owner-primary);">
+                                <i class="fas fa-home me-1"></i>
+                                @conv.PropertyTitle
+                            </div>
+                        }
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted text-truncate last-preview"
+                                  style="font-size:11px;max-width:160px;">
+                                @conv.LastMessagePreview
+                            </span>
+                            @if (conv.UnreadCount > 0)
+                            {
+                                <span class="badge rounded-pill ms-1 flex-shrink-0"
+                                      style="background:var(--owner-primary);
+                                    font-size:10px;">
+                                    @conv.UnreadCount
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Chat Panel ────────────────────────────────────────────────────────── *@
+    <div class="flex-grow-1 d-flex flex-column"
+         style="background:#f9fafb;min-width:0;">
+
+        @if (activeConvId.HasValue)
+        {
+            <div id="chatContent"
+                 data-conversation-id="@activeConvId"
+                 data-current-user-id="@currentUserId"
+                 class="d-flex flex-column h-100">
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border"
+                         style="color:var(--owner-primary);"></div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column align-items-center
+                justify-content-center h-100 text-muted">
+                <i class="fas fa-comments fa-4x mb-3 opacity-25"></i>
+                <h5>Select a conversation</h5>
+                <p class="small">
+                    Your conversations with students appear on the left.
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        /*
+        * Owner chat client — re-uses the same SignalR hub and ChatController
+        * endpoints as the student client (Part 15), just with owner context.
+        */
+        (function () {
+        'use strict';
+
+        const CURRENT_USER_ID  = '@currentUserId';
+        const ACTIVE_CONV_ID   = @(activeConvId.HasValue
+                    ? activeConvId.Value.ToString() : "null");
+        const HUB_URL          = '/hubs/chat';
+
+        let connection     = null;
+        let activeConvId   = ACTIVE_CONV_ID;
+        let pendingRecipId = null;
+        let typingTimer    = null;
+        let isTyping       = false;
+
+        // ── SignalR ────────────────────────────────────────────────────────────────
+        async function buildConnection() {
+        connection = new signalR.HubConnectionBuilder()
+        .withUrl(HUB_URL)
+        .withAutomaticReconnect([0, 2000, 5000, 15000])
+        .configureLogging(signalR.LogLevel.None)
+        .build();
+
+        connection.on('ReceiveMessage', onReceiveMessage);
+        connection.on('MessageRead',    onMessageRead);
+        connection.on('TypingStarted',  onTypingStarted);
+        connection.on('TypingStopped',  onTypingStopped);
+        connection.on('UserOnline',     uid => updateDot(uid, true));
+        connection.on('UserOffline',    uid => updateDot(uid, false));
+
+        await connection.start();
+
+        if (activeConvId) {
+        await connection.invoke('JoinConversation', activeConvId);
+        await loadMessages(activeConvId, 1);
+        }
+        }
+
+        // ── Load Messages ──────────────────────────────────────────────────────────
+        async function loadMessages(convId, page) {
+        const res  = await fetch(
+        `/Chat/Messages?conversationId=${convId}&page=${page}`);
+        const data = await res.json();
+        if (page === 1) renderChatPanel(data);
+        }
+
+        function renderChatPanel(paged) {
+        const panel = document.getElementById('chatContent');
+        if (!panel) return;
+
+        panel.innerHTML = `
+        <div class="d-flex align-items-center gap-3 px-4 py-3
+        border-bottom bg-white"
+        id="chatHeader">
+        <div class="position-relative">
+        <img id="chatAvatar"
+        src="/images/default-avatar.png"
+        width="38" height="38"
+        class="rounded-circle object-fit-cover"
+        style="border:2px solid #e5e7eb;" />
+        <span class="position-absolute bottom-0 end-0
+        rounded-circle border border-white"
+        id="chatOnlineDot"
+        style="width:10px;height:10px;
+        background:#9ca3af;"></span>
+        </div>
+        <div class="flex-grow-1">
+        <div class="fw-semibold small" id="chatName">Student</div>
+        <div class="text-muted" id="typingIndicator"
+        style="display:none;font-size:11px;">
+        <em>typing...</em>
+        </div>
+        <div class="text-muted" id="onlineStatusLabel"
+        style="font-size:11px;">Offline</div>
+        </div>
+        </div>
+
+        <div class="flex-grow-1 overflow-y-auto p-4"
+        id="messagesContainer"
+        style="flex:1;overflow-y:auto;">
+        <div id="messagesList">
+        ${paged.items.map(renderBubble).join('')}
+        </div>
+        </div>
+
+        <div class="bg-white border-top p-3" id="inputArea">
+        <div class="d-flex gap-2 align-items-end">
+        <label class="btn btn-light border btn-sm"
+        for="imagePickerInput"
+        style="width:36px;height:36px;padding:0;
+        display:flex;align-items:center;
+        justify-content:center;">
+        <i class="fas fa-image"
+        style="color:var(--owner-primary);"></i>
+        </label>
+        <input type="file" id="imagePickerInput"
+        class="d-none" accept="image/*" />
+        <textarea id="msgInput"
+        class="form-control"
+        rows="1"
+        placeholder="Type a message..."
+        style="resize:none;max-height:110px;"></textarea>
+        <button id="sendMsgBtn"
+        class="btn flex-shrink-0"
+        style="background:var(--owner-primary);
+        color:white;width:40px;height:36px;
+        padding:0;border-radius:50%;">
+        <i class="fas fa-paper-plane"
+        style="font-size:13px;"></i>
+        </button>
+        </div>
+        </div>`;
+
+        scrollBottom();
+        attachInput();
+        }
+
+        function renderBubble(msg) {
+        const mine   = msg.senderId === CURRENT_USER_ID;
+        const align  = mine ? 'flex-end' : 'flex-start';
+        const bubCls = mine
+        ? 'text-white rounded-3 px-3 py-2'
+        : 'bg-white border rounded-3 px-3 py-2';
+        const bubStyle = mine
+        ? `background:var(--owner-primary);`
+        : '';
+
+        const content = msg.isImage
+        ? `<a href="${msg.imageUrl}" target="_blank">
+        <img src="${msg.imageUrl}"
+        style="max-width:220px;max-height:200px;
+        border-radius:8px;" loading="lazy" />
+        </a>`
+        : `<span style="font-size:13px;">${esc(msg.messageText ?? '')}</span>`;
+
+        return `
+        <div class="d-flex flex-column mb-3" style="align-items:${align};">
+        <div class="${bubCls}" style="${bubStyle}max-width:65%;
+        word-break:break-word;">
+        ${content}
+        </div>
+        <div class="text-muted mt-1" style="font-size:10px;">
+        ${msg.timeLabel}
+        ${mine ? `<span class="read-tick ms-1"
+        data-msg-id="${msg.messageId}"
+        style="opacity:${msg.isRead ? 1 : .5}">
+        ${msg.isRead ? '✓✓' : '✓'}</span>` : ''}
+        </div>
+        </div>`;
+        }
+
+        // ── Input ──────────────────────────────────────────────────────────────────
+        function attachInput() {
+        const input   = document.getElementById('msgInput');
+        const sendBtn = document.getElementById('sendMsgBtn');
+        const imgPick = document.getElementById('imagePickerInput');
+
+        input?.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+        handleTyping();
+        });
+
+        input?.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+        }
+        });
+
+        sendBtn?.addEventListener('click', sendMessage);
+
+        imgPick?.addEventListener('change', async function () {
+        if (!this.files[0] || !activeConvId) return;
+        const fd = new FormData();
+        fd.append('conversationId', activeConvId);
+        fd.append('image', this.files[0]);
+        const token = document.querySelector(
+        'input[name="__RequestVerificationToken"]')?.value ?? '';
+        const res   = await fetch('/Chat/UploadImage', {
+        method : 'POST',
+        headers: { 'RequestVerificationToken': token },
+        body   : fd
+        });
+        if (res.ok) {
+        const msg = await res.json();
+        appendBubble(msg);
+        }
+        this.value = '';
+        });
+
+        const container = document.getElementById('messagesContainer');
+        container?.addEventListener('scroll', function () {
+        if (this.scrollTop < 60)
+        loadMessages(activeConvId, 2);
+        });
+        }
+
+        async function sendMessage() {
+        const input = document.getElementById('msgInput');
+        const text  = input?.value.trim();
+        if (!text || !activeConvId || !connection) return;
+
+        try {
+        await connection.invoke('SendMessage', activeConvId, text);
+        if (input) { input.value = ''; input.style.height = 'auto'; }
+        stopTyping();
+        } catch { /* silent */ }
+        }
+
+        function appendBubble(msg) {
+        const list = document.getElementById('messagesList');
+        if (!list) return;
+        list.insertAdjacentHTML('beforeend', renderBubble(msg));
+        scrollBottom();
+        }
+
+        // ── Event Handlers ─────────────────────────────────────────────────────────
+        function onReceiveMessage(msg) {
+        if (msg.conversationId !== activeConvId) return;
+        appendBubble(msg);
+        connection.invoke('MarkRead', activeConvId).catch(() => {});
+        }
+
+        function onMessageRead(data) {
+        (data.messageIds || []).forEach(id => {
+        const t = document.querySelector(
+        `.read-tick[data-msg-id="${id}"]`);
+        if (t) { t.textContent = '✓✓'; t.style.opacity = '1'; }
+        });
+        }
+
+        function onTypingStarted(data) {
+        if (data.conversationId !== activeConvId) return;
+        const ti = document.getElementById('typingIndicator');
+        const sl = document.getElementById('onlineStatusLabel');
+        if (ti) ti.style.display = '';
+        if (sl) sl.style.display = 'none';
+        }
+
+        function onTypingStopped(data) {
+        if (data.conversationId !== activeConvId) return;
+        const ti = document.getElementById('typingIndicator');
+        const sl = document.getElementById('onlineStatusLabel');
+        if (ti) ti.style.display = 'none';
+        if (sl) sl.style.display = '';
+        }
+
+        function handleTyping() {
+        if (!pendingRecipId || !activeConvId) return;
+        if (!isTyping) {
+        isTyping = true;
+        connection.invoke('StartTyping', activeConvId, pendingRecipId)
+        .catch(() => {});
+        }
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(stopTyping, 1500);
+        }
+
+        function stopTyping() {
+        if (!isTyping || !activeConvId || !pendingRecipId) return;
+        isTyping = false;
+        connection.invoke('StopTyping', activeConvId, pendingRecipId)
+        .catch(() => {});
+        }
+
+        // ── Switch Conversation ────────────────────────────────────────────────────
+        window.openConversation = async function (convId, recipId) {
+        if (activeConvId && activeConvId !== convId)
+        await connection.invoke('LeaveConversation', activeConvId)
+        .catch(() => {});
+
+        activeConvId   = convId;
+        pendingRecipId = recipId;
+
+        document.querySelectorAll('.conv-item').forEach(el =>
+        el.classList.toggle(
+        'bg-success bg-opacity-10', el.dataset.convId == convId));
+
+        await connection.invoke('JoinConversation', convId).catch(() => {});
+        await loadMessages(convId, 1);
+        };
+
+        // ── Online dots ────────────────────────────────────────────────────────────
+        function updateDot(userId, online) {
+        document.querySelectorAll(
+        `[data-user-id="${userId}"]`).forEach(el => {
+        el.style.background = online ? '#10b981' : '#9ca3af';
+        });
+        const dot    = document.getElementById('chatOnlineDot');
+        const status = document.getElementById('onlineStatusLabel');
+        if (dot)    dot.style.background = online ? '#10b981' : '#9ca3af';
+        if (status) status.textContent   = online ? 'Online' : 'Offline';
+        }
+
+        // ── Conversation search ────────────────────────────────────────────────────
+        document.getElementById('convSearch')
+        ?.addEventListener('input', function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('.conv-item').forEach(el => {
+        const text = el.textContent.toLowerCase();
+        el.style.display = text.includes(q) ? '' : 'none';
+        });
+        });
+
+        function scrollBottom() {
+        const c = document.getElementById('messagesContainer');
+        if (c) c.scrollTop = c.scrollHeight;
+        }
+
+        function esc(str) {
+        return str
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+        }
+
+        // ── Boot ──────────────────────────────────────────────────────────────────
+        buildConnection().catch(err =>
+        console.warn('Chat hub error:', err));
+
+        })();
+    </script>
+}

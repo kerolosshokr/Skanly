@@ -1,10 +1,14 @@
 ﻿@* Skanly.Web/Views/Property/Search.cshtml *@
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<Skanly.Web.Resources.SharedResource> L
 @model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Properties.DTOs.PropertyCardDto>
 @{
-    ViewData["Title"] = "Find Student Housing";
+    ViewData["Title"] = L["FindStudentHousing"];
     var req = ViewBag.Request as
         Skanly.Application.Features.Properties.DTOs.PropertySearchRequestDto
         ?? new();
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture
+ .TwoLetterISOLanguageName == "ar";
 }
 
 <div class="container-fluid px-0">
@@ -17,10 +21,10 @@
             <div class="p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h6 class="fw-bold mb-0">
-                        <i class="fas fa-filter me-2 text-primary"></i>Filters
+                        <i class="fas fa-filter me-2 text-primary"></i>@L["Filters"]
                     </h6>
                     <a href="/Property/Search" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-redo me-1"></i>Reset
+                        <i class="fas fa-redo me-1"></i>@L["Reset"]
                     </a>
                 </div>
 
@@ -28,7 +32,7 @@
 
                     @* Search Term *@
                     <div class="mb-4">
-                        <label class="filter-label">Search</label>
+                        <label class="filter-label">@L["Search"]</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white">
                                 <i class="fas fa-search text-muted"></i>
@@ -37,15 +41,15 @@
                                    name="SearchTerm"
                                    value="@req.SearchTerm"
                                    class="form-control border-start-0"
-                                   placeholder="Title or address..." />
+                                   placeholder="@L["SearchPlaceholder"]" />
                         </div>
                     </div>
 
                     @* University *@
                     <div class="mb-4">
-                        <label class="filter-label">University</label>
+                        <label class="filter-label">@L["University"]</label>
                         <select name="UniversityId" class="form-select form-select-sm">
-                            <option value="">All Universities</option>
+                            <option value="">@L["AllUniversities"]</option>
                             @foreach (var u in ViewBag.Universities as
                                 IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
                             {
@@ -59,15 +63,15 @@
 
                     @* Area *@
                     <div class="mb-4">
-                        <label class="filter-label">Area</label>
+                        <label class="filter-label">@L["Area"]</label>
                         <select name="AreaId" class="form-select form-select-sm">
-                            <option value="">All Areas</option>
+                            <option value="">@L["AllAreas"]</option>
                             @foreach (var a in ViewBag.Areas as
                                 IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
                             {
                                 <option value="@a.Id"
                                         selected="@(req.AreaId?.ToString() == a.Id.ToString())">
-                                    @a.NameEn
+                                    @a.NameAr
                                 </option>
                             }
                         </select>
@@ -93,7 +97,7 @@
                     @* Budget *@
                     <div class="mb-4">
                         <label class="filter-label">
-                            Budget (EGP/month)
+                            @L["Budget"]
                         </label>
                         <div class="row g-2">
                             <div class="col-6">
@@ -101,23 +105,23 @@
                                        name="MinPrice"
                                        value="@req.MinPrice"
                                        class="form-control form-control-sm"
-                                       placeholder="Min" min="0" />
+                                       placeholder="@L["MinPrice"]" />
                             </div>
                             <div class="col-6">
                                 <input type="number"
                                        name="MaxPrice"
                                        value="@req.MaxPrice"
                                        class="form-control form-control-sm"
-                                       placeholder="Max" min="0" />
+                                       placeholder="@L["MaxPrice"]" />
                             </div>
                         </div>
                     </div>
 
                     @* Min Rating *@
                     <div class="mb-4">
-                        <label class="filter-label">Minimum Rating</label>
+                        <label class="filter-label">@L["MinimumRating"]</label>
                         <select name="MinRating" class="form-select form-select-sm">
-                            <option value="">Any rating</option>
+                            <option value="">@L["AnyRating"]</option>
                             @foreach (var r in new[] { 4.5, 4.0, 3.5, 3.0 })
                             {
                                 <option value="@r"
@@ -139,35 +143,35 @@
                             @(req.SmokingAllowed == true ? "checked" : "") />
                             <label class="form-check-label small"
                                    for="smokingCheck">
-                                Smoking Allowed
+                                @L["SmokingAllowed"]
                             </label>
                         </div>
                     </div>
 
                     @* Rooms & Beds *@
                     <div class="mb-4">
-                        <label class="filter-label">Minimum Rooms / Beds</label>
+                        <label class="filter-label"> @L["MinimumRoomsBeds"]</label>
                         <div class="row g-2">
                             <div class="col-6">
                                 <input type="number"
                                        name="MinRooms"
                                        value="@req.MinRooms"
                                        class="form-control form-control-sm"
-                                       placeholder="Rooms" min="1" max="20" />
+                                       placeholder="@L["Rooms"]" />
                             </div>
                             <div class="col-6">
                                 <input type="number"
                                        name="MinBeds"
                                        value="@req.MinBeds"
                                        class="form-control form-control-sm"
-                                       placeholder="Beds" min="1" max="50" />
+                                       placeholder="@L["Beds"]" />
                             </div>
                         </div>
                     </div>
 
                     @* Amenities *@
                     <div class="mb-4">
-                        <label class="filter-label">Amenities</label>
+                        <label class="filter-label">@L["Amenities"]</label>
                         <div class="amenity-grid"
                              style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
                             @foreach (var a in ViewBag.Amenities as
@@ -193,7 +197,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-2"></i>Apply Filters
+                        <i class="fas fa-search me-2"></i>  @L["ApplyFilters"]
                     </button>
                 </form>
             </div>
@@ -207,19 +211,19 @@
                 <div>
                     <h5 class="mb-0 fw-bold">
                         @Model.TotalCount
-                        <span class="text-muted fw-normal fs-6">properties found</span>
+                        <span class="text-muted fw-normal fs-6">@L["PropertiesFound"]</span>
                     </h5>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <label class="text-muted small">Sort by:</label>
+                    <label class="text-muted small">@L["SortBy"]:</label>
                     <select id="sortSelect" name="SortBy"
                             class="form-select form-select-sm" style="width:160px">
                         @foreach (var (label, value) in new[]
                         {
-                            ("Newest First", "Newest"),
-                            ("Price: Low to High", "PriceLow"),
-                            ("Price: High to Low", "PriceHigh"),
-                            ("Highest Rated", "Rating")
+                           (L["NewestFirst"], "Newest"),
+                           (L["PriceLowHigh"], "PriceLow"),
+                           (L["PriceHighLow"], "PriceHigh"),
+                           (L["HighestRated"], "Rating")
                         })
                         {
                             <option value="@value"
@@ -232,7 +236,7 @@
                     @* Mobile filter toggle *@
                     <button class="btn btn-outline-secondary btn-sm d-lg-none"
                             id="filterToggle">
-                        <i class="fas fa-filter me-1"></i>Filters
+                        <i class="fas fa-filter me-1"></i>@L["Filters"]
                     </button>
                 </div>
             </div>

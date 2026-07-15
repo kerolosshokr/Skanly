@@ -1,0 +1,24 @@
+﻿@* Skanly.Web/Views/Shared/_ThemeFlashGuard.cshtml *@
+@* Include this as the FIRST child of <head> in every layout *@
+<script>
+    /* THEME FLASH GUARD — must stay inline & first in <head> */
+    (function () {
+        var LIGHT = 'light', DARK = 'dark', SYSTEM = 'system';
+        var KEY   = 'skanly-theme';
+
+        function prefersDark() {
+            return window.matchMedia &&
+                   window.matchMedia('(prefers-color-scheme:dark)').matches;
+        }
+
+        var pref;
+        try { pref = localStorage.getItem(KEY) || SYSTEM; }
+        catch (e) { pref = SYSTEM; }
+
+        var theme = pref === DARK ? DARK
+                  : pref === LIGHT ? LIGHT
+                  : prefersDark() ? DARK : LIGHT;
+
+        document.documentElement.setAttribute('data-bs-theme', theme);
+    })();
+</script>

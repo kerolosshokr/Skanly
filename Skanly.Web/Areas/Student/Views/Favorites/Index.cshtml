@@ -1,258 +1,200 @@
 ﻿@* Skanly.Web/Areas/Student/Views/Favorites/Index.cshtml *@
 @model Skanly.Application.Common.Models.PagedResult<Skanly.Application.Features.Favorites.DTOs.FavoriteDto>
 
-
 @{
-    ViewData["Title"] = "Saved Homes";
+    ViewData["Title"] = "My Favorites";
     Layout = "~/Areas/Student/Views/Shared/_StudentLayout.cshtml";
-    int totalCount = (int)(ViewBag.TotalCount ?? 0);
 }
 
-@* ── Page Header ────────────────────────────────────────────────────────────── *@
-<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
         <h1 class="page-title mb-1">
-            <i class="fas fa-heart me-2 text-danger"></i>Saved Homes
+            <i class="fas fa-heart me-2 text-danger"></i>
+            My Favorites
         </h1>
-        <p class="text-muted mb-0">
-            @totalCount home@(totalCount == 1 ? "" : "s") saved
+        <p class="text-muted mb-0 small">
+            @Model.TotalCount saved propert@(Model.TotalCount == 1 ? "y" : "ies")
         </p>
     </div>
-
-    <div class="d-flex gap-2">
-        @if (totalCount > 0)
-        {
-            <button type="button"
-                    class="btn btn-outline-danger btn-sm"
-                    id="clearAllBtn">
-                <i class="fas fa-trash-alt me-1"></i>Clear All
-            </button>
-        }
-        <a href="/Property/Search"
-           class="btn btn-primary btn-sm">
-            <i class="fas fa-search me-1"></i>Find More
-        </a>
-    </div>
+    @if (Model.TotalCount > 0)
+    {
+        <button class="btn btn-sm btn-outline-danger"
+                id="clearAllBtn">
+            <i class="fas fa-trash me-1"></i>Clear All
+        </button>
+    }
 </div>
 
-@* ── Alert Messages ──────────────────────────────────────────────────────────── *@
-@if (TempData["Success"] is string successMsg)
+@if (!Model.Items.Any())
 {
-    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-        <i class="fas fa-check-circle me-2"></i>@successMsg
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-@if (TempData["Error"] is string errorMsg)
-{
-    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-        <i class="fas fa-exclamation-circle me-2"></i>@errorMsg
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-@if (totalCount == 0 && string.IsNullOrEmpty(ViewBag.Search as string))
-{
-    @* ── Empty State ──────────────────────────────────────────────────────── *@
-    <div class="text-center py-5">
-        <div class="mb-4">
-            <div class="d-inline-flex align-items-center justify-content-center
-                rounded-circle bg-danger bg-opacity-10"
-                 style="width:100px;height:100px;">
-                <i class="fas fa-heart-broken fa-3x text-danger opacity-50"></i>
-            </div>
+    <div class="s-card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-heart fa-4x mb-3 text-danger opacity-25"></i>
+            <h5 class="fw-bold">No saved properties</h5>
+            <p class="text-muted mb-4 small">
+                Click the ❤️ heart icon on any property to save it here.
+            </p>
+            <a href="/Property/Search"
+               class="btn fw-semibold"
+               style="background:var(--student-primary);color:white;">
+                <i class="fas fa-search me-2"></i>Browse Properties
+            </a>
         </div>
-        <h4 class="fw-bold mb-2">No saved homes yet</h4>
-        <p class="text-muted mb-4" style="max-width:380px;margin:0 auto;">
-            Tap the <i class="fas fa-heart text-danger"></i> icon on any property
-            listing to save it here for easy access later.
-        </p>
-        <a href="/Property/Search" class="btn btn-primary px-4">
-            <i class="fas fa-search me-2"></i>Explore Housing
-        </a>
     </div>
 }
 else
 {
-    @* ── Search & Sort Bar ────────────────────────────────────────────────── *@
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body py-3">
-            <form method="get" class="row g-3 align-items-center">
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text"
-                               name="search"
-                               value="@ViewBag.Search"
-                               class="form-control border-start-0"
-                               placeholder="Search by title, area, university..." />
-                        @if (!string.IsNullOrEmpty(ViewBag.Search as string))
-                        {
-                            <a asp-action="Index" class="btn btn-outline-secondary">
-                                <i class="fas fa-times"></i>
+    <div class="row g-4" id="favoritesGrid">
+        @foreach (var fav in Model.Items)
+        {
+            <div class="col-md-6 col-xl-4"
+                 id="fav-card-@fav.PropertyId">
+                <div class="s-property-card card h-100">
+                    <div class="position-relative">
+                        <a href="/Property/@fav.PropertyId">
+                            <img src="@(fav.PrimaryImageUrl ?? "/images/property-placeholder.jpg")"
+                                 class="card-img-top object-fit-cover"
+                                 height="195"
+                                 alt="@fav.Title" />
+                        </a>
+
+                        @* Remove button *@
+                        <button class="btn position-absolute top-0 end-0
+                            m-2 p-0 border-0 remove-fav-btn"
+                                data-property-id="@fav.PropertyId"
+                                style="width:30px;height:30px;
+                            background:rgba(239,68,68,.8);
+                            border-radius:50%;color:white;"
+                                title="Remove from favorites">
+                            <i class="fas fa-heart-broken"
+                               style="font-size:12px;"></i>
+                        </button>
+
+                        @* Availability badge *@
+                        <div class="position-absolute bottom-0 start-0 m-2">
+                            <span class="badge @(fav.IsAvailable ? "bg-success" : "bg-secondary")"
+                                  style="font-size:10px;">
+                                @(fav.IsAvailable ? "Available" : "Unavailable")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold mb-1 text-truncate"
+                            style="font-size:13px;">
+                            <a href="/Property/@fav.PropertyId"
+                               class="text-decoration-none text-body">
+                                @fav.Title
                             </a>
-                        }
+                        </h6>
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-map-marker-alt me-1 text-danger"
+                               style="font-size:10px;"></i>
+                            @fav.AreaNameEn
+                            @if (!string.IsNullOrEmpty(fav.UniversityNameEn))
+                            {
+                                <span class="ms-2">
+                                    <i class="fas fa-graduation-cap me-1 text-primary"
+                                       style="font-size:10px;"></i>
+                                    @fav.UniversityNameEn
+                                </span>
+                            }
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold"
+                                      style="color:var(--student-primary);
+                                    font-size:16px;">
+                                    EGP @fav.PricePerMonth.ToString("N0")
+                                </span>
+                                <span class="text-muted small">/mo</span>
+                            </div>
+                            @if (fav.AverageRating > 0)
+                            {
+                                <span class="text-warning small">
+                                    ★ @fav.AverageRating.ToString("F1")
+                                </span>
+                            }
+                        </div>
+
+                        <div class="text-muted mt-1" style="font-size:11px;">
+                            Saved @fav.TimeAgoSaved
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-transparent border-top-0
+                        pt-0 px-3 pb-3">
+                        <div class="d-flex gap-2">
+                            <a href="/Property/@fav.PropertyId"
+                               class="btn btn-sm btn-outline-secondary flex-grow-1"
+                               style="font-size:12px;">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            @if (fav.IsAvailable)
+                            {
+                                <a asp-area="Student"
+                                   asp-controller="Bookings"
+                                   asp-action="Create"
+                                   asp-route-propertyId="@fav.PropertyId"
+                                   class="btn btn-sm flex-grow-1 fw-semibold"
+                                   style="background:var(--student-primary);
+                                    color:white;font-size:12px;">
+                                    <i class="fas fa-calendar-plus me-1"></i>Book
+                                </a>
+                            }
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <select name="sortBy"
-                            class="form-select"
-                            onchange="this.form.submit()">
-                        @foreach (var (label, value) in new[]
-                        {
-                            ("Newest Saved", "Newest"),
-                            ("Oldest Saved", "Oldest"),
-                            ("Price: Low to High", "PriceLow"),
-                            ("Price: High to Low", "PriceHigh"),
-                            ("Highest Rated", "Rating")
-                        })
-                        {
-                            <option value="@value"
-                                    selected="@(ViewBag.SortBy == value)">
-                                @label
-                            </option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <select name="pageSize"
-                            class="form-select"
-                            onchange="this.form.submit()">
-                        @foreach (int size in new[] { 12, 24, 48 })
-                        {
-                            <option value="@size"
-                                    selected="@(ViewBag.PageSize == size)">
-                                @size per page
-                            </option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-filter me-1"></i>Apply
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+        }
     </div>
 
-    @* Search "no results" (has search term but zero results) *@
-    @if (!Model.Items.Any())
+    @* Pagination *@
+    @if (Model.TotalPages > 1)
     {
-        <div class="text-center py-5 text-muted">
-            <i class="fas fa-search fa-3x mb-3 opacity-25"></i>
-            <h5>No saved homes match "@ViewBag.Search"</h5>
-            <a asp-action="Index" class="btn btn-sm btn-outline-primary mt-2">
-                <i class="fas fa-redo me-1"></i>Clear Search
-            </a>
-        </div>
-    }
-    else
-    {
-        @* ── Results Summary ──────────────────────────────────────────────── *@
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <p class="text-muted small mb-0">
-                Showing @(((Model.PageNumber - 1) * Model.PageSize) + 1)–
-                @Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount)
-                of @Model.TotalCount homes
-            </p>
-            <div class="btn-group btn-group-sm" id="viewToggle">
-                <button class="btn btn-outline-secondary active" id="gridView"
-                        title="Grid View">
-                    <i class="fas fa-th"></i>
-                </button>
-                <button class="btn btn-outline-secondary" id="listView"
-                        title="List View">
-                    <i class="fas fa-list"></i>
-                </button>
-            </div>
-        </div>
-
-        @* ── Property Grid ─────────────────────────────────────────────────── *@
-        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4"
-             id="favoritesGrid">
-            @foreach (var fav in Model.Items)
-            {
-                <partial name="_FavoriteCard" model="fav" />
-            }
-        </div>
-
-        @* ── Pagination ───────────────────────────────────────────────────── *@
-        @if (Model.TotalPages > 1)
-        {
-            <nav class="mt-5" aria-label="Favorites pagination">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
                         <a class="page-link"
                            asp-action="Index"
-                           asp-route-page="@(Model.PageNumber - 1)"
-                           asp-route-search="@ViewBag.Search"
-                           asp-route-sortBy="@ViewBag.SortBy"
-                           asp-route-pageSize="@ViewBag.PageSize">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
+                           asp-route-page="@i">@i</a>
                     </li>
-
-                    @for (int i = Math.Max(1, Model.PageNumber - 2);
-                          i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
-                    {
-                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
-                            <a class="page-link"
-                               asp-action="Index"
-                               asp-route-page="@i"
-                               asp-route-search="@ViewBag.Search"
-                               asp-route-sortBy="@ViewBag.SortBy"
-                               asp-route-pageSize="@ViewBag.PageSize">@i</a>
-                        </li>
-                    }
-
-                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                        <a class="page-link"
-                           asp-action="Index"
-                           asp-route-page="@(Model.PageNumber + 1)"
-                           asp-route-search="@ViewBag.Search"
-                           asp-route-sortBy="@ViewBag.SortBy"
-                           asp-route-pageSize="@ViewBag.PageSize">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        }
+                }
+            </ul>
+        </nav>
     }
 }
 
-@* ── Clear All Confirmation Modal ────────────────────────────────────────────── *@
-<div class="modal fade" id="clearAllModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-danger">
-                    <i class="fas fa-trash-alt me-2"></i>Clear All Saved Homes
-                </h5>
+@* Clear All Confirm Modal *@
+<div class="modal fade" id="clearModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:14px;">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-danger">
+                    Clear All Favorites
+                </h6>
                 <button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p class="text-muted mb-0">
-                    Are you sure you want to remove all
-                    <strong>@totalCount</strong> saved
-                    home@(totalCount == 1 ? "" : "s")?
-                    This action cannot be undone.
+            <div class="modal-body py-2">
+                <p class="text-muted small mb-0">
+                    Remove all @Model.TotalCount saved properties?
+                    This cannot be undone.
                 </p>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button"
-                        class="btn btn-secondary"
+            <div class="modal-footer border-0 pt-0">
+                <button class="btn btn-secondary btn-sm"
                         data-bs-dismiss="modal">
                     Cancel
                 </button>
                 <form asp-action="ClearAll" method="post" class="d-inline">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash-alt me-1"></i>Clear All
+                    <button type="submit"
+                            class="btn btn-danger btn-sm fw-semibold">
+                        Clear All
                     </button>
                 </form>
             </div>
@@ -262,106 +204,39 @@ else
 
 @section Scripts {
     <script>
-        // ── Clear All Modal ────────────────────────────────────────────────────────
-        document.getElementById('clearAllBtn')?.addEventListener('click', function () {
-            new bootstrap.Modal(
-                document.getElementById('clearAllModal')).show();
-        });
+        (function () {
+            const TOKEN = document.querySelector(
+                'input[name="__RequestVerificationToken"]')?.value ?? '';
 
-        // ── Grid / List View Toggle ────────────────────────────────────────────────
-        const grid     = document.getElementById('favoritesGrid');
-        const gridBtn  = document.getElementById('gridView');
-        const listBtn  = document.getElementById('listView');
+            // ── Remove single favorite ─────────────────────────────────────────────────
+            document.querySelectorAll('.remove-fav-btn').forEach(btn => {
+                btn.addEventListener('click', async function () {
+                    const id   = this.dataset.propertyId;
+                    const card = document.getElementById(`fav-card-${id}`);
 
-        gridBtn?.addEventListener('click', function () {
-            grid.className = 'row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4';
-            this.classList.add('active');
-            listBtn.classList.remove('active');
-            localStorage.setItem('favView', 'grid');
-        });
+                    const res = await fetch('/Student/Favorites/Remove', {
+                        method : 'POST',
+                        headers: {
+                            'Content-Type'             : 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken' : TOKEN
+                        },
+                        body: `propertyId=${id}`
+                    });
 
-        listBtn?.addEventListener('click', function () {
-            grid.className = 'row row-cols-1 g-3';
-            this.classList.add('active');
-            gridBtn.classList.remove('active');
-            localStorage.setItem('favView', 'list');
-        });
-
-        // Restore last used view
-        if (localStorage.getItem('favView') === 'list') {
-            listBtn?.click();
-        }
-
-        // ── Remove Card Animation ──────────────────────────────────────────────────
-        function removeCard(propertyId) {
-            const card = document.getElementById(`fav-card-${propertyId}`);
-            if (card) {
-                card.style.transition = 'opacity .3s, transform .3s';
-                card.style.opacity    = '0';
-                card.style.transform  = 'scale(0.95)';
-                setTimeout(() => {
-                    card.remove();
-
-                    // Update count in header
-                    const remaining = document.querySelectorAll('[id^="fav-card-"]').length;
-                    const badge = document.getElementById('favoriteCountBadge');
-                    if (badge) badge.textContent = remaining;
-
-                    if (remaining === 0) location.reload();
-                }, 300);
-            }
-        }
-
-        // ── AJAX Remove from List ──────────────────────────────────────────────────
-        const token = document.querySelector(
-            'input[name="__RequestVerificationToken"]')?.value ?? '';
-
-        document.querySelectorAll('.remove-favorite-btn').forEach(btn => {
-            btn.addEventListener('click', async function () {
-                const propertyId = this.dataset.propertyId;
-
-                const res = await fetch('/Student/Favorites/Toggle', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': token
-                    },
-                    body: `propertyId=${propertyId}`
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (!data.isFavorited) {
-                        removeCard(propertyId);
-                        showToast('Removed from saved homes.', 'secondary');
+                    if (res.ok) {
+                        card.style.transition = 'opacity .3s, transform .3s';
+                        card.style.opacity    = '0';
+                        card.style.transform  = 'scale(.95)';
+                        setTimeout(() => card.remove(), 300);
                     }
-                }
+                });
             });
-        });
 
-        // ── Toast Helper ───────────────────────────────────────────────────────────
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer') || (() => {
-                const el = document.createElement('div');
-                el.id        = 'toastContainer';
-                el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-                el.style.zIndex = '9999';
-                document.body.appendChild(el);
-                return el;
-            })();
-
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-bg-${type} border-0`;
-            toast.setAttribute('role', 'alert');
-            toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button class="btn-close btn-close-white me-2 m-auto"
-                            data-bs-dismiss="toast"></button>
-                </div>`;
-            container.appendChild(toast);
-            new bootstrap.Toast(toast, { delay: 3000 }).show();
-            toast.addEventListener('hidden.bs.toast', () => toast.remove());
-        }
+            // ── Clear all modal ────────────────────────────────────────────────────────
+            document.getElementById('clearAllBtn')?.addEventListener('click', () => {
+                new bootstrap.Modal(
+                    document.getElementById('clearModal')).show();
+            });
+        })();
     </script>
 }

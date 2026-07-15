@@ -1,0 +1,20 @@
+﻿@* Skanly.Web/Views/Shared/_BilingualName.cshtml *@
+@* Usage:
+   @await Html.PartialAsync("_BilingualName", new
+   {
+       NameEn = area.NameEn,
+       NameAr = area.NameAr
+   })
+*@
+@{
+    dynamic model = Model!;
+    var nameEn = (string?)model.NameEn ?? "";
+    var nameAr = (string?)model.NameAr ?? "";
+    var isAr = System.Globalization.CultureInfo
+        .CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+    var display = isAr && !string.IsNullOrEmpty(nameAr)
+        ? nameAr
+        : nameEn;
+}
+@display

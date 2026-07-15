@@ -1,28 +1,759 @@
-﻿@* Inside the student nav — wherever the Favorites link lives *@
-<a asp-area="Student"
-   asp-controller="Favorites"
-   asp-action="Index"
-   class="nav-link position-relative">
-    <i class="fas fa-heart me-1"></i>Saved
-    <span class="position-absolute top-0 start-100 translate-middle
-        badge rounded-pill bg-danger favorite-count-badge"
-          style="font-size:10px;"
-          id="favNavBadge">
-    </span>
-</a>
+﻿@* Skanly.Web/Areas/Student/Views/Shared/_StudentLayout.cshtml *@
+@{
+    var _culture = System.Globalization.CultureInfo
+        .CurrentUICulture.TwoLetterISOLanguageName;
 
-<script>
-    // Load count on page ready for the nav badge
-    (async function() {
-        try {
-            const res = await fetch('/Student/Favorites/Count');
-            if (!res.ok) return;
-            const { count } = await res.json();
-            const badge = document.getElementById('favNavBadge');
-            if (badge) {
-                badge.textContent  = count > 0 ? count : '';
-                badge.style.display= count > 0 ? '' : 'none';
+    var _isAr = _culture == "ar";
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+
+    <title>@ViewData["Title"] — Skanly</title>
+
+    @* ① منع Flash عند تغيير الثيم *@
+    @await Html.PartialAsync("_ThemeFlashGuard")
+
+    @* ② Bootstrap RTL/LTR *@
+    @await Html.PartialAsync("_RtlHead")
+
+    @* ③ Skanly Theme *@
+    <link rel="stylesheet"
+          href="~/css/theme.css"
+          asp-append-version="true" />
+
+    @* ④ Font Awesome *@
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+          rel="stylesheet" />
+
+    @* ⑤ Inter + Cairo *@
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cairo:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet" />
+
+    <style>
+            /* ── Variables ────────────────────────────────────────────────────── */
+            :root {
+                --student-primary: #6C63FF;
+                --student-primary-dk: #5b52d4;
+                --student-success: #10b981;
+                --student-warning: #f59e0b;
+                --student-danger: #ef4444;
+                --sidebar-width: 240px;
+                --sidebar-bg: #13111c;
+                --sidebar-text: rgba(255,255,255,.72);
+                --sidebar-hover: rgba(255,255,255,.08);
+                --sidebar-active: rgba(108,99,255,.3);
+                --topbar-height: 58px;
             }
-        } catch { /* silent */ }
-    })();
-</script>
+
+            [data-bs-theme="dark"] {
+                --bs-body-bg: #0d0b17;
+                --sidebar-bg: #0a0812;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Inter', sans-serif;
+                font-size: 14px;
+                overflow-x: hidden;
+            }
+
+            /* ── Sidebar ──────────────────────────────────────────────────────── */
+            #studentSidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: var(--sidebar-width);
+                height: 100vh;
+                background: var(--sidebar-bg);
+                z-index: 1030;
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                transition: transform .3s ease;
+            }
+
+                #studentSidebar::-webkit-scrollbar {
+                    width: 4px;
+                }
+
+                #studentSidebar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,.1);
+                    border-radius: 2px;
+                }
+
+            /* Logo */
+            .student-logo {
+                padding: 18px 20px 14px;
+                border-bottom: 1px solid rgba(255,255,255,.08);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+                .student-logo .logo-mark {
+                    width: 36px;
+                    height: 36px;
+                    background: linear-gradient(135deg, #6C63FF, #9c55ff);
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+            /* Student profile in sidebar */
+            .student-profile {
+                padding: 12px 20px;
+                border-bottom: 1px solid rgba(255,255,255,.07);
+            }
+
+                .student-profile img {
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 50%;
+                    object-fit: cover;
+                    border: 2px solid rgba(108,99,255,.5);
+                }
+
+            /* Nav */
+            .student-nav {
+                padding: 8px 0;
+                flex: 1;
+            }
+
+            .nav-label {
+                color: rgba(255,255,255,.28);
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .1em;
+                padding: 10px 20px 4px;
+            }
+
+            .student-link {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 20px;
+                color: var(--sidebar-text);
+                text-decoration: none;
+                transition: all .15s;
+                position: relative;
+                border-radius: 0;
+            }
+
+                .student-link:hover {
+                    background: var(--sidebar-hover);
+                    color: #fff;
+                }
+
+                .student-link.active {
+                    background: var(--sidebar-active);
+                    color: #fff;
+                }
+
+                    .student-link.active::before {
+                        content: '';
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        bottom: 0;
+                        width: 3px;
+                        background: var(--student-primary);
+                        border-radius: 0 3px 3px 0;
+                    }
+
+                .student-link .s-icon {
+                    width: 18px;
+                    text-align: center;
+                    font-size: 13px;
+                    flex-shrink: 0;
+                }
+
+                .student-link .s-badge {
+                    margin-left: auto;
+                }
+
+            /* ── Topbar ───────────────────────────────────────────────────────── */
+            #studentTopbar {
+                position: fixed;
+                top: 0;
+                left: var(--sidebar-width);
+                right: 0;
+                height: var(--topbar-height);
+                background: var(--bs-body-bg);
+                border-bottom: 1px solid var(--bs-border-color);
+                z-index: 1020;
+                display: flex;
+                align-items: center;
+                padding: 0 20px;
+                gap: 10px;
+            }
+
+            /* ── Content ──────────────────────────────────────────────────────── */
+            #studentContent {
+                margin-left: var(--sidebar-width);
+                margin-top: var(--topbar-height);
+                padding: 24px;
+                min-height: calc(100vh - var(--topbar-height));
+            }
+
+            /* ── Cards ────────────────────────────────────────────────────────── */
+            .s-card {
+                border: 1px solid var(--bs-border-color);
+                border-radius: 12px;
+                box-shadow: 0 1px 3px rgba(0,0,0,.04);
+            }
+
+                .s-card .card-header {
+                    background: transparent;
+                    border-bottom: 1px solid var(--bs-border-color);
+                    padding: 13px 18px;
+                    font-weight: 600;
+                    font-size: 13px;
+                }
+
+            /* ── Property card ────────────────────────────────────────────────── */
+            .s-property-card {
+                border: 1px solid var(--bs-border-color);
+                border-radius: 14px;
+                overflow: hidden;
+                transition: transform .2s, box-shadow .2s;
+            }
+
+                .s-property-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 8px 24px rgba(108,99,255,.12);
+                }
+
+            /* ── Stat card ────────────────────────────────────────────────────── */
+            .s-stat {
+                border: 1px solid var(--bs-border-color);
+                border-radius: 12px;
+                transition: transform .15s, box-shadow .15s;
+            }
+
+                .s-stat:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 14px rgba(0,0,0,.08);
+                }
+
+            /* ── Icon circle ──────────────────────────────────────────────────── */
+            .icon-circle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+            }
+
+            /* ── Progress steps ───────────────────────────────────────────────── */
+            .step-circle {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            /* ── Mobile bottom nav ────────────────────────────────────────────── */
+            #mobileBottomNav {
+                display: none;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 60px;
+                background: var(--bs-body-bg);
+                border-top: 1px solid var(--bs-border-color);
+                z-index: 1030;
+            }
+
+            @@media (max-width: 992px) {
+                #studentSidebar {
+                    transform: translateX(-100%);
+                }
+
+                    #studentSidebar.open {
+                        transform: translateX(0);
+                    }
+
+                #studentTopbar {
+                    left: 0;
+                }
+
+                #studentContent {
+                    margin-left: 0;
+                    padding-bottom: 70px;
+                }
+
+                #mobileBottomNav {
+                    display: flex;
+                }
+            }
+
+            /* ── Tables ───────────────────────────────────────────────────────── */
+            .s-table th {
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                color: var(--bs-secondary-color);
+                border-bottom-width: 1px;
+                padding: 10px 14px;
+            }
+
+            .s-table td {
+                padding: 11px 14px;
+            }
+
+            /* ── Page title ───────────────────────────────────────────────────── */
+            .page-title {
+                font-size: 20px;
+                font-weight: 700;
+                margin: 0;
+            }
+
+            /* ── Verified badge ───────────────────────────────────────────────── */
+            .verified-badge {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                padding: 2px 8px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+    </style>
+</head>
+<body>
+
+    @* ── SIDEBAR ──────────────────────────────────────────────────────────────── *@
+    <aside id="studentSidebar">
+
+        @* Logo *@
+        <div class="student-logo">
+            <div class="logo-mark">
+                <i class="fas fa-home text-white" style="font-size:15px;"></i>
+            </div>
+            <div>
+                <div style="color:#fff;font-size:16px;font-weight:700;">Skanly</div>
+                <div style="color:rgba(255,255,255,.4);font-size:10px;">
+                    Student Portal
+                </div>
+            </div>
+        </div>
+
+        @* Student profile chip *@
+        @{
+            var studentName = ViewBag.StudentFullName as string
+                                ?? User.Identity?.Name ?? "Student";
+            var studentImage = ViewBag.StudentImageUrl as string
+                                ?? "/images/default-avatar.png";
+            var isVerified = ViewBag.StudentIsVerified as bool? ?? false;
+            var university = ViewBag.UniversityName as string;
+        }
+        <div class="student-profile">
+            <div class="d-flex align-items-center gap-2">
+                <img src="@studentImage" alt="@studentName" />
+                <div class="min-w-0 flex-grow-1">
+                    <div class="fw-semibold text-truncate"
+                         style="color:#fff;font-size:13px;">
+                        @studentName
+                    </div>
+                    <div class="d-flex align-items-center gap-1 mt-1">
+                        @if (isVerified)
+                        {
+                            <span class="verified-badge">
+                                <i class="fas fa-check-circle me-1"
+                                   style="font-size:9px;"></i>Verified
+                            </span>
+                        }
+                        else
+                        {
+                            <span style="color:rgba(255,255,255,.4);font-size:11px;">
+                                Not Verified
+                            </span>
+                        }
+                    </div>
+                </div>
+                <a asp-area="Student"
+                   asp-controller="Profile"
+                   asp-action="Index"
+                   style="color:rgba(255,255,255,.3);"
+                   title="Edit profile">
+                    <i class="fas fa-cog" style="font-size:12px;"></i>
+                </a>
+            </div>
+            @if (!string.IsNullOrEmpty(university))
+            {
+                <div class="mt-2"
+                     style="color:rgba(255,255,255,.4);font-size:11px;">
+                    <i class="fas fa-graduation-cap me-1"></i>@university
+                </div>
+            }
+        </div>
+
+        @* Navigation *@
+        <nav class="student-nav">
+
+            <div class="nav-label">Home</div>
+
+            <a asp-area="Student"
+               asp-controller="Dashboard"
+               asp-action="Index"
+               class="student-link @(GetController() == "Dashboard" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-th-large"></i></span>
+                Dashboard
+            </a>
+
+            <div class="nav-label">Housing</div>
+
+            <a href="/Property/Search"
+               class="student-link @(GetController() == "Property" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-search"></i></span>
+                Find Housing
+            </a>
+
+            <a asp-controller="Recommendations"
+               asp-action="Index"
+               asp-area=""
+               class="student-link @(GetController() == "Recommendations" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-magic"></i></span>
+                For You
+                <span class="s-badge badge"
+                      style="background:linear-gradient(135deg,#6C63FF,#9c55ff);
+                font-size:9px;color:white;">AI</span>
+            </a>
+
+            <a asp-area="Student"
+               asp-controller="Favorites"
+               asp-action="Index"
+               class="student-link @(GetController() == "Favorites" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-heart"></i></span>
+                Favorites
+                @{
+                    var favCount = ViewBag.FavoritesCount as int?;
+                }
+                @if (favCount > 0)
+                {
+                    <span class="s-badge badge"
+                          style="background:var(--student-primary);
+                        font-size:10px;">
+                        @favCount
+                    </span>
+                }
+            </a>
+
+            <div class="nav-label">My Activity</div>
+
+            <a asp-area="Student"
+               asp-controller="Bookings"
+               asp-action="Index"
+               class="student-link @(GetController() == "Bookings" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-calendar-check"></i></span>
+                My Bookings
+                @{
+                    var activeBookings = ViewBag.ActiveBookingsCount as int?;
+                }
+                @if (activeBookings > 0)
+                {
+                    <span class="s-badge badge bg-warning text-dark"
+                          style="font-size:10px;">
+                        @activeBookings
+                    </span>
+                }
+            </a>
+
+            <a asp-area="Student"
+               asp-controller="Reviews"
+               asp-action="Index"
+               class="student-link @(GetController() == "Reviews" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-star"></i></span>
+                My Reviews
+            </a>
+
+            <div class="nav-label">Connect</div>
+
+            <a asp-controller="Chat"
+               asp-action="StudentIndex"
+               asp-area=""
+               class="student-link @(GetController() == "Chat" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-comments"></i></span>
+                Messages
+                @{
+                    var unreadMsgs = ViewBag.UnreadMessages as int?;
+                }
+                @if (unreadMsgs > 0)
+                {
+                    <span class="s-badge badge bg-danger"
+                          style="font-size:10px;">
+                        @unreadMsgs
+                    </span>
+                }
+            </a>
+
+            <a asp-controller="Notifications"
+               asp-action="Index"
+               asp-area=""
+               class="student-link @(GetController() == "Notifications" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-bell"></i></span>
+                Notifications
+                @{
+                    var unreadNotifs = ViewBag.UnreadNotifications as int?;
+                }
+                @if (unreadNotifs > 0)
+                {
+                    <span class="s-badge badge bg-danger"
+                          style="font-size:10px;">
+                        @unreadNotifs
+                    </span>
+                }
+            </a>
+
+            <div class="nav-label">Account</div>
+
+            <a asp-area="Student"
+               asp-controller="Profile"
+               asp-action="Index"
+               class="student-link @(GetController() == "Profile" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-user-circle"></i></span>
+                My Profile
+            </a>
+
+            <a asp-area="Student"
+               asp-controller="Verification"
+               asp-action="Index"
+               class="student-link @(GetController() == "Verification" ? "active" : "")">
+                <span class="s-icon"><i class="fas fa-shield-alt"></i></span>
+                Verification
+                @if (!isVerified)
+                {
+                    <span class="s-badge badge bg-warning text-dark"
+                          style="font-size:10px;">!</span>
+                }
+            </a>
+
+        </nav>
+
+        @* Sign out *@
+        <div class="px-4 py-3"
+             style="border-top:1px solid rgba(255,255,255,.07);">
+            <a asp-area=""
+               asp-controller="Account"
+               asp-action="Logout"
+               class="d-flex align-items-center gap-2 text-decoration-none"
+               style="color:rgba(255,255,255,.4);font-size:12px;">
+                <i class="fas fa-sign-out-alt"></i>Sign Out
+            </a>
+        </div>
+    </aside>
+
+    @* ── TOPBAR ────────────────────────────────────────────────────────────────── *@
+    <header id="studentTopbar">
+
+        <button class="btn btn-sm d-lg-none me-1"
+                id="studentSidebarToggle"
+                style="padding:5px 9px;">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        @* Search bar in topbar *@
+        <div class="me-auto d-none d-md-block" style="width:320px;">
+            <form action="/Property/Search" method="get">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="fas fa-search"
+                           style="font-size:12px;color:var(--student-primary);"></i>
+                    </span>
+                    <input type="text"
+                           name="q"
+                           class="form-control border-start-0 bg-transparent"
+                           placeholder="Search areas, universities..."
+                           style="font-size:13px;" />
+                </div>
+            </form>
+        </div>
+
+        @* Language Switcher *@
+        @await Html.PartialAsync("_LanguageSwitcher")
+
+        @* Theme Toggle *@
+        @await Html.PartialAsync("_ThemeToggle")
+
+        @* Notifications *@
+        @await Html.PartialAsync(
+            "~/Views/Notifications/_NotificationDropdown.cshtml")
+
+        @* Avatar *@
+        <div class="dropdown">
+            <button class="btn btn-sm p-0 border-0"
+                    data-bs-toggle="dropdown">
+                <img src="@studentImage"
+                     class="rounded-circle"
+                     width="32" height="32"
+                     style="object-fit:cover;
+                border:2px solid var(--student-primary);" />
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li class="px-3 py-2">
+                    <div class="fw-semibold small">@studentName</div>
+                    <div class="text-muted" style="font-size:11px;">
+                        @(university ?? "Student")
+                    </div>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                    <a class="dropdown-item small"
+                       asp-area="Student"
+                       asp-controller="Profile"
+                       asp-action="Index">
+                        <i class="fas fa-user me-2 text-muted"></i>My Profile
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item small"
+                       asp-area="Student"
+                       asp-controller="Verification"
+                       asp-action="Index">
+                        <i class="fas fa-shield-alt me-2 text-muted"></i>
+                        Verification
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item small text-danger"
+                       asp-area=""
+                       asp-controller="Account"
+                       asp-action="Logout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    @* ── CONTENT ───────────────────────────────────────────────────────────────── *@
+    <main id="studentContent">
+
+        @if (TempData["Success"] is string ok)
+        {
+            <div class="alert alert-success alert-dismissible fade show mb-4
+                d-flex align-items-center gap-2"
+                 style="border-radius:10px;font-size:13px;">
+                <i class="fas fa-check-circle"
+                   style="color:var(--student-success);"></i>
+                @ok
+                <button type="button" class="btn-close ms-auto"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Error"] is string err)
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-4
+                d-flex align-items-center gap-2"
+                 style="border-radius:10px;font-size:13px;">
+                <i class="fas fa-exclamation-circle text-danger"></i>
+                @err
+                <button type="button" class="btn-close ms-auto"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["Info"] is string info)
+        {
+            <div class="alert alert-info alert-dismissible fade show mb-4"
+                 style="border-radius:10px;font-size:13px;">
+                <i class="fas fa-info-circle me-2"></i>@info
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    @* ── MOBILE BOTTOM NAV ─────────────────────────────────────────────────────── *@
+    <nav id="mobileBottomNav" class="align-items-stretch">
+        @{
+            var mobileItems = new[]
+            {
+            ("/Student/Dashboard",    "fa-th-large",        "Home"),
+            ("/Property/Search",      "fa-search",          "Search"),
+            ("/Recommendations",      "fa-magic",           "For You"),
+            ("/Student/Bookings",     "fa-calendar-check",  "Bookings"),
+            ("/Student/Profile",      "fa-user-circle",     "Profile"),
+        };
+            var currentPath = Context.Request.Path.Value ?? "";
+        }
+        @foreach (var (href, icon, label) in mobileItems)
+        {
+            var isActive = currentPath.StartsWith(href.Split('?')[0],
+                StringComparison.OrdinalIgnoreCase);
+            <a href="@href"
+               class="flex-grow-1 d-flex flex-column align-items-center
+                justify-content-center text-decoration-none gap-1"
+               style="color:@(isActive ? "var(--student-primary)" : "#9ca3af");
+                font-size:10px;">
+                <i class="fas @icon" style="font-size:18px;"></i>
+                @label
+            </a>
+        }
+    </nav>
+
+    @* Bootstrap JS *@
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    @* Chart.js *@
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    @* SignalR *@
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+
+    @* Theme Manager *@
+    <script src="~/js/theme-manager.js" asp-append-version="true"></script>
+
+    @* RTL Helpers *@
+    <script src="~/js/rtl-helpers.js" asp-append-version="true"></script>
+
+    <script>
+        // Mobile sidebar
+        document.getElementById('studentSidebarToggle')
+        ?.addEventListener('click', () => {
+        document.getElementById('studentSidebar')
+        .classList.toggle('open');
+        });
+
+        // Close sidebar on outside click
+        document.addEventListener('click', function (e) {
+        const sb = document.getElementById('studentSidebar');
+        const tb = document.getElementById('studentSidebarToggle');
+        if (window.innerWidth < 992 &&
+        !sb.contains(e.target) &&
+        tb && !tb.contains(e.target)) {
+        sb.classList.remove('open');
+        }
+        });
+
+        Chart.defaults.font.family = "'Inter','Segoe UI',sans-serif";
+        Chart.defaults.font.size   = 12;
+        Chart.defaults.color       = '#6b7280';
+    </script>
+
+    @Html.AntiForgeryToken()
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>
+
+@functions {
+    string GetController() =>
+        ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+}

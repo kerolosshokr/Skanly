@@ -1,0 +1,76 @@
+﻿@* Skanly.Web/Views/Shared/_LanguageSwitcher.cshtml *@
+@using Microsoft.AspNetCore.Localization
+@using System.Globalization
+@{
+    var requestCulture = Context.Features
+        .Get<IRequestCultureFeature>();
+    var currentCulture = requestCulture?.RequestCulture.UICulture
+                         ?? CultureInfo.CurrentUICulture;
+    var isArabic = currentCulture.TwoLetterISOLanguageName == "ar";
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<div class="language-switcher dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle
+        d-flex align-items-center gap-2"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            style="font-size:12px;padding:5px 10px;border-radius:8px;">
+        <span style="font-size:15px;">
+            @(isArabic ? "🇪🇬" : "🇬🇧")
+        </span>
+        <span>@(isArabic ? "العربية" : "English")</span>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm"
+        style="min-width:140px;border-radius:10px;">
+
+        @* English *@
+        <li>
+            <form asp-controller="Culture"
+                  asp-action="Set"
+                  method="post"
+                  class="m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="culture" value="en" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <button type="submit"
+                        class="dropdown-item d-flex align-items-center gap-2
+                    @(!isArabic ? "active" : "")"
+                        style="font-size:13px;">
+                    <span>🇬🇧</span>
+                    <span>English</span>
+                    @if (!isArabic)
+                    {
+                        <i class="fas fa-check ms-auto text-primary"
+                           style="font-size:11px;"></i>
+                    }
+                </button>
+            </form>
+        </li>
+
+        @* Arabic *@
+        <li>
+            <form asp-controller="Culture"
+                  asp-action="Set"
+                  method="post"
+                  class="m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="culture" value="ar" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <button type="submit"
+                        class="dropdown-item d-flex align-items-center gap-2
+                    @(isArabic ? "active" : "")"
+                        style="font-size:13px;">
+                    <span>🇪🇬</span>
+                    <span>العربية</span>
+                    @if (isArabic)
+                    {
+                        <i class="fas fa-check ms-auto text-primary"
+                           style="font-size:11px;"></i>
+                    }
+                </button>
+            </form>
+        </li>
+    </ul>
+</div>

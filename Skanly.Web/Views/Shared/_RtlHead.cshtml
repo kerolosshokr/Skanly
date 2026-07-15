@@ -1,0 +1,210 @@
+﻿@* Skanly.Web/Views/Shared/_RtlHead.cshtml *@
+@* Include inside <head> on every layout *@
+@using Microsoft.AspNetCore.Localization
+@using System.Globalization
+@{
+    var requestCulture = Context.Features
+        .Get<IRequestCultureFeature>();
+    var isArabic = (requestCulture?.RequestCulture.UICulture
+                           ?? CultureInfo.CurrentUICulture)
+                          .TwoLetterISOLanguageName == "ar";
+}
+
+@if (isArabic)
+{
+    @* Bootstrap RTL stylesheet *@
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"
+          rel="stylesheet" />
+
+    <style>
+        /* ── RTL Global Overrides ─────────────────────────────────────────── */
+
+        body {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Cairo', 'Segoe UI', 'Tahoma', sans-serif;
+        }
+
+        /* Google Fonts Cairo for Arabic */
+        @@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
+        /* Sidebar direction fix */
+        #adminSidebar,
+        #ownerSidebar,
+        #studentSidebar {
+            left: auto;
+            right: 0;
+            border-right: none;
+            border-left: 1px solid rgba(255,255,255,.08);
+        }
+
+        /* Active nav indicator — move to right side */
+        .sidebar-link.active::before,
+        .owner-nav-link.active::before,
+        .student-link.active::before {
+            left: auto;
+            right: 0;
+            border-radius: 3px 0 0 3px;
+        }
+
+        /* Topbar — mirror margins */
+        #adminTopbar,
+        #ownerTopbar,
+        #studentTopbar {
+            left: 0;
+            right: var(--sidebar-width, 250px);
+        }
+
+        /* Main content — mirror left margin to right */
+        #adminContent,
+        #ownerContent,
+        #studentContent {
+            margin-left: 0;
+            margin-right: var(--sidebar-width, 250px);
+        }
+
+        /* Form inputs — right-aligned text */
+        .form-control,
+        .form-select,
+        textarea {
+            text-align: right;
+        }
+
+        /* Dropdown menus — align left instead of right */
+        .dropdown-menu-end {
+            right: auto !important;
+            left: 0 !important;
+        }
+
+        /* Badge alignment in nav */
+        .s-badge,
+        .nav-badge {
+            margin-left: 0;
+            margin-right: auto;
+        }
+
+        /* Table text alignment */
+        .table th,
+        .table td {
+            text-align: right;
+        }
+
+        /* Progress bars — reverse fill direction */
+        .progress-bar {
+            direction: ltr;
+        }
+
+        /* Input group icons */
+        .input-group-text {
+            border-radius: 0 0.375rem 0.375rem 0;
+        }
+
+        .input-group .form-control:first-child {
+            border-radius: 0.375rem 0 0 0.375rem;
+        }
+
+        /* Card header icons — flip icon + text order */
+        .card-header i.fas,
+        .card-header i.far {
+            margin-left: 0.5rem;
+            margin-right: 0;
+        }
+
+        /* Breadcrumb separator direction */
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: "\\";
+        }
+
+        /* Tooltip/popover alignment */
+        .tooltip {
+            text-align: right;
+        }
+
+        /* Alert icons */
+        .alert i.fas,
+        .alert i.far {
+            margin-left: 0.5rem;
+            margin-right: 0;
+        }
+
+        /* Mobile bottom nav — RTL text */
+        #mobileBottomNav {
+            direction: rtl;
+        }
+
+        /* Pagination — reverse order */
+        .pagination {
+            flex-direction: row-reverse;
+        }
+
+        /* Chat bubbles — reverse alignment */
+        .user-bubble {
+            border-bottom-right-radius: 18px !important;
+            border-bottom-left-radius: 4px !important;
+        }
+
+        .assistant-bubble,
+        .rtl-other-bubble {
+            border-bottom-left-radius: 18px !important;
+            border-bottom-right-radius: 4px !important;
+        }
+
+        /* Star rating — RTL direction */
+        .stars {
+            direction: ltr;
+            display: inline-block;
+        }
+
+        /* Map sidebar — right side */
+        .map-sidebar {
+            left: auto !important;
+            right: 0 !important;
+            border-right: none !important;
+            border-left: 1px solid var(--bs-border-color) !important;
+        }
+
+        #exploreMap {
+            left: 0 !important;
+            right: 340px !important;
+        }
+
+        /* Property card price — rtl number display */
+        .price-display {
+            direction: ltr;
+            display: inline-block;
+        }
+
+        @@media (max-width: 992px) {
+            #adminSidebar,
+            #ownerSidebar,
+            #studentSidebar {
+                right: auto;
+                left: 0;
+                transform: translateX(-100%);
+            }
+
+                #adminSidebar.open,
+                #ownerSidebar.open,
+                #studentSidebar.open {
+                    transform: translateX(0);
+                }
+
+            #adminTopbar,
+            #ownerTopbar,
+            #studentTopbar {
+                right: 0;
+            }
+
+            #adminContent,
+            #ownerContent,
+            #studentContent {
+                margin-right: 0;
+            }
+        }
+    </style>
+}
+else
+{
+    @* LTR stylesheet (already included in layout — just ensure no RTL) *@
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet" />
+}

@@ -1,0 +1,329 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Properties/Pending.cshtml *@
+@model IEnumerable<Skanly.Application.Features.Properties.DTOs.PropertyDetailDto>
+@{
+    ViewData["Title"] = "Pending Property Approvals";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="page-title mb-1">
+            <i class="fas fa-clock me-2 text-warning"></i>
+            Pending Approvals
+        </h1>
+        <p class="text-muted mb-0 small">
+            @Model.Count() propert@(Model.Count() == 1 ? "y" : "ies")
+            awaiting review
+        </p>
+    </div>
+    <a asp-action="Index"
+       class="btn btn-outline-secondary btn-sm">
+        All Properties
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card admin-card">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="fas fa-check-circle fa-4x mb-3 text-success opacity-50"></i>
+            <h5>All caught up!</h5>
+            <p class="mb-0">No properties are waiting for approval.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var property in Model)
+        {
+            <div class="col-md-6 col-xl-4" id="prop-card-@property.PropertyId">
+                <div class="card admin-card h-100">
+
+                    @* Property Image *@
+                    <div class="position-relative">
+                        <img src="@(property.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
+                                                                 ?? "/images/property-placeholder.jpg")"
+                             class="card-img-top object-fit-cover"
+                             height="180"
+                             alt="@property.Title" />
+                        <div class="position-absolute top-0 start-0 m-2">
+                            <span class="badge bg-warning text-dark fw-semibold">
+                                Pending Review
+                            </span>
+                        </div>
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <span class="badge bg-dark bg-opacity-60">
+                                @property.PropertyTypeDisplay
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-1">@property.Title</h6>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                            @property.AreaNameEn
+                            @if (!string.IsNullOrEmpty(property.UniversityNameEn))
+                            {
+                                <span class="ms-2">
+                                    <i class="fas fa-graduation-cap me-1 text-primary"></i>
+                                    @property.UniversityNameEn
+                                </span>
+                            }
+                        </p>
+
+                        @* Property quick stats *@
+                        <div class="row g-2 mb-3">
+                            @{
+                                var stats = new[]
+                                {
+                                    ("EGP " + property.PricePerMonth.ToString("N0") + "/mo",
+                                     "fa-coins", "primary"),
+                                    (property.Rooms + " rooms", "fa-door-open", "info"),
+                                    (property.Beds + " beds", "fa-bed", "success"),
+                                   
+                                };
+                            }
+                            @foreach (var (val, icon, color) in stats)
+                            {
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center gap-2
+                                        p-2 rounded bg-light"
+                                         style="font-size:11px;">
+                                        <i class="fas @icon text-@color"></i>
+                                        <span>@val</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @* Owner info *@
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <img src="@(property.OwnerImageUrl ?? "/images/default-avatar.png")"
+                                 class="rounded-circle"
+                                 width="28" height="28"
+                                 style="object-fit:cover;" />
+                            <div style="font-size:12px;">
+                                <div class="fw-semibold">@property.OwnerFullName</div>
+                                @if (property.OwnerIsVerified)
+                                {
+                                    <span class="text-success"
+                                          style="font-size:10px;">
+                                        <i class="fas fa-check-circle me-1"></i>Verified
+                                    </span>
+                                }
+                            </div>
+                            <div class="ms-auto text-muted"
+                                 style="font-size:11px;">
+                                @property.Amenities.Count amenit@(property.Amenities.Count == 1 ? "y" : "ies")
+                            </div>
+                        </div>
+
+                        @* Amenities *@
+                        @if (property.Amenities.Any())
+                        {
+                            <div class="d-flex flex-wrap gap-1 mb-3">
+                                @foreach (var amenity in property.Amenities.Take(5))
+                                {
+                                    <span class="badge bg-light text-dark border"
+                                          style="font-size:10px;">
+                                        @amenity.NameEn
+                                    </span>
+                                }
+                                @if (property.Amenities.Count > 5)
+                                {
+                                    <span class="badge bg-light text-muted border"
+                                          style="font-size:10px;">
+                                        +@(property.Amenities.Count - 5) more
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @* Action Footer *@
+                    <div class="card-footer bg-transparent border-top-0 pt-0 px-3 pb-3">
+                        <div class="d-flex gap-2">
+                            <a href="/Property/@property.PropertyId"
+                               target="_blank"
+                               class="btn btn-sm btn-outline-secondary flex-grow-1">
+                                <i class="fas fa-eye me-1"></i>Preview
+                            </a>
+                            <button class="btn btn-sm btn-success flex-grow-1
+                                approve-property-btn fw-semibold"
+                                    data-property-id="@property.PropertyId"
+                                    data-property-title="@property.Title">
+                                <i class="fas fa-check me-1"></i>Approve
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger
+                                reject-property-btn"
+                                    data-property-id="@property.PropertyId"
+                                    data-property-title="@property.Title"
+                                    title="Reject">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* Reject Modal *@
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:12px;">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-danger">
+                    <i class="fas fa-times-circle me-2"></i>Reject Listing
+                </h6>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3"
+                   id="rejectModalDesc">
+                    Please provide a reason for rejection.
+                    The owner will be notified.
+                </p>
+                <textarea id="rejectReasonInput"
+                          class="form-control"
+                          rows="3"
+                          placeholder="e.g. Photos are not clear, incorrect address, missing amenity details..."></textarea>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button class="btn btn-secondary btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button class="btn btn-danger btn-sm fw-semibold"
+                        id="confirmRejectBtn">
+                    <i class="fas fa-times me-1"></i>Reject Listing
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const TOKEN = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        let rejectPropertyId = null;
+
+        // ── Approve ───────────────────────────────────────────────────────────────
+        document.querySelectorAll('.approve-property-btn').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const id    = this.dataset.propertyId;
+                const title = this.dataset.propertyTitle;
+                const card  = document.getElementById(`prop-card-${id}`);
+
+                this.disabled = true;
+                this.innerHTML =
+                    '<span class="spinner-border spinner-border-sm me-1"></span>Approving...';
+
+                const res = await fetch('/Admin/Properties/Approve', {
+                    method : 'POST',
+                    headers: {
+                        'Content-Type'             : 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken' : TOKEN,
+                        'X-Requested-With'         : 'XMLHttpRequest'
+                    },
+                    body: `id=${id}`
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    card.style.transition = 'opacity .4s, transform .4s';
+                    card.style.opacity    = '0';
+                    card.style.transform  = 'scale(.95)';
+                    setTimeout(() => card.remove(), 400);
+                    showToast(`"${title}" approved and is now live.`, 'success');
+                } else {
+                    this.disabled = false;
+                    this.innerHTML =
+                        '<i class="fas fa-check me-1"></i>Approve';
+                    showToast(data.message ?? 'Approval failed.', 'danger');
+                }
+            });
+        });
+
+        // ── Reject ────────────────────────────────────────────────────────────────
+        document.querySelectorAll('.reject-property-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                rejectPropertyId = this.dataset.propertyId;
+                document.getElementById('rejectModalDesc').textContent =
+                    `Rejecting: "${this.dataset.propertyTitle}"`;
+                document.getElementById('rejectReasonInput').value = '';
+                new bootstrap.Modal(
+                    document.getElementById('rejectModal')).show();
+            });
+        });
+
+        document.getElementById('confirmRejectBtn').addEventListener(
+            'click', async function () {
+                const reason = document.getElementById('rejectReasonInput').value.trim();
+                if (!reason) {
+                    document.getElementById('rejectReasonInput')
+                        .classList.add('is-invalid');
+                    return;
+                }
+
+                bootstrap.Modal.getInstance(
+                    document.getElementById('rejectModal')).hide();
+
+                const card = document.getElementById(
+                    `prop-card-${rejectPropertyId}`);
+
+                const res = await fetch('/Admin/Properties/Reject', {
+                    method : 'POST',
+                    headers: {
+                        'Content-Type'             : 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken' : TOKEN,
+                        'X-Requested-With'         : 'XMLHttpRequest'
+                    },
+                    body: `id=${rejectPropertyId}&reason=${encodeURIComponent(reason)}`
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    card.style.transition = 'opacity .4s';
+                    card.style.opacity    = '0';
+                    setTimeout(() => card.remove(), 400);
+                    showToast('Listing rejected. Owner notified.', 'secondary');
+                } else {
+                    showToast(data.message ?? 'Action failed.', 'danger');
+                }
+            });
+
+        // ── Toast Helper ──────────────────────────────────────────────────────────
+        function showToast(message, type) {
+            const c = document.getElementById('toastContainer') || (() => {
+                const el = document.createElement('div');
+                el.id = 'toastContainer';
+                el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                el.style.zIndex = '9999';
+                document.body.appendChild(el);
+                return el;
+            })();
+            const t = document.createElement('div');
+            t.className =
+                `toast align-items-center text-bg-${type} border-0`;
+            t.setAttribute('role', 'alert');
+            t.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"></button>
+                </div>`;
+            c.appendChild(t);
+            new bootstrap.Toast(t, { delay: 3500 }).show();
+            t.addEventListener('hidden.bs.toast', () => t.remove());
+        }
+    </script>
+}

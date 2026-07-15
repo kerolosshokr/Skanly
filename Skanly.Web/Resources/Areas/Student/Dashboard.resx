@@ -1,0 +1,50 @@
+﻿<!-- Skanly.Web/Resources/Areas/Student/Dashboard.resx -->
+
+<root>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>2.0</value>
+	</resheader>
+
+	<data name="WelcomeMessage" xml:space="preserve">
+    <value>Hey, {0} 👋</value>
+  </data>
+	<data name="TodayDate" xml:space="preserve">
+    <value>Today is {0}</value>
+  </data>
+	<data name="CompleteProfileTitle" xml:space="preserve">
+    <value>Complete your profile to unlock all features</value>
+  </data>
+	<data name="CompleteProfileSubtitle" xml:space="preserve">
+    <value>3 quick steps to get started</value>
+  </data>
+	<data name="SetUniversity" xml:space="preserve">
+    <value>Set Your University</value>
+  </data>
+	<data name="SetUniversityDesc" xml:space="preserve">
+    <value>We'll find housing close to your campus</value>
+  </data>
+	<data name="CompleteProfile" xml:space="preserve">
+    <value>Complete Your Profile</value>
+  </data>
+	<data name="CompleteProfileDesc" xml:space="preserve">
+    <value>Add your phone number and personal details</value>
+  </data>
+	<data name="VerifyNow" xml:space="preserve">
+    <value>Verify Now</value>
+  </data>
+	<data name="RecommendedForYou" xml:space="preserve">
+    <value>Recommended for You</value>
+  </data>
+	<data name="QuickActions" xml:space="preserve">
+    <value>Quick Actions</value>
+  </data>
+	<data name="NoBookingsYet" xml:space="preserve">
+    <value>No bookings yet.</value>
+  </data>
+	<data name="ExploreProperties" xml:space="preserve">
+    <value>Explore Properties</value>
+  </data>
+</root>

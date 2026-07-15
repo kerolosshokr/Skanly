@@ -1,0 +1,113 @@
+﻿@* Skanly.Web/Areas/Owner/Views/Dashboard/_OwnerAnalytics.cshtml *@
+@* Partial included at bottom of dashboard *@
+@model Skanly.Application.Features.Owners.DTOs.OwnerDashboardDto
+
+@if (Model is null) { return; }
+
+<div class="row g-4 mt-2">
+
+    @* Booking Status Breakdown *@
+    <div class="col-md-6">
+        <div class="card owner-card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"
+                   style="color:var(--owner-primary);"></i>
+                Booking Summary
+            </div>
+            <div class="card-body d-flex align-items-center gap-4">
+                <div style="max-width:140px;width:100%;">
+                    <canvas id="ownerBookingPie"></canvas>
+                </div>
+                <div class="flex-grow-1">
+                    @{
+                        var summaryItems = new[]
+                        {
+                            ("Confirmed",      "#10b981",
+                             Model.TotalBookings - Model.PendingRequests),
+                            ("Pending",        "#f59e0b", Model.PendingRequests),
+                        };
+                    }
+                    @foreach (var (label, color, count) in summaryItems)
+                    {
+                        <div class="d-flex justify-content-between mb-2
+                            align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="rounded-circle d-inline-block"
+                                      style="width:8px;height:8px;
+                                background:@color;"></span>
+                                <span class="small">@label</span>
+                            </div>
+                            <span class="fw-bold small">@count</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Quick Performance *@
+    <div class="col-md-6">
+        <div class="card owner-card">
+            <div class="card-header">
+                <i class="fas fa-tachometer-alt me-2"
+                   style="color:var(--owner-primary);"></i>
+                Performance
+            </div>
+            <div class="card-body p-0">
+                @{
+                    var metrics = new[]
+                    {
+                        ("Active Listings",
+                         $"{Model.ActiveListings} / {Model.TotalProperties}",
+                         "green"),
+                        ("Unread Messages",
+                         $"{Model.UnreadNotifications}",
+                         Model.UnreadNotifications > 0 ? "orange" : "green"),
+                        ("Response Rate",
+                         Model.PendingRequests > 0
+                            ? "Has pending requests"
+                            : "No pending",
+                         Model.PendingRequests > 0 ? "orange" : "green"),
+                    };
+                }
+                @foreach (var (label, value, color) in metrics)
+                {
+                    <div class="d-flex justify-content-between px-4 py-3
+                        border-bottom align-items-center">
+                        <span class="small text-muted">@label</span>
+                        <span class="small fw-bold"
+                              style="color:@color;">
+                            @value
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const confirmed = @(Model.TotalBookings - Model.PendingRequests);
+        const pending   = @Model.PendingRequests;
+
+        new Chart(
+            document.getElementById('ownerBookingPie')?.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels  : ['Confirmed', 'Pending'],
+                datasets: [{
+                    data           : [confirmed, pending],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth    : 2,
+                    borderColor    : '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout    : '65%',
+                plugins   : { legend: { display: false } }
+            }
+        });
+    })();
+</script>

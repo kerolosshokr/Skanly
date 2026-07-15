@@ -1,0 +1,353 @@
+﻿@* Skanly.Web/Areas/Admin/Views/Users/Index.cshtml *@
+@model Skanly.Application.Common.Models.PagedResult<Skanly.Web.Areas.Admin.Controllers.AdminUserRow>
+
+@{
+    ViewData["Title"] = "User Management";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+@* Header *@
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title mb-1">
+            <i class="fas fa-users me-2 text-primary"></i>User Management
+        </h1>
+        <p class="text-muted mb-0 small">
+            @Model.TotalCount total users ·
+            @ViewBag.TotalStudents students ·
+            @ViewBag.TotalOwners owners
+        </p>
+    </div>
+    <a href="/Admin/Analytics/Users"
+       class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-chart-bar me-1"></i>User Analytics
+    </a>
+</div>
+
+@* Filter Bar *@
+<div class="card admin-card mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent">
+                        <i class="fas fa-search text-muted"
+                           style="font-size:12px;"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           value="@ViewBag.Search"
+                           class="form-control border-start-0"
+                           placeholder="Name or email..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="role" class="form-select form-select-sm">
+                    <option value="">All Roles</option>
+                    @foreach (var r in new[] { "Student", "Owner", "Admin" })
+                    {
+                        <option value="@r"
+                                selected="@(ViewBag.Role as string == r)">
+                            @r
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Status</option>
+                    <option value="active"
+                            selected="@(ViewBag.Status as string == "active")">
+                        Active
+                    </option>
+                    <option value="inactive"
+                            selected="@(ViewBag.Status as string == "inactive")">
+                        Inactive
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit"
+                        class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="fas fa-redo me-1"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Users Table *@
+<div class="card admin-card">
+    <div class="table-responsive">
+        <table class="table admin-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:40px"></th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th class="text-center">Role</th>
+                    <th class="text-center">Verified</th>
+                    <th class="text-center">Status</th>
+                    <th>Joined</th>
+                    <th class="text-center" style="width:100px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Items.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-users fa-3x mb-3 opacity-25 d-block"></i>
+                            No users found.
+                        </td>
+                    </tr>
+                }
+                @foreach (var user in Model.Items)
+                {
+                    <tr id="user-row-@user.UserId">
+                        <td>
+                            <img src="@(user.ProfileImage ?? "/images/default-avatar.png")"
+                                 class="rounded-circle object-fit-cover"
+                                 width="36" height="36" alt="" />
+                        </td>
+                        <td>
+                            <div class="fw-semibold small">@user.FullName</div>
+                            <div class="text-muted"
+                                 style="font-size:11px;">
+                                @user.UserId[..8]…
+                            </div>
+                        </td>
+                        <td class="small text-muted">@user.Email</td>
+                        <td class="text-center">
+                            <span class="badge badge-pill
+                                @(user.Role == "Admin" ? "bg-danger" :
+                                    user.Role == "Owner" ? "bg-success" : "bg-primary")">
+                                @user.Role
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            @if (user.IsVerified)
+                            {
+                                <i class="fas fa-check-circle text-success"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-times-circle text-muted"></i>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-pill
+                                @(user.IsActive ? "bg-success" : "bg-secondary")
+                                bg-opacity-15
+                                @(user.IsActive ? "text-success" : "text-secondary")">
+                                @(user.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td class="small text-muted">@user.TimeAgo</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a asp-action="Detail"
+                                   asp-route-id="@user.UserId"
+                                   class="btn btn-outline-secondary btn-sm"
+                                   title="View details">
+                                    <i class="fas fa-eye"
+                                       style="font-size:11px;"></i>
+                                </a>
+                                @if (user.IsActive)
+                                {
+                                    <button class="btn btn-outline-danger btn-sm
+                                        user-deactivate-btn"
+                                            data-user-id="@user.UserId"
+                                            data-user-name="@user.FullName"
+                                            title="Deactivate">
+                                        <i class="fas fa-ban"
+                                           style="font-size:11px;"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-outline-success btn-sm
+                                        user-activate-btn"
+                                            data-user-id="@user.UserId"
+                                            data-user-name="@user.FullName"
+                                            title="Activate">
+                                        <i class="fas fa-check"
+                                           style="font-size:11px;"></i>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* Pagination *@
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer d-flex justify-content-between
+            align-items-center py-3 px-4">
+            <small class="text-muted">
+                Showing
+                @(((Model.PageNumber - 1) * Model.PageSize) + 1)–@(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount))
+                of @Model.TotalCount users
+            </small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@(Model.PageNumber - 1)"
+                           asp-route-search="@ViewBag.Search"
+                           asp-route-role="@ViewBag.Role"
+                           asp-route-status="@ViewBag.Status">
+                            <i class="fas fa-chevron-left"
+                               style="font-size:10px;"></i>
+                        </a>
+                    </li>
+                    @for (int i = Math.Max(1, Model.PageNumber - 2);
+                          i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-search="@ViewBag.Search"
+                               asp-route-role="@ViewBag.Role"
+                               asp-route-status="@ViewBag.Status">
+                                @i
+                            </a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@(Model.PageNumber + 1)"
+                           asp-route-search="@ViewBag.Search"
+                           asp-route-role="@ViewBag.Role"
+                           asp-route-status="@ViewBag.Status">
+                            <i class="fas fa-chevron-right"
+                               style="font-size:10px;"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+@* Deactivate / Activate Confirm Modal *@
+<div class="modal fade" id="userActionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:12px;">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold" id="userActionTitle">
+                    Confirm Action
+                </h6>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="text-muted small mb-0" id="userActionBody">
+                    Are you sure?
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button"
+                        class="btn btn-secondary btn-sm"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button"
+                        class="btn btn-sm fw-semibold"
+                        id="userActionConfirm">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const TOKEN  = document.querySelector(
+            'input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        let pendingUserId = null;
+        let pendingAction = null;
+
+        async function doUserAction(url, userId) {
+            const res = await fetch(url, {
+                method : 'POST',
+                headers: {
+                    'Content-Type'             : 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken' : TOKEN
+                },
+                body: `userId=${encodeURIComponent(userId)}`
+            });
+            return res.ok ? (await res.json()) : { success: false };
+        }
+
+        // Deactivate
+        document.querySelectorAll('.user-deactivate-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                pendingUserId = this.dataset.userId;
+                pendingAction = 'deactivate';
+                document.getElementById('userActionTitle').textContent =
+                    'Deactivate User';
+                document.getElementById('userActionBody').textContent =
+                    `Deactivate ${this.dataset.userName}? ` +
+                    'They will not be able to log in.';
+                document.getElementById('userActionConfirm').className =
+                    'btn btn-danger btn-sm fw-semibold';
+                document.getElementById('userActionConfirm').textContent = 'Deactivate';
+                new bootstrap.Modal(
+                    document.getElementById('userActionModal')).show();
+            });
+        });
+
+        // Activate
+        document.querySelectorAll('.user-activate-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                pendingUserId = this.dataset.userId;
+                pendingAction = 'activate';
+                document.getElementById('userActionTitle').textContent =
+                    'Activate User';
+                document.getElementById('userActionBody').textContent =
+                    `Reactivate ${this.dataset.userName}?`;
+                document.getElementById('userActionConfirm').className =
+                    'btn btn-success btn-sm fw-semibold';
+                document.getElementById('userActionConfirm').textContent = 'Activate';
+                new bootstrap.Modal(
+                    document.getElementById('userActionModal')).show();
+            });
+        });
+
+        // Confirm
+        document.getElementById('userActionConfirm').addEventListener(
+            'click', async function () {
+                bootstrap.Modal.getInstance(
+                    document.getElementById('userActionModal')).hide();
+
+                const url = pendingAction === 'deactivate'
+                    ? '/Admin/Users/Deactivate'
+                    : '/Admin/Users/Activate';
+
+                const data = await doUserAction(url, pendingUserId);
+
+                if (data.success) {
+                    // Reload to reflect new state
+                    window.location.reload();
+                } else {
+                    alert('Action failed. Please try again.');
+                }
+            });
+    </script>
+}

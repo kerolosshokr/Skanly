@@ -1,0 +1,27 @@
+﻿@model Skanly.Application.Features.Auth.DTOs.RegisterOwnerDto
+
+@{
+    ViewData["Title"] = "Register Owner";
+}
+
+<h2>Register Owner</h2>
+
+<form asp-action="RegisterOwner" method="post">
+
+    <div class="mb-3">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" type="password" class="form-control" />
+        <span asp-validation-for="Password"></span>
+    </div>
+
+    <button class="btn btn-primary">
+        Register
+    </button>
+
+</form>
